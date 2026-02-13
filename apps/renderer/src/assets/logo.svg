@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Rounded square background -->
+  <rect width="128" height="128" rx="28" fill="#1a1a1a"/>
+
+  <!-- Sound wave arcs (left) -->
+  <path d="M38 52c-4 4-6 9-6 14s2 10 6 14" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M44 56c-2.5 2.5-4 6-4 9s1.5 6.5 4 9" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.75"/>
+
+  <!-- Central microphone -->
+  <rect x="56" y="40" width="16" height="32" rx="8" fill="#4ade80"/>
+  <rect x="56" y="40" width="16" height="10" rx="8" fill="#3bc96f"/>
+
+  <!-- Mic stand -->
+  <path d="M64 76v12" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
+  <path d="M56 88h16" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Sound wave arcs (right) -->
+  <path d="M84 56c2.5 2.5 4 6 4 9s-1.5 6.5-4 9" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.75"/>
+  <path d="M90 52c4 4 6 9 6 14s-2 10-6 14" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
+</svg>

@@ -1,0 +1,177 @@
+import { contextBridge, ipcRenderer } from 'electron';
+
+const sourdineApi = {
+  audio: {
+    sendChunk: (samples: number[]): void => {
+      ipcRenderer.send('audio:chunk', samples);
+    },
+    startRecording: (): void => {
+      ipcRenderer.send('audio:recording-start');
+    },
+    stopRecording: (): void => {
+      ipcRenderer.send('audio:recording-stop');
+    },
+  },
+
+  transcript: {
+    onSegment: (
+      callback: (segment: {
+        id: string;
+        text: string;
+        startTimeMs: number;
+        endTimeMs: number;
+        isFinal: boolean;
+        language?: string;
+      }) => void
+    ): (() => void) => {
+      const handler = (_event: any, segment: any) => callback(segment);
+      ipcRenderer.on('transcript:segment', handler);
+      return () => ipcRenderer.removeListener('transcript:segment', handler);
+    },
+    onPartial: (callback: (data: { text: string }) => void): (() => void) => {
+      const handler = (_event: any, data: any) => callback(data);
+      ipcRenderer.on('transcript:partial', handler);
+      return () => ipcRenderer.removeListener('transcript:partial', handler);
+    },
+  },
+
+  stt: {
+    onStatus: (
+      callback: (status: 'loading' | 'ready' | 'error') => void
+    ): (() => void) => {
+      const handler = (_event: any, status: any) => callback(status);
+      ipcRenderer.on('stt:status', handler);
+      return () => ipcRenderer.removeListener('stt:status', handler);
+    },
+    onSpeechDetected: (callback: (detected: boolean) => void): (() => void) => {
+      const handler = (_event: any, detected: any) => callback(detected);
+      ipcRenderer.on('stt:speech-detected', handler);
+      return () =>
+        ipcRenderer.removeListener('stt:speech-detected', handler);
+    },
+    restart: (): Promise<void> => ipcRenderer.invoke('stt:restart'),
+  },
+
+  widget: {
+    onState: (
+      callback: (state: { isRecording: boolean; audioLevel: number }) => void
+    ): (() => void) => {
+      const handler = (_event: any, state: any) => callback(state);
+      ipcRenderer.on('widget:state', handler);
+      return () => ipcRenderer.removeListener('widget:state', handler);
+    },
+    toggleRecording: (): void => {
+      ipcRenderer.send('widget:toggle-recording');
+    },
+    focusMain: (): void => {
+      ipcRenderer.send('widget:focus-main');
+    },
+  },
+
+  llm: {
+    initialize: (): void => {
+      ipcRenderer.send('llm:initialize');
+    },
+    prompt: (payload: {
+      requestId: string;
+      systemPrompt: string;
+      userPrompt: string;
+      maxTokens?: number;
+      temperature?: number;
+    }): void => {
+      ipcRenderer.send('llm:prompt', payload);
+    },
+    cancel: (): void => {
+      ipcRenderer.send('llm:cancel');
+    },
+    onToken: (
+      callback: (payload: { requestId: string; token: string; isLast: boolean }) => void
+    ): (() => void) => {
+      const handler = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('llm:token', handler);
+      return () => ipcRenderer.removeListener('llm:token', handler);
+    },
+    onComplete: (
+      callback: (payload: {
+        requestId: string;
+        fullText: string;
+        tokensGenerated: number;
+        durationMs: number;
+      }) => void
+    ): (() => void) => {
+      const handler = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('llm:complete', handler);
+      return () => ipcRenderer.removeListener('llm:complete', handler);
+    },
+    onError: (
+      callback: (payload: { requestId: string; error: string }) => void
+    ): (() => void) => {
+      const handler = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('llm:error', handler);
+      return () => ipcRenderer.removeListener('llm:error', handler);
+    },
+    onStatus: (
+      callback: (status: 'idle' | 'loading' | 'ready' | 'generating' | 'error') => void
+    ): (() => void) => {
+      const handler = (_event: any, status: any) => callback(status);
+      ipcRenderer.on('llm:status', handler);
+      return () => ipcRenderer.removeListener('llm:status', handler);
+    },
+  },
+
+  session: {
+    save: (data: any): Promise<any> => ipcRenderer.invoke('session:save', data),
+    load: (id: string): Promise<any> => ipcRenderer.invoke('session:load', id),
+    list: (): Promise<any> => ipcRenderer.invoke('session:list'),
+    delete: (id: string): Promise<any> => ipcRenderer.invoke('session:delete', id),
+  },
+
+  search: {
+    query: (term: string): Promise<any> => ipcRenderer.invoke('search:query', term),
+  },
+
+  folder: {
+    create: (name: string, parentId?: string): Promise<any> =>
+      ipcRenderer.invoke('folder:create', name, parentId),
+    list: (): Promise<any> => ipcRenderer.invoke('folder:list'),
+    delete: (id: string): Promise<any> => ipcRenderer.invoke('folder:delete', id),
+    moveSession: (sessionId: string, folderId: string | null): Promise<any> =>
+      ipcRenderer.invoke('folder:move-session', sessionId, folderId),
+  },
+
+  export: {
+    markdown: (sessionId: string): Promise<any> =>
+      ipcRenderer.invoke('export:markdown', sessionId),
+    json: (sessionId: string): Promise<any> =>
+      ipcRenderer.invoke('export:json', sessionId),
+  },
+
+  config: {
+    get: (): Promise<any> => ipcRenderer.invoke('config:get'),
+    set: (key: string, value: any): Promise<any> =>
+      ipcRenderer.invoke('config:set', key, value),
+    reset: (): Promise<any> => ipcRenderer.invoke('config:reset'),
+  },
+
+  media: {
+    requestMicAccess: (): Promise<boolean> => ipcRenderer.invoke('media:request-mic'),
+    requestScreenAccess: (): Promise<boolean> => ipcRenderer.invoke('media:request-screen'),
+  },
+
+  model: {
+    list: (): Promise<any> => ipcRenderer.invoke('model:list'),
+    download: (modelId: string): void => ipcRenderer.send('model:download', modelId),
+    delete: (modelId: string): Promise<any> => ipcRenderer.invoke('model:delete', modelId),
+    onDownloadProgress: (
+      callback: (payload: { modelId: string; progress: number; total: number }) => void
+    ): (() => void) => {
+      const handler = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('model:download-progress', handler);
+      return () => ipcRenderer.removeListener('model:download-progress', handler);
+    },
+  },
+};
+
+contextBridge.exposeInMainWorld('sourdine', sourdineApi);
+
+export type SourdineApi = typeof sourdineApi;

@@ -1,0 +1,119 @@
+/* ── Sourdine Design System ─────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── CSS Variables: Dark Mode (default) ───────────────────────────── */
+:root {
+  --bg-main:        #1a1a1a;
+  --bg-sidebar:     #141414;
+  --bg-editor:      #1e1e1e;
+  --bg-surface:     #252525;
+  --border-subtle:  #2a2a2a;
+  --text-primary:   #e8e8e8;
+  --text-secondary: #888888;
+  --text-ai:        #666666;
+  --accent-primary: #4ade80;
+  --accent-recording: #ef4444;
+  --accent-hover:   #333333;
+  --accent-generate:#6b7a2e;
+  --bg-pill:        #2a2a2e;
+  --selection:      rgba(74, 222, 128, 0.15);
+
+  --font-editor:    'Inter', -apple-system, system-ui, sans-serif;
+  --font-transcript:'Inter', sans-serif;
+  --font-timestamp: 'Inter', monospace;
+
+  color-scheme: dark;
+}
+
+/* ── Light Mode ───────────────────────────────────────────────────── */
+:root.light {
+  --bg-main:        #ffffff;
+  --bg-sidebar:     #f5f5f5;
+  --bg-editor:      #ffffff;
+  --bg-surface:     #f0f0f0;
+  --border-subtle:  #e0e0e0;
+  --text-primary:   #1a1a1a;
+  --text-secondary: #666666;
+  --text-ai:        #999999;
+  --accent-primary: #22c55e;
+  --accent-recording: #ef4444;
+  --accent-hover:   #e8e8e8;
+  --accent-generate:#7a8c32;
+  --bg-pill:        #e8e8eb;
+  --selection:      rgba(34, 197, 94, 0.15);
+
+  color-scheme: light;
+}
+
+/* ── Reset ────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-editor);
+  font-size: 16px;
+  line-height: 1.6;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Allow text selection in editor and transcript */
+textarea, [contenteditable], .notes-area, .segment-bubble {
+  user-select: text;
+}
+
+/* ── Selection ────────────────────────────────────────────────────── */
+::selection {
+  background: var(--selection);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ── Drag region for macOS titlebar ───────────────────────────────── */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ── Focus styles ─────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+button, select, input, textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
