@@ -2,5 +2,18 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/electron-shell"
+    },
+    {
+      "path": "./libs/shared-types"
+    },
+    {
+      "path": "./libs/backend"
+    },
+    {
+      "path": "./apps/renderer"
+    }
+  ]
 }
