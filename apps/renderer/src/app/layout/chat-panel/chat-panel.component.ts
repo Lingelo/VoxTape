@@ -9,6 +9,7 @@ import {
   ViewChild,
   ChangeDetectorRef,
   ChangeDetectionStrategy,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -32,36 +33,49 @@ interface ChatMessage {
     <div class="chat-expand">
       <!-- Messages area -->
       <div class="chat-messages" #messagesContainer>
-        <div *ngIf="messages.length === 0 && !isGenerating" class="chat-empty">
-          <p>Posez une question sur cette reunion.</p>
-        </div>
-
-        <div *ngFor="let msg of messages" class="chat-msg" [class]="msg.role">
-          <div class="msg-bubble" [innerHTML]="msg.html || msg.content"></div>
-        </div>
-
-        <div *ngIf="isGenerating" class="chat-msg assistant">
-          <div class="msg-bubble typing">
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
+        @if (messages.length === 0 && !isGenerating) {
+          <div class="chat-empty">
+            <p>Posez une question sur cette reunion.</p>
           </div>
-        </div>
+        }
+
+        @for (msg of messages; track $index) {
+          <div class="chat-msg" [class]="msg.role">
+            <div class="msg-bubble" [innerHTML]="msg.html || msg.content"></div>
+          </div>
+        }
+
+        @if (isGenerating) {
+          <div class="chat-msg assistant">
+            <div class="msg-bubble typing">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+        }
       </div>
 
       <!-- Recipes dropdown -->
-      <div class="recipes-dropdown" *ngIf="showRecipes">
-        <div
-          *ngFor="let r of filteredRecipes; let i = index"
-          class="recipe-item"
-          [class.active]="i === recipeIndex"
-          (click)="selectRecipe(r)"
-          (mouseenter)="recipeIndex = i"
-        >
-          <span class="recipe-cmd">{{ r.command }}</span>
-          <span class="recipe-label">{{ r.label }}</span>
+      @if (showRecipes) {
+        <div class="recipes-dropdown">
+          @for (r of filteredRecipes; track r.command; let i = $index) {
+            <div
+              class="recipe-item"
+              tabindex="0"
+              role="option"
+              [attr.aria-selected]="i === recipeIndex"
+              [class.active]="i === recipeIndex"
+              (click)="selectRecipe(r)"
+              (keydown.enter)="selectRecipe(r)"
+              (mouseenter)="recipeIndex = i"
+            >
+              <span class="recipe-cmd">{{ r.command }}</span>
+              <span class="recipe-label">{{ r.label }}</span>
+            </div>
+          }
         </div>
-      </div>
+      }
 
       <!-- Input bar (continuation of the main-pill) -->
       <div class="chat-input-bar">
@@ -251,7 +265,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   @ViewChild('messagesContainer') messagesEl!: ElementRef<HTMLDivElement>;
   @ViewChild('chatInputEl') chatInputEl!: ElementRef<HTMLInputElement>;
   @Input() initialPrompt = '';
-  @Output() close = new EventEmitter<void>();
+  @Output() closePanel = new EventEmitter<void>();
 
   sessionTitle = '';
   input = '';
@@ -261,14 +275,11 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   filteredRecipes: Recipe[] = [];
   recipeIndex = 0;
 
+  private readonly llm = inject(LlmService);
+  private readonly session = inject(SessionService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private subs: Subscription[] = [];
   private chatSubs: Subscription[] = [];
-
-  constructor(
-    private llm: LlmService,
-    private session: SessionService,
-    private cdr: ChangeDetectorRef
-  ) {}
 
   ngOnInit(): void {
     this.subs.push(
@@ -333,7 +344,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       this.showRecipes = false;
       this.cdr.markForCheck();
     } else {
-      this.close.emit();
+      this.closePanel.emit();
     }
   }
 

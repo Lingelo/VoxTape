@@ -1,4 +1,4 @@
-import { Injectable, NgZone, OnDestroy } from '@angular/core';
+import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { ElectronIpcService } from './electron-ipc.service';
 
@@ -29,7 +29,10 @@ export class AudioCaptureService implements OnDestroy {
   readonly audioLevel$: Observable<number> = this._audioLevel$.asObservable();
   readonly systemAudioSupported$: Observable<boolean> = this._systemAudioSupported$.asObservable();
 
-  constructor(private ipc: ElectronIpcService, private ngZone: NgZone) {
+  private readonly ipc = inject(ElectronIpcService);
+  private readonly ngZone = inject(NgZone);
+
+  constructor() {
     this.refreshDevices();
     this.checkSystemAudioSupport();
 
@@ -77,7 +80,7 @@ export class AudioCaptureService implements OnDestroy {
     // Auto-detect system audio preference from config if not explicitly passed
     if (systemAudio === undefined) {
       try {
-        const api = (window as any).sourdine?.config;
+        const api = (window as Window & { sourdine?: { config?: { get: () => Promise<{ audio?: { systemAudioEnabled?: boolean } }> } } }).sourdine?.config;
         if (api) {
           const cfg = await api.get();
           systemAudio = cfg?.audio?.systemAudioEnabled === true;
@@ -89,7 +92,7 @@ export class AudioCaptureService implements OnDestroy {
 
     try {
       // Request microphone permission on macOS first
-      const mediaApi = (window as any).sourdine?.media;
+      const mediaApi = (window as Window & { sourdine?: { media?: { requestMicAccess: () => Promise<boolean> } } }).sourdine?.media;
       if (mediaApi) {
         const granted = await mediaApi.requestMicAccess();
         if (!granted) {
@@ -215,7 +218,7 @@ export class AudioCaptureService implements OnDestroy {
     this.mediaStream?.getTracks().forEach((t) => t.stop());
     this.mediaStream = null;
 
-    this.audioContext?.close().catch(() => {});
+    this.audioContext?.close().catch(() => { /* AudioContext close errors are expected */ });
     this.audioContext = null;
   }
 

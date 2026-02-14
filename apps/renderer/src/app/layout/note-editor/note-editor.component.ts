@@ -9,6 +9,7 @@ import {
   EventEmitter,
   ChangeDetectorRef,
   ChangeDetectionStrategy,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -35,9 +36,11 @@ import type { EnhancedNote } from '@sourdine/shared-types';
       />
 
       <!-- AI Summary (top, main content after recording) -->
-      <div class="ai-summary" *ngIf="aiSummary">
-        <div class="ai-summary-body" [innerHTML]="renderedSummary"></div>
-      </div>
+      @if (aiSummary) {
+        <div class="ai-summary">
+          <div class="ai-summary-body" [innerHTML]="renderedSummary"></div>
+        </div>
+      }
 
       <!-- Tiptap editor (hidden when AI summary exists) -->
       <div
@@ -203,11 +206,11 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   title = '';
   aiSummary = '';
   renderedSummary = '';
+  private readonly session = inject(SessionService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private editor: Editor | null = null;
   private subs: Subscription[] = [];
   private updatingFromExternal = false;
-
-  constructor(private session: SessionService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.subs.push(
@@ -215,7 +218,7 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       this.session.aiSummary$.subscribe((summary) => {
         setTimeout(() => {
           // Strip separators and "Mes notes" section from LLM output
-          let cleaned = (summary || '')
+          const cleaned = (summary || '')
             .replace(/---+\s*\n/g, '\n')
             .replace(/#{1,3}\s*Mes notes\s*:?[\s\S]*$/i, '')
             .trim();

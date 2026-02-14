@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -17,82 +17,98 @@ import type { LlmStatus } from '@sourdine/shared-types';
   template: `
     <div class="control-wrapper">
       <!-- Floating "Generate notes" button (when done, above the pill) -->
-      <button
-        *ngIf="showGenerateBtn"
-        class="generate-btn"
-        [class.processing]="status === 'processing'"
-        [disabled]="status === 'processing'"
-        (click)="onEnhance()"
-      >
-        <svg *ngIf="status !== 'processing'" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/>
-          <circle cx="18" cy="4" r="2" fill="currentColor"/>
-          <circle cx="5" cy="5" r="1.5" fill="currentColor"/>
-          <circle cx="20" cy="12" r="1" fill="currentColor"/>
-        </svg>
-        <span *ngIf="status === 'processing'" class="spinner"></span>
-        {{ status === 'processing' ? 'En cours...' : 'Générer les notes' }}
-      </button>
+      @if (showGenerateBtn) {
+        <button
+          class="generate-btn"
+          [class.processing]="status === 'processing'"
+          [disabled]="status === 'processing'"
+          (click)="onEnhance()"
+        >
+          @if (status !== 'processing') {
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/>
+              <circle cx="18" cy="4" r="2" fill="currentColor"/>
+              <circle cx="5" cy="5" r="1.5" fill="currentColor"/>
+              <circle cx="20" cy="12" r="1" fill="currentColor"/>
+            </svg>
+          }
+          @if (status === 'processing') {
+            <span class="spinner"></span>
+          }
+          {{ status === 'processing' ? 'En cours...' : 'Générer les notes' }}
+        </button>
+      }
 
       <!-- Bottom bar -->
       <div class="bottom-bar" [class.expanded]="chatOpen || transcriptOpen">
         <!-- Audio pill (detached) -->
         <div class="audio-pill" [class.active]="isRecording">
-          <div class="vu-bars" (click)="toggleRecording()">
-            <div class="vu-bar" *ngFor="let bar of vuBars; let i = index"
-              [style.height.px]="isRecording ? getBarHeight(i) : 4"
-              [style.opacity]="isRecording ? getBarOpacity(i) : 0.4"
-            ></div>
+          <div class="vu-bars" tabindex="0" role="button" (click)="toggleRecording()" (keydown.enter)="toggleRecording()">
+            @for (bar of vuBars; track $index; let i = $index) {
+              <div class="vu-bar"
+                [style.height.px]="isRecording ? getBarHeight(i) : 4"
+                [style.opacity]="isRecording ? getBarOpacity(i) : 0.4"
+              ></div>
+            }
           </div>
           <button class="chevron-btn" [class.open]="transcriptOpen" (click)="showTranscript.emit()" title="Voir la transcription">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
               <polyline points="2,6 5,3 8,6"/>
             </svg>
           </button>
-          <button *ngIf="isRecording" class="stop-btn" (click)="toggleRecording()">
-            <span class="stop-square"></span>
-          </button>
+          @if (isRecording) {
+            <button class="stop-btn" (click)="toggleRecording()">
+              <span class="stop-square"></span>
+            </button>
+          }
         </div>
 
         <!-- Main pill — always present, expands upward -->
         <div class="main-pill" [class.expanded]="chatOpen || transcriptOpen">
 
           <!-- Transcript body (expanded content) -->
-          <div class="pill-body" *ngIf="transcriptOpen">
-            <div class="pill-header">
-              <span class="pill-header-title">Transcription</span>
-              <div class="pill-header-actions">
-                <span class="pill-timer" *ngIf="elapsed > 0">{{ formatElapsed(elapsed) }}</span>
-                <button class="pill-header-btn" (click)="closeTranscript.emit()" title="Minimiser">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <line x1="2" y1="6" x2="10" y2="6"/>
-                  </svg>
-                </button>
+          @if (transcriptOpen) {
+            <div class="pill-body">
+              <div class="pill-header">
+                <span class="pill-header-title">Transcription</span>
+                <div class="pill-header-actions">
+                  @if (elapsed > 0) {
+                    <span class="pill-timer">{{ formatElapsed(elapsed) }}</span>
+                  }
+                  <button class="pill-header-btn" (click)="closeTranscript.emit()" title="Minimiser">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <line x1="2" y1="6" x2="10" y2="6"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
+              <sdn-transcript-panel></sdn-transcript-panel>
             </div>
-            <sdn-transcript-panel></sdn-transcript-panel>
-          </div>
+          }
 
           <!-- Chat body (expanded content, includes its own input) -->
-          <sdn-chat-panel
-            *ngIf="chatOpen"
-            [initialPrompt]="chatInitialPrompt"
-            (close)="closeChat.emit()"
-          ></sdn-chat-panel>
+          @if (chatOpen) {
+            <sdn-chat-panel
+              [initialPrompt]="chatInitialPrompt"
+              (closePanel)="closeChat.emit()"
+            ></sdn-chat-panel>
+          }
 
           <!-- Input bar (hidden when chat or transcript is open) -->
-          <div class="pill-input" *ngIf="!chatOpen && !transcriptOpen">
-            <input
-              class="chat-input"
-              type="text"
-              [(ngModel)]="chatInput"
-              (keydown.enter)="onChatSubmit()"
-              (keydown.escape)="transcriptOpen ? closeTranscript.emit() : null"
-              (focus)="onInputFocus()"
-              placeholder="Posez une question..."
-              [disabled]="status === 'processing'"
-            />
-          </div>
+          @if (!chatOpen && !transcriptOpen) {
+            <div class="pill-input">
+              <input
+                class="chat-input"
+                type="text"
+                [(ngModel)]="chatInput"
+                (keydown.enter)="onChatSubmit()"
+                (keydown.escape)="transcriptOpen ? closeTranscript.emit() : null"
+                (focus)="onInputFocus()"
+                placeholder="Posez une question..."
+                [disabled]="status === 'processing'"
+              />
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -371,15 +387,12 @@ export class ControlBarComponent implements OnInit, OnDestroy {
 
   vuBars = [0, 1, 2, 3, 4];
 
+  private readonly session = inject(SessionService);
+  private readonly audioCapture = inject(AudioCaptureService);
+  private readonly llm = inject(LlmService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private subs: Subscription[] = [];
   private selectedDeviceId = '';
-
-  constructor(
-    private session: SessionService,
-    private audioCapture: AudioCaptureService,
-    private llm: LlmService,
-    private cdr: ChangeDetectorRef
-  ) {}
 
   ngOnInit(): void {
     // Load saved device from config
@@ -406,7 +419,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
 
   private async loadSavedDevice(): Promise<void> {
     try {
-      const api = (window as any).sourdine?.config;
+      const api = (window as Window & { sourdine?: { config?: { get: () => Promise<{ audio?: { defaultDeviceId?: string } }> } } }).sourdine?.config;
       if (api) {
         const cfg = await api.get();
         if (cfg?.audio?.defaultDeviceId) {
@@ -414,7 +427,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
         }
       }
     } catch {
-      // Ignore config errors
+      // Ignore config errors - silently fall back to default device
     }
   }
 

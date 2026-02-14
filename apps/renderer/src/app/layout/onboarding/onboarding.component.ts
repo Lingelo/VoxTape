@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -24,6 +24,29 @@ interface AudioDevice {
   label: string;
 }
 
+interface SourdineOnboardingApi {
+  config?: {
+    set: (key: string, value: string | boolean | number | null) => Promise<void>;
+  };
+  model?: {
+    list: () => Promise<{ known: ModelInfo[]; downloaded: { id: string }[] }>;
+    download: (modelId: string) => void;
+    onDownloadProgress: (cb: (payload: { modelId: string; progress: number; total: number }) => void) => () => void;
+  };
+  media?: {
+    requestMicAccess: () => Promise<boolean>;
+  };
+  systemAudio?: {
+    isSupported: () => Promise<boolean>;
+    start: () => void;
+    stop: () => void;
+    onLevel: (cb: (level: number) => void) => () => void;
+  };
+  stt?: {
+    restart: () => void;
+  };
+}
+
 @Component({
   selector: 'sdn-onboarding',
   standalone: true,
@@ -34,16 +57,18 @@ interface AudioDevice {
       <div class="onboarding-card">
         <!-- Step indicators -->
         <div class="steps">
-          <div
-            *ngFor="let s of steps; let i = index"
-            class="step-dot"
-            [class.active]="step === i"
-            [class.completed]="step > i"
-          ></div>
+          @for (s of steps; track s; let i = $index) {
+            <div
+              class="step-dot"
+              [class.active]="step === i"
+              [class.completed]="step > i"
+            ></div>
+          }
         </div>
 
         <!-- Step 0: Welcome -->
-        <div class="step-content" *ngIf="step === 0">
+        @if (step === 0) {
+        <div class="step-content">
           <img src="assets/logo.svg" alt="Sourdine" class="welcome-logo" />
           <h1>Sourdine</h1>
           <p class="subtitle">Votre assistant de réunion 100% local</p>
@@ -89,46 +114,65 @@ interface AudioDevice {
 
           <button class="primary-btn" (click)="nextStep()">Commencer</button>
         </div>
+        }
 
         <!-- Step 1: Microphone -->
-        <div class="step-content" *ngIf="step === 1">
+        @if (step === 1) {
+        <div class="step-content">
           <h1>Microphone</h1>
           <p class="subtitle">Choisissez et testez votre micro</p>
 
-          <div class="field" *ngIf="audioDevices.length > 0">
-            <label>Microphone</label>
-            <select
-              class="mic-select"
-              [(ngModel)]="selectedDeviceId"
-              (ngModelChange)="onDeviceChange($event)"
-            >
-              <option *ngFor="let d of audioDevices" [value]="d.deviceId">
-                {{ d.label }}
-              </option>
-            </select>
-          </div>
+          @if (audioDevices.length > 0) {
+            <div class="field">
+              <label for="mic-select">Microphone</label>
+              <select
+                id="mic-select"
+                class="mic-select"
+                [(ngModel)]="selectedDeviceId"
+                (ngModelChange)="onDeviceChange($event)"
+              >
+                @for (d of audioDevices; track d.deviceId) {
+                  <option [value]="d.deviceId">
+                    {{ d.label }}
+                  </option>
+                }
+              </select>
+            </div>
+          }
 
           <div class="mic-test">
-            <div class="vu-meter" *ngIf="micState !== 'error'">
-              <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
-            </div>
-            <p *ngIf="micState === 'idle'" class="mic-status">
-              Chargement...
-            </p>
-            <p *ngIf="micState === 'requesting'" class="mic-status">
-              Demande d'accès au micro...
-            </p>
-            <p *ngIf="micState === 'active'" class="mic-status" [class.active]="audioLevel > 0.02">
-              {{ audioLevel > 0.02 ? 'Signal détecté !' : 'Parlez pour tester...' }}
-            </p>
-            <p *ngIf="micState === 'error'" class="mic-status mic-error">
-              Accès au micro refusé. Vérifiez Préférences Système &gt; Confidentialité &gt; Microphone.
-            </p>
+            @if (micState !== 'error') {
+              <div class="vu-meter">
+                <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
+              </div>
+            }
+            @if (micState === 'idle') {
+              <p class="mic-status">
+                Chargement...
+              </p>
+            }
+            @if (micState === 'requesting') {
+              <p class="mic-status">
+                Demande d'accès au micro...
+              </p>
+            }
+            @if (micState === 'active') {
+              <p class="mic-status" [class.active]="audioLevel > 0.02">
+                {{ audioLevel > 0.02 ? 'Signal détecté !' : 'Parlez pour tester...' }}
+              </p>
+            }
+            @if (micState === 'error') {
+              <p class="mic-status mic-error">
+                Accès au micro refusé. Vérifiez Préférences Système &gt; Confidentialité &gt; Microphone.
+              </p>
+            }
           </div>
 
-          <p *ngIf="micState === 'active' && !micSignalDetected" class="mic-warning">
-            Aucun signal détecté. Vous pouvez continuer, mais vérifiez votre micro avant d'enregistrer.
-          </p>
+          @if (micState === 'active' && !micSignalDetected) {
+            <p class="mic-warning">
+              Aucun signal détecté. Vous pouvez continuer, mais vérifiez votre micro avant d'enregistrer.
+            </p>
+          }
 
           <div class="btn-group">
             <button class="secondary-btn" (click)="prevStep()">Retour</button>
@@ -140,110 +184,134 @@ interface AudioDevice {
             >Continuer</button>
           </div>
         </div>
+        }
 
         <!-- Step 2: System Audio -->
-        <div class="step-content" *ngIf="step === 2">
+        @if (step === 2) {
+        <div class="step-content">
           <h1>Audio Système</h1>
           <p class="subtitle">Capturez le son des applications (réunions, vidéos...)</p>
 
-          <div *ngIf="!systemAudioSupported" class="system-audio-unsupported">
-            <p class="mic-warning">Nécessite macOS 14.2 ou supérieur</p>
-            <p class="setting-hint">Votre système ne supporte pas cette fonctionnalité. Vous pouvez continuer sans.</p>
-          </div>
-
-          <div *ngIf="systemAudioSupported" class="system-audio-setup">
-            <div class="setting-row">
-              <div class="setting-label-group">
-                <label>Activer la capture audio système</label>
-                <span class="setting-hint">Transcrit le son des apps en plus du micro</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" />
-                <span class="toggle-slider"></span>
-              </label>
+          @if (!systemAudioSupported) {
+            <div class="system-audio-unsupported">
+              <p class="mic-warning">Nécessite macOS 14.2 ou supérieur</p>
+              <p class="setting-hint">Votre système ne supporte pas cette fonctionnalité. Vous pouvez continuer sans.</p>
             </div>
+          }
 
-            <div class="mic-test" *ngIf="systemAudioEnabled">
-              <div class="vu-meter">
-                <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+          @if (systemAudioSupported) {
+            <div class="system-audio-setup">
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <span class="label-text">Activer la capture audio système</span>
+                  <span class="setting-hint">Transcrit le son des apps en plus du micro</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" aria-label="Activer la capture audio système" />
+                  <span class="toggle-slider"></span>
+                </label>
               </div>
-              <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
-                {{ systemAudioLevel > 0.02 ? 'Audio système détecté !' : 'Lancez une vidéo ou de la musique...' }}
-              </p>
+
+              @if (systemAudioEnabled) {
+                <div class="mic-test">
+                  <div class="vu-meter">
+                    <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+                  </div>
+                  <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
+                    {{ systemAudioLevel > 0.02 ? 'Audio système détecté !' : 'Lancez une vidéo ou de la musique...' }}
+                  </p>
+                </div>
+              }
             </div>
-          </div>
+          }
 
           <div class="btn-group">
             <button class="secondary-btn" (click)="stopSystemAudioTest(); prevStep()">Retour</button>
             <button class="primary-btn" (click)="stopSystemAudioTest(); nextStep()">Continuer</button>
           </div>
         </div>
+        }
 
         <!-- Step 3: Install -->
-        <div class="step-content" *ngIf="step === 3">
+        @if (step === 3) {
+        <div class="step-content">
           <h1>Installation</h1>
           <p class="subtitle">Sourdine a besoin de télécharger quelques composants pour fonctionner</p>
 
           <!-- Before install -->
-          <div *ngIf="installState === 'idle'" class="install-info">
-            <div class="install-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-              <span>Détection de voix</span>
+          @if (installState === 'idle') {
+            <div class="install-info">
+              <div class="install-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                <span>Détection de voix</span>
+              </div>
+              <div class="install-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>Transcription multilingue</span>
+              </div>
+              <div class="install-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Assistant IA local (résumés, chat)</span>
+              </div>
+              <p class="install-size">Environ 5 Go au total</p>
             </div>
-            <div class="install-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              <span>Transcription multilingue</span>
-            </div>
-            <div class="install-item">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span>Assistant IA local (résumés, chat)</span>
-            </div>
-            <p class="install-size">Environ 5 Go au total</p>
-          </div>
+          }
 
           <!-- During install -->
-          <div *ngIf="installState === 'downloading'" class="install-progress">
-            <p class="install-step-label">{{ currentInstallLabel }}</p>
-            <div class="progress-bar large">
-              <div class="progress-fill" [style.width.%]="overallProgress"></div>
+          @if (installState === 'downloading') {
+            <div class="install-progress">
+              <p class="install-step-label">{{ currentInstallLabel }}</p>
+              <div class="progress-bar large">
+                <div class="progress-fill" [style.width.%]="overallProgress"></div>
+              </div>
+              <p class="install-percent">{{ overallProgress | number:'1.0-0' }}%</p>
             </div>
-            <p class="install-percent">{{ overallProgress | number:'1.0-0' }}%</p>
-          </div>
+          }
 
           <!-- Done -->
-          <div *ngIf="installState === 'done'" class="install-done">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            <p class="install-done-text">Installation terminée</p>
-          </div>
+          @if (installState === 'done') {
+            <div class="install-done">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <p class="install-done-text">Installation terminée</p>
+            </div>
+          }
 
           <!-- Error -->
-          <div *ngIf="installState === 'error'" class="install-error">
-            <p class="mic-error">Une erreur est survenue. Vérifiez votre connexion et réessayez.</p>
-          </div>
+          @if (installState === 'error') {
+            <div class="install-error">
+              <p class="mic-error">Une erreur est survenue. Vérifiez votre connexion et réessayez.</p>
+            </div>
+          }
 
           <div class="btn-group">
             <button class="secondary-btn" (click)="prevStep()">Retour</button>
-            <button
-              *ngIf="installState === 'idle' || installState === 'error'"
-              class="primary-btn"
-              (click)="startInstall()"
-            >Installer</button>
-            <button
-              *ngIf="installState === 'done'"
-              class="primary-btn"
-              (click)="nextStep()"
-            >Continuer</button>
-            <div *ngIf="installState === 'downloading'" class="primary-btn disabled" style="text-align:center">
-              Installation en cours...
-            </div>
+            @if (installState === 'idle' || installState === 'error') {
+              <button
+                class="primary-btn"
+                (click)="startInstall()"
+              >Installer</button>
+            }
+            @if (installState === 'done') {
+              <button
+                class="primary-btn"
+                (click)="nextStep()"
+              >Continuer</button>
+            }
+            @if (installState === 'downloading') {
+              <div class="primary-btn disabled" style="text-align:center">
+                Installation en cours...
+              </div>
+            }
           </div>
         </div>
+        }
 
         <!-- Step 4: Ready -->
-        <div class="step-content" *ngIf="step === 4">
+        @if (step === 4) {
+        <div class="step-content">
           <h1>Prêt !</h1>
           <p class="subtitle">Sourdine est configuré. Commencez votre première session.</p>
 
@@ -256,6 +324,7 @@ interface AudioDevice {
 
           <button class="primary-btn" (click)="finish()">Commencer</button>
         </div>
+        }
       </div>
     </div>
   `,
@@ -689,7 +758,13 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // Required model IDs — without these, core functionality doesn't work
   private readonly REQUIRED_MODELS = ['silero-vad', 'parakeet-tdt-v3', 'mistral-7b-instruct-q4'];
 
-  constructor(private router: Router, private zone: NgZone, private cdr: ChangeDetectorRef) {}
+  private readonly router = inject(Router);
+  private readonly zone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private get sourdineApi(): SourdineOnboardingApi | undefined {
+    return (window as Window & { sourdine?: SourdineOnboardingApi }).sourdine;
+  }
 
   async ngOnInit(): Promise<void> {
     await this.loadModels();
@@ -769,7 +844,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
     try {
       // On macOS, request mic access through Electron's system preferences first
-      const mediaApi = (window as any).sourdine?.media;
+      const mediaApi = this.sourdineApi?.media;
       if (mediaApi) {
         await mediaApi.requestMicAccess();
       }
@@ -847,7 +922,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       this.micStream = null;
     }
     if (this.audioCtx) {
-      this.audioCtx.close().catch(() => {});
+      this.audioCtx.close().catch(() => { /* AudioContext close errors are expected */ });
       this.audioCtx = null;
     }
     this.audioLevel = 0;
@@ -856,7 +931,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // ── System Audio ────────────────────────────────────────────────────
 
   private async checkSystemAudioSupport(): Promise<void> {
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (!api) return;
     try {
       this.systemAudioSupported = await api.isSupported();
@@ -868,7 +943,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   private setupSystemAudioLevelListener(): void {
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (!api?.onLevel) return;
 
     this.systemAudioLevelCleanup = api.onLevel((level: number) => {
@@ -881,7 +956,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   onSystemAudioToggle(): void {
     this.saveConfig('audio.systemAudioEnabled', this.systemAudioEnabled);
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (!api) return;
 
     if (this.systemAudioEnabled) {
@@ -893,7 +968,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   stopSystemAudioTest(): void {
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (api && this.systemAudioEnabled) {
       api.stop();
     }
@@ -909,7 +984,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   };
 
   private async loadModels(): Promise<void> {
-    const api = (window as any).sourdine?.model;
+    const api = this.sourdineApi?.model;
     if (!api) return;
 
     const result = await api.list();
@@ -932,7 +1007,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   startInstall(): void {
-    const api = (window as any).sourdine?.model;
+    const api = this.sourdineApi?.model;
     if (!api) return;
 
     this.installState = 'downloading';
@@ -951,7 +1026,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   private setupProgressListener(): void {
-    const api = (window as any).sourdine?.model;
+    const api = this.sourdineApi?.model;
     if (!api) return;
 
     this.progressCleanup = api.onDownloadProgress(
@@ -977,7 +1052,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
             if (pending.length === 0) {
               this.installState = 'done';
               // Restart STT worker now that models are available
-              (window as any).sourdine?.stt?.restart?.();
+              this.sourdineApi?.stt?.restart?.();
             } else {
               this.currentInstallLabel = this.INSTALL_LABELS[pending[0]] ?? 'Téléchargement...';
               this.downloads[pending[0]] = { modelId: pending[0], progress: 0, total: 0, status: 'downloading' };
@@ -1017,8 +1092,8 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   // ── Config ────────────────────────────────────────────────────────
 
-  private async saveConfig(key: string, value: any): Promise<void> {
-    const api = (window as any).sourdine?.config;
+  private async saveConfig(key: string, value: string | boolean | number | null): Promise<void> {
+    const api = this.sourdineApi?.config;
     if (api) {
       await api.set(key, value);
     }

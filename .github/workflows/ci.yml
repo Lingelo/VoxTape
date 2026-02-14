@@ -29,6 +29,9 @@ jobs:
       - name: Build native audio capture module
         run: npm run build:native
 
+      - name: Lint
+        run: NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx lint renderer
+
       - name: Build
         run: npm run build
 

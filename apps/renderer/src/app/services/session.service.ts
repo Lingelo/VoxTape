@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, Subscription, debounceTime } from 'rxjs';
 import { ElectronIpcService } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
@@ -16,6 +16,34 @@ export interface TranscriptSegment {
 
 export type SessionStatus = 'idle' | 'recording' | 'processing' | 'done';
 
+interface SessionListItem {
+  id: string;
+  title: string;
+  durationMs: number;
+  hasSummary: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface SessionData {
+  id: string;
+  title?: string;
+  userNotes?: string;
+  segments?: TranscriptSegment[];
+  aiNotes?: EnhancedNote[];
+  aiSummary?: string;
+  durationMs?: number;
+}
+
+interface SourdineSessionApi {
+  session?: {
+    load: (id: string) => Promise<SessionData | null>;
+    save: (data: SessionData & { createdAt: number; updatedAt: number }) => Promise<void>;
+    delete: (id: string) => Promise<void>;
+    list: () => Promise<SessionListItem[]>;
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private readonly _id$ = new BehaviorSubject<string>(this.generateId());
@@ -27,7 +55,7 @@ export class SessionService {
   private readonly _aiNotes$ = new BehaviorSubject<EnhancedNote[]>([]);
   private readonly _aiSummary$ = new BehaviorSubject<string>('');
   private readonly _chatMessages$ = new BehaviorSubject<{ role: 'user' | 'assistant'; content: string }[]>([]);
-  private readonly _sessions$ = new BehaviorSubject<any[]>([]);
+  private readonly _sessions$ = new BehaviorSubject<SessionListItem[]>([]);
 
   private recordingStartTime = 0;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
@@ -35,6 +63,10 @@ export class SessionService {
 
   // Auto-save subject
   private readonly _saveRequested$ = new Subject<void>();
+
+  private readonly ipc = inject(ElectronIpcService);
+  private readonly audioCapture = inject(AudioCaptureService);
+  private readonly llm = inject(LlmService);
 
   readonly id$: Observable<string> = this._id$.asObservable();
   readonly status$: Observable<SessionStatus> = this._status$.asObservable();
@@ -45,13 +77,9 @@ export class SessionService {
   readonly aiNotes$: Observable<EnhancedNote[]> = this._aiNotes$.asObservable();
   readonly aiSummary$: Observable<string> = this._aiSummary$.asObservable();
   readonly chatMessages$: Observable<{ role: 'user' | 'assistant'; content: string }[]> = this._chatMessages$.asObservable();
-  readonly sessions$: Observable<any[]> = this._sessions$.asObservable();
+  readonly sessions$: Observable<SessionListItem[]> = this._sessions$.asObservable();
 
-  constructor(
-    private ipc: ElectronIpcService,
-    private audioCapture: AudioCaptureService,
-    private llm: LlmService
-  ) {
+  constructor() {
     // Subscribe to incoming transcript segments
     this.ipc.segment$.subscribe((segment: TranscriptSegment) => {
       const current = this._segments$.value;
@@ -181,9 +209,13 @@ export class SessionService {
     this._chatMessages$.next([]);
   }
 
+  private get sourdineApi(): SourdineSessionApi | undefined {
+    return (window as Window & { sourdine?: SourdineSessionApi }).sourdine;
+  }
+
   /** Load a session from persistence */
   async loadSession(id: string): Promise<void> {
-    const api = (window as any).sourdine?.session;
+    const api = this.sourdineApi?.session;
     if (!api) return;
 
     const data = await api.load(id);
@@ -202,7 +234,7 @@ export class SessionService {
 
   /** Delete a session */
   async deleteSession(id: string): Promise<void> {
-    const api = (window as any).sourdine?.session;
+    const api = this.sourdineApi?.session;
     if (!api) return;
     await api.delete(id);
 
@@ -239,12 +271,18 @@ export class SessionService {
     const parsed = JSON.parse(jsonStr);
     if (!Array.isArray(parsed)) throw new Error('Expected array');
 
-    return parsed.map((item: any, i: number) => ({
-      id: `ai-${i}`,
-      type: item.type || 'key-point',
-      text: item.text || '',
-      segmentIds: item.segmentIds || [],
-    }));
+    return parsed.map((item: { type?: string; text?: string; segmentIds?: string[] }, i: number) => {
+      const validTypes = ['decision', 'action-item', 'key-point', 'summary'] as const;
+      const noteType = validTypes.includes(item.type as typeof validTypes[number])
+        ? (item.type as typeof validTypes[number])
+        : 'key-point';
+      return {
+        id: `ai-${i}`,
+        type: noteType,
+        text: item.text || '',
+        segmentIds: item.segmentIds || [],
+      };
+    });
   }
 
   private requestSave(): void {
@@ -252,7 +290,7 @@ export class SessionService {
   }
 
   private async saveSession(): Promise<void> {
-    const api = (window as any).sourdine?.session;
+    const api = this.sourdineApi?.session;
     if (!api) return;
 
     // Don't persist sessions with no segments
@@ -274,7 +312,7 @@ export class SessionService {
   }
 
   private async loadSessionsList(): Promise<void> {
-    const api = (window as any).sourdine?.session;
+    const api = this.sourdineApi?.session;
     if (!api) {
       // Preload not ready yet, retry after a short delay
       setTimeout(() => this.loadSessionsList(), 500);

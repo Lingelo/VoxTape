@@ -1,13 +1,28 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 import { SessionService } from '../../services/session.service';
 
+interface SessionItem {
+  id: string;
+  title: string;
+  durationMs: number;
+  hasSummary: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 interface SessionGroup {
   label: string;
-  sessions: any[];
+  sessions: SessionItem[];
+}
+
+interface SearchResult {
+  sessionId: string;
+  title: string;
+  excerpt: string;
 }
 
 @Component({
@@ -49,63 +64,81 @@ interface SessionGroup {
         </div>
 
         <!-- Search results -->
-        <div *ngIf="searchResults.length > 0" class="search-results">
-          <div class="nav-section-title">Resultats</div>
-          <div
-            *ngFor="let result of searchResults"
-            class="session-item"
-            (click)="openSession(result.sessionId)"
-          >
-            <span class="session-title">{{ result.title }}</span>
-            <span class="session-excerpt" [innerHTML]="result.excerpt"></span>
+        @if (searchResults.length > 0) {
+          <div class="search-results">
+            <div class="nav-section-title">Resultats</div>
+            @for (result of searchResults; track result.sessionId) {
+              <div
+                class="session-item"
+                tabindex="0"
+                role="button"
+                (click)="openSession(result.sessionId)"
+                (keydown.enter)="openSession(result.sessionId)"
+              >
+                <span class="session-title">{{ result.title }}</span>
+                <span class="session-excerpt" [innerHTML]="result.excerpt"></span>
+              </div>
+            }
           </div>
-        </div>
+        }
 
         <!-- Session list (grouped by date) -->
-        <nav class="session-list" *ngIf="searchResults.length === 0">
-          <div *ngFor="let group of sessionGroups" class="nav-section">
-            <div class="nav-section-title">{{ group.label }}</div>
-            <div
-              *ngFor="let s of group.sessions"
-              class="session-item"
-              [class.active]="s.id === activeSessionId"
-              (click)="openSession(s.id)"
-            >
-              <div class="session-row">
-                <span class="session-title">{{ s.title }}</span>
-                <button
-                  class="action-btn export-btn"
-                  (click)="onExportSession($event, s.id)"
-                  title="Exporter en Markdown"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                </button>
-                <button
-                  class="action-btn delete-btn"
-                  (click)="onDeleteSession($event, s.id)"
-                  title="Supprimer"
-                >
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"/>
-                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 010-2H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM7 2h2v1H7V2z"/>
-                  </svg>
-                </button>
+        @if (searchResults.length === 0) {
+          <nav class="session-list">
+            @for (group of sessionGroups; track group.label) {
+              <div class="nav-section">
+                <div class="nav-section-title">{{ group.label }}</div>
+                @for (s of group.sessions; track s.id) {
+                  <div
+                    class="session-item"
+                    tabindex="0"
+                    role="button"
+                    [class.active]="s.id === activeSessionId"
+                    (click)="openSession(s.id)"
+                    (keydown.enter)="openSession(s.id)"
+                  >
+                    <div class="session-row">
+                      <span class="session-title">{{ s.title }}</span>
+                      <button
+                        class="action-btn export-btn"
+                        (click)="onExportSession($event, s.id)"
+                        title="Exporter en Markdown"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                      </button>
+                      <button
+                        class="action-btn delete-btn"
+                        (click)="onDeleteSession($event, s.id)"
+                        title="Supprimer"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"/>
+                          <path fill-rule="evenodd" d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 010-2H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM7 2h2v1H7V2z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <span class="session-meta">
+                      {{ formatDuration(s.durationMs) }}
+                      @if (s.hasSummary) {
+                        <span class="summary-badge">Résumé</span>
+                      }
+                    </span>
+                  </div>
+                }
               </div>
-              <span class="session-meta">
-                {{ formatDuration(s.durationMs) }}
-                <span *ngIf="s.hasSummary" class="summary-badge">Résumé</span>
-              </span>
-            </div>
-          </div>
+            }
 
-          <div *ngIf="sessionGroups.length === 0" class="empty-sessions">
-            <p>Aucune session</p>
-          </div>
-        </nav>
+            @if (sessionGroups.length === 0) {
+              <div class="empty-sessions">
+                <p>Aucune session</p>
+              </div>
+            }
+          </nav>
+        }
       </div>
 
       <div class="sidebar-footer">
@@ -348,12 +381,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
   activeSessionId = '';
   sessionGroups: SessionGroup[] = [];
   searchQuery = '';
-  searchResults: any[] = [];
+  searchResults: SearchResult[] = [];
 
+  private readonly session = inject(SessionService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private searchSubject = new Subject<string>();
   private subs: Subscription[] = [];
-
-  constructor(private session: SessionService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.subs.push(
@@ -389,7 +422,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   async onExportSession(event: Event, id: string): Promise<void> {
     event.stopPropagation();
-    const api = (window as any).sourdine?.export;
+    const api = (window as Window & { sourdine?: { export?: { markdown: (id: string) => Promise<void> } } }).sourdine?.export;
     if (api) {
       await api.markdown(id);
     }
@@ -412,20 +445,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private async performSearch(term: string): Promise<void> {
-    const api = (window as any).sourdine?.search;
+    const api = (window as Window & { sourdine?: { search?: { query: (term: string) => Promise<SearchResult[]> } } }).sourdine?.search;
     if (!api) return;
     this.searchResults = await api.query(term);
   }
 
-  private groupByDate(sessions: any[]): SessionGroup[] {
-    const now = Date.now();
+  private groupByDate(sessions: SessionItem[]): SessionGroup[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayMs = today.getTime();
     const yesterdayMs = todayMs - 86400000;
     const weekMs = todayMs - 7 * 86400000;
 
-    const groups: Record<string, any[]> = {
+    const groups: Record<string, SessionItem[]> = {
       "Aujourd'hui": [],
       'Hier': [],
       'Cette semaine': [],
