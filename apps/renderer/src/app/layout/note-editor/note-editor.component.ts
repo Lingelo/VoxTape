@@ -372,11 +372,15 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     return md
       .split('\n')
       .map((line) => {
-        // Headings
+        // Skip lines that look like "Titre: xxx" (extracted separately)
+        if (line.match(/^Titre\s*:/i)) return '';
+        // Headings (### ## #)
+        if (line.startsWith('### ')) return `<h2>${line.slice(4)}</h2>`;
         if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
         if (line.startsWith('# ')) return `<h2>${line.slice(2)}</h2>`;
         // List items
         if (line.startsWith('- ')) return `<li>${this.inlineFormat(line.slice(2))}</li>`;
+        if (line.match(/^\* /)) return `<li>${this.inlineFormat(line.slice(2))}</li>`;
         // Empty line
         if (line.trim() === '') return '';
         // Paragraph

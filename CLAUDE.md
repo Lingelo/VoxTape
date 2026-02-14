@@ -86,6 +86,7 @@ npm run generate-icon
 | `apps/renderer` | App | Angular 21 + SCSS | UI (standalone components, signals) |
 | `libs/backend` | Lib | NestJS 11 | Backend services (audio, STT, LLM, DB, config, export, model-manager) |
 | `libs/shared-types` | Lib | TypeScript | Shared interfaces, IPC channel constants |
+| `libs/native-audio-capture` | Lib | Rust + napi-rs | System audio capture via ScreenCaptureKit (macOS 14.2+) |
 
 ### IPC Communication
 
@@ -134,15 +135,17 @@ On startup, main.ts migrates models from legacy paths to `~/Library/Application 
 ## Build System
 
 **`npm run dev`** runs:
-1. `node apps/electron-shell/build.mjs` — 4 parallel Vite builds (main, preload, stt-worker, llm-worker) → `apps/electron-shell/dist/`
-2. `npx nx serve renderer` — Angular dev server on `:4200`
-3. `electron apps/electron-shell/dist/main.js` — waits for `:4200` then launches
+1. `node scripts/build-native.mjs` — Builds Rust native module (if Rust installed, else warns and continues)
+2. `node apps/electron-shell/build.mjs` — 4 parallel Vite builds (main, preload, stt-worker, llm-worker) → `apps/electron-shell/dist/`
+3. `npx nx serve renderer` — Angular dev server on `:4200`
+4. `electron apps/electron-shell/dist/main.js` — waits for `:4200` then launches
 
 **`npm run package/make`** (`scripts/package.mjs`):
-1. Nx prod build of renderer
-2. Vite build of electron-shell
-3. Copy renderer output → `apps/electron-shell/renderer/`
-4. Electron Forge package/make (ASAR with native modules unpacked)
+1. Build native-audio-capture (Rust → `.node`) — **requires Rust toolchain**
+2. Nx prod build of renderer
+3. Vite build of electron-shell
+4. Copy renderer output → `apps/electron-shell/renderer/`
+5. Electron Forge package/make (ASAR with native modules unpacked)
 
 ## Key Patterns
 
@@ -158,3 +161,44 @@ On startup, main.ts migrates models from legacy paths to `~/Library/Application 
 - `sherpa-onnx-node` — Prebuilt binaries, no rebuild needed
 - `node-llama-cpp` — llama.cpp Node bindings
 - `better-sqlite3` — SQLite C++ bindings
+- `@sourdine/native-audio-capture` — Rust/napi-rs for system audio (requires compilation)
+
+## System Audio Capture
+
+Captures system audio (meetings, videos, etc.) via macOS ScreenCaptureKit. **Requires macOS 14.2+ (Sonoma)**.
+
+### Rust Toolchain (required for packaging, optional for dev)
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# After install, restart terminal or run:
+source "$HOME/.cargo/env"
+
+# Build native module manually (usually done by npm run dev/package)
+npm run build:native
+```
+
+- **Dev mode**: If Rust absent, warns but continues (system audio disabled)
+- **Packaging**: Fails with clear error if Rust absent
+
+### Architecture
+
+```
+libs/native-audio-capture/
+├── src/lib.rs          # napi-rs bindings
+├── src/objc_bridge.m   # ObjC ScreenCaptureKit wrapper
+├── src/resampler.rs    # 48kHz stereo → 16kHz mono
+└── *.node              # Compiled binary (darwin-arm64 or darwin-x86_64)
+```
+
+### Data Flow
+
+```
+ScreenCaptureKit (48kHz stereo Float32)
+  → Rust resampler (16kHz mono Int16)
+  → SystemAudioService.handleSystemAudioChunk()
+  → AudioService mixer → stt-worker (channel: 'system')
+  → Transcription with source='system' tag
+```

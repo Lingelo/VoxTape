@@ -231,7 +231,8 @@ export class DatabaseService implements OnModuleDestroy {
     const rows = this.db
       .prepare(`
         SELECT s.id, s.title, s.folder_id, s.created_at, s.updated_at, s.duration_ms,
-               (SELECT COUNT(*) FROM segments WHERE session_id = s.id) as segment_count
+               (SELECT COUNT(*) FROM segments WHERE session_id = s.id) as segment_count,
+               (s.ai_summary IS NOT NULL AND s.ai_summary != '') as has_summary
         FROM sessions s
         ORDER BY s.updated_at DESC
       `)
@@ -245,6 +246,7 @@ export class DatabaseService implements OnModuleDestroy {
       updatedAt: r.updated_at,
       durationMs: r.duration_ms,
       segmentCount: r.segment_count,
+      hasSummary: !!r.has_summary,
     }));
   }
 
