@@ -32,8 +32,7 @@ void *sourdine_create_global_tap_description(void) {
 
 void sourdine_release_tap_description(void *desc) {
     if (desc) {
-        id obj = (__bridge_transfer id)desc;
-        obj = nil;
+        (void)(__bridge_transfer id)desc; // Transfer ownership to ARC for release
     }
 }
 

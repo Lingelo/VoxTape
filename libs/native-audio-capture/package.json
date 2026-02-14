@@ -12,14 +12,11 @@
     }
   },
   "napi": {
-    "name": "native-audio-capture",
-    "triples": {
-      "defaults": false,
-      "additional": [
-        "aarch64-apple-darwin",
-        "x86_64-apple-darwin"
-      ]
-    }
+    "binaryName": "native-audio-capture",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-apple-darwin"
+    ]
   },
   "nx": {
     "name": "native-audio-capture"

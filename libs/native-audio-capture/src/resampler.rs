@@ -81,6 +81,7 @@ impl Resampler {
     }
 
     /// Reset the resampler state (e.g. when starting a new capture session).
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.delay_line.fill(0.0);
         self.phase = 0;
