@@ -294,8 +294,8 @@ export class SessionService {
     const lines = text.split('\n');
     const firstLine = lines[0]?.trim() || '';
 
-    // Check for "Titre: ..." pattern
-    const match = firstLine.match(/^Titre\s*:\s*(.+)$/i);
+    // Check for "Titre: ..." pattern (with optional ### ## # prefix)
+    const match = firstLine.match(/^(?:#{1,3}\s*)?Titre\s*:\s*(.+)$/i);
     let body = match ? lines.slice(1).join('\n').trim() : text;
     const title = match ? match[1].trim() : '';
 

@@ -13,6 +13,7 @@ export interface SessionSummary {
   updatedAt: number;
   durationMs: number;
   segmentCount: number;
+  hasSummary: boolean;
 }
 
 export interface SearchResult {

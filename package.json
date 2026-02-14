@@ -5,7 +5,7 @@
   "license": "MIT",
   "main": "apps/electron-shell/dist/main.js",
   "scripts": {
-    "dev": "node apps/electron-shell/build.mjs && concurrently -k -n ng,electron \"NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx serve renderer\" \"wait-on http://localhost:4200 && electron apps/electron-shell/dist/main.js\"",
+    "dev": "node scripts/build-native.mjs && node apps/electron-shell/build.mjs && concurrently -k -n ng,electron \"NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx serve renderer\" \"wait-on http://localhost:4200 && electron apps/electron-shell/dist/main.js\"",
     "build": "NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx build renderer && node apps/electron-shell/build.mjs",
     "build:renderer": "NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx build renderer",
     "build:electron": "node apps/electron-shell/build.mjs",

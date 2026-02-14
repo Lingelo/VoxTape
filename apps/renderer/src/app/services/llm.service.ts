@@ -131,28 +131,32 @@ NOTES UTILISATEUR = PRIORITÉ ABSOLUE :
 - Ne perds AUCUNE information des notes utilisateur.
 - La transcription complète mais ne remplace jamais les notes.
 
-Format (texte brut, pas de JSON) :
+FORMAT EXACT (respecte-le strictement) :
 
-Titre: Court et descriptif (5-8 mots)
+Titre: [5-8 mots descriptifs, PAS de # devant]
 
 ## Résumé
-2-3 phrases MAX.
+[2-3 phrases MAX]
 
 ## Points clés
-- 3 à 5 bullets, une ligne chacun
+- [bullet 1]
+- [bullet 2]
+- [bullet 3]
 
 ## Décisions
-- Une ligne par décision (omettre si aucune)
+- [décision, omettre la section entière si aucune]
 
 ## Actions
-- Action — responsable si mentionné (omettre si aucune)
+- [action — responsable, omettre la section entière si aucune]
 
-Règles :
+RÈGLES DE FORMAT :
+- La ligne "Titre:" ne doit PAS avoir de # devant
+- Utilise ## pour les sections (pas # ni ###)
 - Français uniquement
-- BREF : une ligne par bullet
-- Omets les sections vides
-- Pas de séparateurs (----, ===)
-- Pas de formules de politesse ou commentaires`;
+- Une seule ligne par bullet
+- Omets les sections vides entièrement
+- Pas de séparateurs (----, ===, ***)
+- Pas de commentaires ni formules de politesse`;
 
 const CHAT_SYSTEM_PROMPT = `Tu es un assistant pour analyser des conversations. Tu reçois une transcription et/ou des notes comme contexte.
 
