@@ -16,21 +16,31 @@ export class AudioCaptureService implements OnDestroy {
   private analyser: AnalyserNode | null = null;
   private levelAnimationId: number | null = null;
 
+  private systemAudioActive = false;
+
   private readonly _isRecording$ = new BehaviorSubject<boolean>(false);
   private readonly _devices$ = new BehaviorSubject<AudioDevice[]>([]);
   private readonly _audioLevel$ = new BehaviorSubject<number>(0);
+  private readonly _systemAudioSupported$ = new BehaviorSubject<boolean>(false);
 
   readonly isRecording$: Observable<boolean> = this._isRecording$.asObservable();
   readonly devices$: Observable<AudioDevice[]> = this._devices$.asObservable();
   /** Audio level 0-1, updated ~30fps during recording */
   readonly audioLevel$: Observable<number> = this._audioLevel$.asObservable();
+  readonly systemAudioSupported$: Observable<boolean> = this._systemAudioSupported$.asObservable();
 
   constructor(private ipc: ElectronIpcService, private ngZone: NgZone) {
     this.refreshDevices();
+    this.checkSystemAudioSupport();
 
     navigator.mediaDevices?.addEventListener('devicechange', () => {
       this.refreshDevices();
     });
+  }
+
+  private async checkSystemAudioSupport(): Promise<void> {
+    const supported = await this.ipc.systemAudioIsSupported();
+    this._systemAudioSupported$.next(supported);
   }
 
   async refreshDevices(): Promise<void> {
@@ -61,8 +71,21 @@ export class AudioCaptureService implements OnDestroy {
     }
   }
 
-  async startRecording(deviceId?: string): Promise<void> {
+  async startRecording(deviceId?: string, systemAudio?: boolean): Promise<void> {
     if (this._isRecording$.value) return;
+
+    // Auto-detect system audio preference from config if not explicitly passed
+    if (systemAudio === undefined) {
+      try {
+        const api = (window as any).sourdine?.config;
+        if (api) {
+          const cfg = await api.get();
+          systemAudio = cfg?.audio?.systemAudioEnabled === true;
+        }
+      } catch {
+        // Ignore config errors, default to no system audio
+      }
+    }
 
     try {
       const constraints: MediaStreamConstraints = {
@@ -101,6 +124,12 @@ export class AudioCaptureService implements OnDestroy {
       // Start audio level monitoring loop
       this.startLevelMonitoring();
 
+      // Start system audio capture if requested and supported
+      if (systemAudio && this._systemAudioSupported$.value) {
+        this.ipc.systemAudioStart();
+        this.systemAudioActive = true;
+      }
+
       this.ipc.startRecording();
       this._isRecording$.next(true);
     } catch (err) {
@@ -112,6 +141,11 @@ export class AudioCaptureService implements OnDestroy {
 
   stopRecording(): void {
     if (!this._isRecording$.value) return;
+
+    if (this.systemAudioActive) {
+      this.ipc.systemAudioStop();
+      this.systemAudioActive = false;
+    }
 
     this.ipc.stopRecording();
     this.cleanup();

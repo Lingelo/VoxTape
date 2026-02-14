@@ -4,6 +4,8 @@ import { EventEmitter } from 'events';
 import { join } from 'path';
 import { TranscriptSegment, SttStatus } from '@sourdine/shared-types';
 
+export type AudioChannel = 'mic' | 'system';
+
 export interface SttEvents {
   segment: [TranscriptSegment];
   partial: [{ text: string }];
@@ -19,7 +21,6 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
 
   constructor() {
     super();
-    // Will be resolved at runtime from Electron's app path
     this.workerPath = join(__dirname, 'stt-worker.js');
   }
 
@@ -40,7 +41,7 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
     return new Promise<void>((resolve, reject) => {
       this.worker = fork(this.workerPath, [], {
         env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-        serialization: 'advanced', // Support for transferring ArrayBuffers
+        serialization: 'advanced',
       });
 
       this.worker.on('message', (msg: any) => {
@@ -86,9 +87,9 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
     });
   }
 
-  feedAudioChunk(samples: Int16Array): void {
+  feedAudioChunk(samples: Int16Array, channel: AudioChannel = 'mic'): void {
     if (!this.worker || this._status !== 'ready') return;
-    this.worker.send({ type: 'audio-chunk', data: Array.from(samples) });
+    this.worker.send({ type: 'audio-chunk', data: Array.from(samples), channel });
   }
 
   startRecording(): void {
@@ -115,7 +116,6 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
   async shutdown(): Promise<void> {
     if (this.worker) {
       this.worker.send({ type: 'shutdown' });
-      // Give it a moment to clean up, then force kill
       await new Promise<void>((resolve) => {
         const timeout = setTimeout(() => {
           this.worker?.kill('SIGKILL');

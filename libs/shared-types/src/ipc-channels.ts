@@ -58,6 +58,12 @@ export const IpcChannels = {
   MODEL_DOWNLOAD: 'model:download',
   MODEL_DELETE: 'model:delete',
   MODEL_DOWNLOAD_PROGRESS: 'model:download-progress',
+
+  // System Audio: renderer -> main
+  SYSTEM_AUDIO_START: 'system-audio:start',
+  SYSTEM_AUDIO_STOP: 'system-audio:stop',
+  SYSTEM_AUDIO_SUPPORTED: 'system-audio:supported',
+  SYSTEM_AUDIO_STATUS: 'system-audio:status',
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];

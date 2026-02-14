@@ -14,7 +14,8 @@
     "rebuild-native": "echo 'sherpa-onnx-node ships prebuilt binaries — no rebuild needed'",
     "generate-icon": "node scripts/generate-icon.mjs",
     "package": "node scripts/package.mjs",
-    "make": "node scripts/package.mjs --make"
+    "make": "node scripts/package.mjs --make",
+    "build:native": "cd libs/native-audio-capture && npx napi build --platform --release"
   },
   "private": true,
   "devDependencies": {
@@ -73,6 +74,7 @@
     "libs/*"
   ],
   "dependencies": {
+    "@sourdine/native-audio-capture": "file:libs/native-audio-capture",
     "@angular/common": "~21.1.0",
     "@angular/compiler": "~21.1.0",
     "@angular/core": "~21.1.0",

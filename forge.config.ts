@@ -34,6 +34,11 @@ const config: ForgeConfig = {
       // Ignore everything else (source code, configs, libs, scripts, etc.)
       return true;
     },
+    extendInfo: {
+      NSMicrophoneUsageDescription: 'Sourdine needs microphone access to transcribe your voice.',
+      NSAudioCaptureUsageDescription: 'Sourdine needs system audio access to transcribe meeting participants.',
+      NSScreenCaptureUsageDescription: 'Sourdine needs screen capture access to record system audio from meetings.',
+    },
     // macOS code signing (disabled for now — enable with Apple Developer cert)
     osxSign: undefined,
   },

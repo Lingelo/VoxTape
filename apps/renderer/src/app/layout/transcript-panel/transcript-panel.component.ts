@@ -194,9 +194,12 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, AfterViewChe
 
   ngAfterViewChecked(): void {
     if (this.shouldAutoScroll && this.scrollContainer) {
-      const el = this.scrollContainer.nativeElement;
-      el.scrollTop = el.scrollHeight;
       this.shouldAutoScroll = false;
+      // Defer scroll to next frame so DOM has rendered the new segment
+      requestAnimationFrame(() => {
+        const el = this.scrollContainer?.nativeElement;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
     }
   }
 
