@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrateg
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { SessionService } from '../../services/session.service';
 
 interface DownloadedModel {
   id: string;
@@ -551,6 +552,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
+  private readonly sessionService = inject(SessionService);
 
   private get sourdineApi(): SourdineSettingsApi | undefined {
     return (window as Window & { sourdine?: SourdineSettingsApi }).sourdine;
@@ -706,6 +708,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const api = this.sourdineApi?.config;
     if (api) {
       await api.reset();
+      // Clear frontend session state after backend reset
+      this.sessionService.clearAllState();
       this.router.navigate(['/onboarding']);
     }
   }
@@ -763,9 +767,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private async startMicTest(): Promise<void> {
     try {
       const deviceId = this.config?.audio?.defaultDeviceId;
+      // Use 'ideal' instead of 'exact' for graceful fallback when deviceId is invalid
       const constraints: MediaStreamConstraints = {
         audio: deviceId && deviceId !== 'default'
-          ? { deviceId: { exact: deviceId } }
+          ? { deviceId: { ideal: deviceId } }
           : true,
       };
 

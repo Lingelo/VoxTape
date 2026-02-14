@@ -64,6 +64,7 @@ export const IpcChannels = {
   SYSTEM_AUDIO_STOP: 'system-audio:stop',
   SYSTEM_AUDIO_SUPPORTED: 'system-audio:supported',
   SYSTEM_AUDIO_STATUS: 'system-audio:status',
+  SYSTEM_AUDIO_LEVEL: 'system-audio:level',
 } as const;
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];

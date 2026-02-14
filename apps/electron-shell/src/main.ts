@@ -376,43 +376,88 @@ function setupIpc(): void {
 
   // ── Database IPC (invoke/handle pattern) ──────────────────────────
   ipcMain.handle('session:save', (_event, data) => {
-    databaseService.saveSession(data);
-    return { ok: true };
+    try {
+      databaseService.saveSession(data);
+      return { ok: true };
+    } catch (err: any) {
+      console.error('[Main] session:save error:', err.message);
+      return { ok: false, error: err.message };
+    }
   });
 
   ipcMain.handle('session:load', (_event, id: string) => {
-    return databaseService.getSession(id);
+    try {
+      return databaseService.getSession(id);
+    } catch (err: any) {
+      console.error('[Main] session:load error:', err.message);
+      return null;
+    }
   });
 
   ipcMain.handle('session:list', () => {
-    return databaseService.listSessions();
+    try {
+      return databaseService.listSessions();
+    } catch (err: any) {
+      console.error('[Main] session:list error:', err.message);
+      return [];
+    }
   });
 
   ipcMain.handle('session:delete', (_event, id: string) => {
-    databaseService.deleteSession(id);
-    return { ok: true };
+    try {
+      databaseService.deleteSession(id);
+      return { ok: true };
+    } catch (err: any) {
+      console.error('[Main] session:delete error:', err.message);
+      return { ok: false, error: err.message };
+    }
   });
 
   ipcMain.handle('folder:create', (_event, name: string, parentId?: string) => {
-    return databaseService.createFolder(name, parentId);
+    try {
+      return databaseService.createFolder(name, parentId);
+    } catch (err: any) {
+      console.error('[Main] folder:create error:', err.message);
+      return null;
+    }
   });
 
   ipcMain.handle('folder:list', () => {
-    return databaseService.listFolders();
+    try {
+      return databaseService.listFolders();
+    } catch (err: any) {
+      console.error('[Main] folder:list error:', err.message);
+      return [];
+    }
   });
 
   ipcMain.handle('folder:delete', (_event, id: string) => {
-    databaseService.deleteFolder(id);
-    return { ok: true };
+    try {
+      databaseService.deleteFolder(id);
+      return { ok: true };
+    } catch (err: any) {
+      console.error('[Main] folder:delete error:', err.message);
+      return { ok: false, error: err.message };
+    }
   });
 
   ipcMain.handle('folder:move-session', (_event, sessionId: string, folderId: string | null) => {
-    databaseService.moveSession(sessionId, folderId);
-    return { ok: true };
+    try {
+      databaseService.moveSession(sessionId, folderId);
+      return { ok: true };
+    } catch (err: any) {
+      console.error('[Main] folder:move-session error:', err.message);
+      return { ok: false, error: err.message };
+    }
   });
 
   ipcMain.handle('search:query', (_event, term: string) => {
-    return databaseService.search(term);
+    try {
+      return databaseService.search(term);
+    } catch (err: any) {
+      console.error('[Main] search:query error:', err.message);
+      return [];
+    }
   });
 
   // ── Export IPC ────────────────────────────────────────────────────
