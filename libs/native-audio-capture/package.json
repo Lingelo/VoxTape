@@ -25,6 +25,7 @@
     "name": "native-audio-capture"
   },
   "scripts": {
+    "dev": "echo 'No dev for native module'",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform"
   },
