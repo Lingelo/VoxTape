@@ -1,13 +1,17 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (ex: v0.1.0-beta)'
+        required: true
+        default: 'v0.1.0-beta'
 
 jobs:
   build:
     runs-on: macos-14  # Apple Silicon runner
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout
@@ -69,11 +73,13 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Sourdine ${{ github.event.inputs.version }}
           files: |
             artifacts/**/*.dmg
             artifacts/**/*.zip
           generate_release_notes: true
           draft: false
-          prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
+          prerelease: ${{ contains(github.event.inputs.version, '-beta') || contains(github.event.inputs.version, '-alpha') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

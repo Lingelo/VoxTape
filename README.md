@@ -118,16 +118,15 @@ npm run make
 
 ### Release GitHub
 
-Les releases sont automatisees via GitHub Actions. Pour publier une nouvelle version :
+Les releases sont declenchees manuellement via GitHub Actions :
 
-```bash
-# Creer un tag de version
-git tag v0.1.0
-git push origin v0.1.0
-```
+1. Aller dans **Actions** > **Release**
+2. Cliquer sur **Run workflow**
+3. Entrer la version (ex: `v0.1.0-beta`)
+4. Lancer le workflow
 
-Le workflow CI va automatiquement :
-1. Builder l'application pour macOS (arm64 + x64)
+Le workflow va :
+1. Builder l'application pour macOS (arm64)
 2. Creer le DMG
 3. Publier une release GitHub avec les artefacts
 
