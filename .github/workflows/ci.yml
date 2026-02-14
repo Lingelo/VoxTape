@@ -29,11 +29,6 @@ jobs:
       - name: Build native audio capture module
         run: npm run build:native
 
-      - name: Lint
-        run: |
-          npx nx lint renderer || true
-          npx nx lint backend || true
-
       - name: Build
         run: npm run build
 
