@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,16 +26,16 @@ interface Config {
             <path d="M10 12L6 8l4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-        <h1>Parametres</h1>
+        <h1>Paramètres</h1>
       </div>
 
       <div class="settings-body" *ngIf="config">
         <!-- General -->
         <section class="settings-section">
-          <h2>General</h2>
+          <h2>Général</h2>
 
           <div class="setting-row">
-            <label>Theme</label>
+            <label>Thème</label>
             <div class="theme-toggle">
               <button
                 *ngFor="let t of themes"
@@ -52,24 +52,55 @@ interface Config {
         <section class="settings-section">
           <h2>Audio</h2>
           <div class="setting-row">
-            <label>Microphone par defaut</label>
-            <select [(ngModel)]="config.audio.defaultDeviceId" (change)="save('audio.defaultDeviceId', config.audio.defaultDeviceId)">
-              <option [ngValue]="null">Defaut du systeme</option>
-              <option *ngFor="let mic of microphones" [ngValue]="mic.deviceId">{{ mic.label }}</option>
-            </select>
+            <label>Microphone par défaut</label>
+            <div class="mic-controls">
+              <select [(ngModel)]="config.audio.defaultDeviceId" (change)="onMicChange()">
+                <option [ngValue]="null">Défaut du système</option>
+                <option *ngFor="let mic of microphones" [ngValue]="mic.deviceId">{{ mic.label }}</option>
+              </select>
+              <button class="test-mic-btn" [class.active]="isTestingMic" (click)="toggleMicTest()">
+                {{ isTestingMic ? 'Stop' : 'Test' }}
+              </button>
+            </div>
+          </div>
+          <div class="mic-test-box" *ngIf="isTestingMic">
+            <div class="vu-meter">
+              <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
+            </div>
+            <p class="mic-status" [class.active]="audioLevel > 0.02">
+              {{ audioLevel > 0.02 ? 'Signal détecté !' : 'Parlez pour tester...' }}
+            </p>
           </div>
           <div class="setting-row" *ngIf="systemAudioSupported">
             <div class="setting-label-group">
               <label>Capturer l'audio systeme</label>
-              <span class="setting-hint">Transcrit l'audio des applications (reunions, videos...)</span>
+              <span class="setting-hint">Transcrit l'audio des applications (réunions, vidéos...)</span>
             </div>
-            <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="save('audio.systemAudioEnabled', systemAudioEnabled)" />
-              <span class="toggle-slider"></span>
-            </label>
+            <div class="mic-controls">
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" />
+                <span class="toggle-slider"></span>
+              </label>
+              <button
+                class="test-mic-btn"
+                [class.active]="isTestingSystemAudio"
+                [disabled]="!systemAudioEnabled"
+                (click)="toggleSystemAudioTest()"
+              >
+                {{ isTestingSystemAudio ? 'Stop' : 'Test' }}
+              </button>
+            </div>
+          </div>
+          <div class="mic-test-box" *ngIf="isTestingSystemAudio">
+            <div class="vu-meter">
+              <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+            </div>
+            <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
+              {{ systemAudioLevel > 0.02 ? 'Audio système détecté !' : 'Lancez une vidéo ou de la musique...' }}
+            </p>
           </div>
           <div class="setting-row unsupported-hint" *ngIf="!systemAudioSupported">
-            <span class="setting-hint">Capture audio systeme : necessite macOS 14.2+</span>
+            <span class="setting-hint">Capture audio système : nécessite macOS 14.2+</span>
           </div>
         </section>
 
@@ -101,15 +132,15 @@ interface Config {
 
         <!-- About -->
         <section class="settings-section">
-          <h2>A propos</h2>
-          <p class="about-text">Sourdine — Notes de reunion intelligentes</p>
+          <h2>À propos</h2>
+          <p class="about-text">Sourdine — Notes de réunion intelligentes</p>
           <p class="about-text">100% local, zero cloud</p>
         </section>
 
         <!-- Reset -->
         <section class="settings-section">
-          <button class="reset-btn" (click)="resetApp()">Reinitialiser l'application</button>
-          <p class="about-text">Remet la configuration par defaut et relance l'assistant de configuration.</p>
+          <button class="reset-btn" (click)="resetApp()">Réinitialiser l'application</button>
+          <p class="reset-warning">Supprime toutes vos sessions, transcriptions et modèles téléchargés.</p>
         </section>
       </div>
     </div>
@@ -134,15 +165,21 @@ interface Config {
     }
 
     .settings-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 32px;
-      padding-top: 32px;
+      margin: 0 -32px 32px;
+      padding: 32px 32px 16px;
+      background: var(--bg-main);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
     .settings-header h1 {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
       color: var(--text-primary);
     }
@@ -150,10 +187,10 @@ interface Config {
     .back-btn {
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       color: var(--text-secondary);
       cursor: pointer;
-      padding: 6px 8px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
     }
@@ -192,9 +229,9 @@ interface Config {
     .setting-row select {
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       color: var(--text-primary);
-      padding: 6px 12px;
+      padding: 10px 12px;
       font-size: 13px;
       outline: none;
     }
@@ -203,11 +240,11 @@ interface Config {
       display: flex;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
     }
     .theme-toggle button {
-      padding: 6px 16px;
+      padding: 10px 16px;
       border: none;
       background: none;
       color: var(--text-secondary);
@@ -277,7 +314,7 @@ interface Config {
     }
     .status-badge.installed {
       color: var(--accent-primary);
-      background: rgba(99, 102, 241, 0.1);
+      background: var(--accent-primary-tint);
     }
     .status-badge.missing {
       color: #f59e0b;
@@ -289,14 +326,14 @@ interface Config {
     .model-action-btn {
       padding: 4px 12px;
       border: 1px solid var(--accent-primary);
-      border-radius: 6px;
+      border-radius: 8px;
       background: none;
       color: var(--accent-primary);
       font-size: 12px;
       cursor: pointer;
     }
     .model-action-btn:hover {
-      background: rgba(99, 102, 241, 0.1);
+      background: var(--accent-primary-tint);
     }
     .setting-label-group {
       display: flex;
@@ -351,9 +388,9 @@ interface Config {
     }
 
     .reset-btn {
-      padding: 8px 20px;
+      padding: 12px 24px;
       border: 1px solid #ef4444;
-      border-radius: 6px;
+      border-radius: 8px;
       background: none;
       color: #ef4444;
       font-size: 13px;
@@ -363,9 +400,75 @@ interface Config {
     .reset-btn:hover {
       background: rgba(239, 68, 68, 0.1);
     }
+    .reset-warning {
+      font-size: 12px;
+      color: #ef4444;
+      margin-top: 8px;
+    }
+
+    .mic-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .test-mic-btn {
+      padding: 10px 16px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .test-mic-btn:hover {
+      background: var(--accent-hover);
+      color: var(--text-primary);
+    }
+    .test-mic-btn.active {
+      background: var(--accent-primary);
+      color: #1a1a1a;
+      border-color: var(--accent-primary);
+    }
+    .test-mic-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .mic-test-box {
+      margin-top: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+    }
+
+    .vu-meter {
+      height: 8px;
+      background: var(--bg-main);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .vu-bar {
+      height: 100%;
+      background: var(--accent-primary);
+      border-radius: 4px;
+      transition: width 0.1s;
+    }
+    .mic-status {
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+      margin: 0;
+    }
+    .mic-status.active {
+      color: var(--accent-primary);
+    }
   `],
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit, OnDestroy {
   config: Config | null = null;
   microphones: MediaDeviceInfo[] = [];
   knownModels: { id: string; name: string; type: string; size: string; description: string }[] = [];
@@ -373,12 +476,23 @@ export class SettingsComponent implements OnInit {
   downloadProgress: Record<string, number> = {};
   systemAudioSupported = false;
   systemAudioEnabled = false;
+  systemAudioLevel = 0;
+  isTestingSystemAudio = false;
   private progressCleanup: (() => void) | null = null;
+  private systemAudioLevelCleanup: (() => void) | null = null;
+
+  // Mic test state
+  isTestingMic = false;
+  audioLevel = 0;
+  private audioContext: AudioContext | null = null;
+  private mediaStream: MediaStream | null = null;
+  private analyser: AnalyserNode | null = null;
+  private levelAnimationId: number | null = null;
 
   themes = [
     { value: 'dark' as const, label: 'Sombre' },
     { value: 'light' as const, label: 'Clair' },
-    { value: 'system' as const, label: 'Systeme' },
+    { value: 'system' as const, label: 'Système' },
   ];
 
   constructor(
@@ -415,6 +529,54 @@ export class SettingsComponent implements OnInit {
     if (this.config) {
       this.systemAudioEnabled = (this.config as any).audio?.systemAudioEnabled ?? false;
     }
+    // Set up level listener
+    this.setupSystemAudioLevelListener();
+    this.cdr.markForCheck();
+  }
+
+  private setupSystemAudioLevelListener(): void {
+    const api = (window as any).sourdine?.systemAudio;
+    if (!api?.onLevel) return;
+
+    this.systemAudioLevelCleanup = api.onLevel((level: number) => {
+      this.ngZone.run(() => {
+        this.systemAudioLevel = level;
+        this.cdr.markForCheck();
+      });
+    });
+  }
+
+  onSystemAudioToggle(): void {
+    this.save('audio.systemAudioEnabled', this.systemAudioEnabled);
+    // Stop test if toggle is turned off
+    if (!this.systemAudioEnabled && this.isTestingSystemAudio) {
+      this.stopSystemAudioTest();
+    }
+  }
+
+  toggleSystemAudioTest(): void {
+    if (this.isTestingSystemAudio) {
+      this.stopSystemAudioTest();
+    } else {
+      this.startSystemAudioTest();
+    }
+  }
+
+  private startSystemAudioTest(): void {
+    const api = (window as any).sourdine?.systemAudio;
+    if (!api) return;
+    api.start();
+    this.isTestingSystemAudio = true;
+    this.cdr.markForCheck();
+  }
+
+  private stopSystemAudioTest(): void {
+    const api = (window as any).sourdine?.systemAudio;
+    if (api) {
+      api.stop();
+    }
+    this.isTestingSystemAudio = false;
+    this.systemAudioLevel = 0;
     this.cdr.markForCheck();
   }
 
@@ -522,5 +684,111 @@ export class SettingsComponent implements OnInit {
         html.classList.add('light');
       }
     }
+  }
+
+  // ── Mic Test ────────────────────────────────────────────────────────────────
+
+  onMicChange(): void {
+    this.save('audio.defaultDeviceId', this.config?.audio.defaultDeviceId);
+    // If testing, restart with new device
+    if (this.isTestingMic) {
+      this.stopMicTest();
+      this.startMicTest();
+    }
+  }
+
+  async toggleMicTest(): Promise<void> {
+    if (this.isTestingMic) {
+      this.stopMicTest();
+    } else {
+      await this.startMicTest();
+    }
+  }
+
+  private async startMicTest(): Promise<void> {
+    try {
+      const deviceId = this.config?.audio?.defaultDeviceId;
+      const constraints: MediaStreamConstraints = {
+        audio: deviceId && deviceId !== 'default'
+          ? { deviceId: { exact: deviceId } }
+          : true,
+      };
+
+      this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.audioContext = new AudioContext();
+
+      if (this.audioContext.state !== 'running') {
+        await this.audioContext.resume();
+      }
+
+      const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+      this.analyser = this.audioContext.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.analyser.smoothingTimeConstant = 0.5;
+      source.connect(this.analyser);
+
+      this.isTestingMic = true;
+      this.startLevelMonitoring();
+      this.cdr.markForCheck();
+    } catch (err) {
+      console.error('[Settings] Mic test failed:', err);
+    }
+  }
+
+  private stopMicTest(): void {
+    if (this.levelAnimationId !== null) {
+      cancelAnimationFrame(this.levelAnimationId);
+      this.levelAnimationId = null;
+    }
+
+    this.analyser?.disconnect();
+    this.analyser = null;
+
+    this.mediaStream?.getTracks().forEach((t) => t.stop());
+    this.mediaStream = null;
+
+    this.audioContext?.close().catch(() => {});
+    this.audioContext = null;
+
+    this.isTestingMic = false;
+    this.audioLevel = 0;
+    this.cdr.markForCheck();
+  }
+
+  private startLevelMonitoring(): void {
+    if (!this.analyser) return;
+
+    const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+    const poll = () => {
+      if (!this.analyser) return;
+
+      this.analyser.getByteFrequencyData(dataArray);
+
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i] * dataArray[i];
+      }
+      const rms = Math.sqrt(sum / dataArray.length) / 255;
+      const level = Math.min(1, rms * 2.5);
+
+      this.ngZone.run(() => {
+        this.audioLevel = level;
+        this.cdr.markForCheck();
+      });
+
+      this.levelAnimationId = requestAnimationFrame(poll);
+    };
+
+    this.ngZone.runOutsideAngular(() => poll());
+  }
+
+  ngOnDestroy(): void {
+    this.stopMicTest();
+    if (this.isTestingSystemAudio) {
+      this.stopSystemAudioTest();
+    }
+    this.progressCleanup?.();
+    this.systemAudioLevelCleanup?.();
   }
 }

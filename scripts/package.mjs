@@ -37,8 +37,18 @@ if (!existsSync(icnsPath)) {
 }
 
 // 2. Build native audio capture module (Rust → .node) — skip if already built
-const nativeNodeFile = resolve(root, 'libs/native-audio-capture/native-audio-capture.darwin-arm64.node');
+const arch = process.arch === 'x64' ? 'x86_64' : 'arm64';
+const nativeNodeFile = resolve(root, `libs/native-audio-capture/native-audio-capture.darwin-${arch}.node`);
 if (!existsSync(nativeNodeFile)) {
+  // Check if Rust is installed
+  try {
+    execSync('cargo --version', { stdio: 'ignore' });
+  } catch {
+    console.error('\n✗ Rust toolchain required for packaging.');
+    console.error('  Install Rust: curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh');
+    console.error('  Then restart your terminal and run this command again.\n');
+    process.exit(1);
+  }
   run('npm run build:native', 'Building native-audio-capture');
 } else {
   console.log('\n✓ native-audio-capture .node binary exists, skipping Rust build');

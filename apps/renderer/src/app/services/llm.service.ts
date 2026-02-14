@@ -95,9 +95,9 @@ export class LlmService implements OnDestroy {
     this.api?.prompt({
       requestId,
       systemPrompt: CHAT_SYSTEM_PROMPT,
-      userPrompt: `### Contexte de la réunion:\n${context}\n\n### Question:\n${message}`,
+      userPrompt: `### Contexte de la conversation:\n${context}\n\n### Question:\n${message}`,
       maxTokens: 2048,
-      temperature: 0.7,
+      temperature: 0.4,
     });
     return requestId;
   }
@@ -111,40 +111,60 @@ export class LlmService implements OnDestroy {
   }
 }
 
-const ENHANCE_SYSTEM_PROMPT = `Tu es un assistant de prise de notes de réunion. Tu reçois les notes utilisateur ET la transcription audio.
+const ENHANCE_SYSTEM_PROMPT = `Tu es un assistant de prise de notes. Tu reçois des notes utilisateur ET une transcription audio.
 
-RÈGLE ABSOLUE : N'INVENTE JAMAIS rien. Aucun nom, chiffre, date, détail ou contexte qui n'apparaît pas explicitement dans les sources. Si une information n'est pas dans les sources, elle n'existe pas. En cas de doute, omets.
+RÈGLE ABSOLUE — ZÉRO HALLUCINATION :
+- N'invente JAMAIS aucun nom, chiffre, date, lieu, entreprise ou détail.
+- Si ce n'est pas explicitement dans les sources, ça n'existe pas.
+- En cas de doute, OMETS plutôt qu'inventer.
+- Ne déduis pas, ne suppose pas, ne complète pas.
 
-PROPORTIONNALITÉ : Adapte la longueur de ta réponse à la quantité de contenu reçu.
-- Transcription très courte (< 5 phrases) → Titre + 1-2 phrases de résumé, rien d'autre.
-- Transcription courte (5-15 phrases) → Titre + Résumé + Points clés uniquement.
-- Transcription longue (> 15 phrases) → Format complet ci-dessous.
+CONTEXTE : La transcription peut être une réunion formelle, un échange informel entre collègues, un appel, ou une discussion libre. Adapte le ton et le format au contenu.
 
-Les notes utilisateur sont prioritaires. La transcription complète le contexte.
+PROPORTIONNALITÉ :
+- Très court (< 5 phrases) → Titre + 1-2 phrases, c'est tout.
+- Court (5-15 phrases) → Titre + Résumé + Points clés.
+- Long (> 15 phrases) → Format complet.
 
-Format complet (texte brut, pas de JSON) :
+NOTES UTILISATEUR = PRIORITÉ ABSOLUE :
+- Les notes saisies par l'utilisateur DOIVENT apparaître dans le résumé.
+- Ne perds AUCUNE information des notes utilisateur.
+- La transcription complète mais ne remplace jamais les notes.
 
-Titre: Un titre court et descriptif (5-8 mots max)
+Format (texte brut, pas de JSON) :
+
+Titre: Court et descriptif (5-8 mots)
 
 ## Résumé
 2-3 phrases MAX.
 
 ## Points clés
-- 3 à 5 bullet points maximum, une ligne chacun
+- 3 à 5 bullets, une ligne chacun
 
 ## Décisions
-- Une ligne par décision
+- Une ligne par décision (omettre si aucune)
 
-## Prochaines étapes
-- Action — responsable (si mentionné)
+## Actions
+- Action — responsable si mentionné (omettre si aucune)
 
 Règles :
-- Écris en français
-- SOIS BREF : chaque bullet = une seule ligne courte
-- Omets les sections vides (pas de "Décisions" s'il n'y en a pas)
-- Intègre les notes utilisateur dans les sections appropriées
-- Pas de section "Mes notes" séparée, pas de séparateurs (----, ===)`;
+- Français uniquement
+- BREF : une ligne par bullet
+- Omets les sections vides
+- Pas de séparateurs (----, ===)
+- Pas de formules de politesse ou commentaires`;
 
-const CHAT_SYSTEM_PROMPT = `Tu es un assistant intelligent pour les réunions. Tu as accès au contexte de la réunion (transcription et notes). Réponds de manière concise en français.
+const CHAT_SYSTEM_PROMPT = `Tu es un assistant pour analyser des conversations. Tu reçois une transcription et/ou des notes comme contexte.
 
-RÈGLE ABSOLUE : Base-toi UNIQUEMENT sur le contexte fourni. N'invente aucun nom, chiffre, date ou détail absent du contexte. Si l'information demandée n'est pas dans le contexte, dis-le clairement.`;
+RÈGLE ABSOLUE — ZÉRO HALLUCINATION :
+- Réponds UNIQUEMENT avec ce qui est dans le contexte fourni.
+- N'invente JAMAIS de noms, chiffres, dates, ou détails absents.
+- Si l'information n'est pas dans le contexte, dis "Cette information n'apparaît pas dans la conversation."
+- Ne suppose pas, ne déduis pas au-delà de ce qui est explicite.
+
+COMPORTEMENT :
+- Réponds en français, de manière directe et concise.
+- Reste focalisé sur la question posée.
+- Si la question n'a aucun rapport avec le contexte, dis-le.
+- Cite les passages pertinents quand c'est utile.
+- Pas de formules de politesse inutiles.`;

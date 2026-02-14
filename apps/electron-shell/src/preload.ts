@@ -167,6 +167,11 @@ const sourdineApi = {
       ipcRenderer.on('system-audio:status', handler);
       return () => ipcRenderer.removeListener('system-audio:status', handler);
     },
+    onLevel: (callback: (level: number) => void): (() => void) => {
+      const handler = (_event: any, level: number) => callback(level);
+      ipcRenderer.on('system-audio:level', handler);
+      return () => ipcRenderer.removeListener('system-audio:level', handler);
+    },
   },
 
   model: {

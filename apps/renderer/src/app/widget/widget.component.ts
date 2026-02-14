@@ -54,7 +54,7 @@ import { ElectronIpcService } from '../services/electron-ipc.service';
       height: 24px;
       cursor: pointer;
       padding: 2px 4px;
-      border-radius: 6px;
+      border-radius: 8px;
       transition: background 0.15s;
       -webkit-app-region: no-drag;
     }
@@ -89,7 +89,7 @@ import { ElectronIpcService } from '../services/electron-ipc.service';
     .stop-btn {
       width: 24px;
       height: 24px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: none;
       background: rgba(255, 255, 255, 0.08);
       cursor: pointer;

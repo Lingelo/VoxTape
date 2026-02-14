@@ -46,7 +46,7 @@ interface AudioDevice {
         <div class="step-content" *ngIf="step === 0">
           <img src="assets/logo.svg" alt="Sourdine" class="welcome-logo" />
           <h1>Sourdine</h1>
-          <p class="subtitle">Votre assistant de reunion 100% local</p>
+          <p class="subtitle">Votre assistant de réunion 100% local</p>
 
           <div class="welcome-features">
             <div class="welcome-feature">
@@ -54,8 +54,8 @@ interface AudioDevice {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
               </div>
               <div class="feature-text">
-                <span class="feature-title">Transcription en temps reel</span>
-                <span class="feature-desc">Vos reunions transcrites automatiquement, sans connexion internet</span>
+                <span class="feature-title">Transcription en temps réel</span>
+                <span class="feature-desc">Vos réunions transcrites automatiquement, sans connexion internet</span>
               </div>
             </div>
             <div class="welcome-feature">
@@ -63,8 +63,8 @@ interface AudioDevice {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               </div>
               <div class="feature-text">
-                <span class="feature-title">Resumes intelligents</span>
-                <span class="feature-desc">Points cles, actions et decisions extraits par une IA locale</span>
+                <span class="feature-title">Résumés intelligents</span>
+                <span class="feature-desc">Points clés, actions et décisions extraits par une IA locale</span>
               </div>
             </div>
             <div class="welcome-feature">
@@ -73,7 +73,7 @@ interface AudioDevice {
               </div>
               <div class="feature-text">
                 <span class="feature-title">100% local, zero cloud</span>
-                <span class="feature-desc">Vos donnees restent sur votre machine, rien n'est envoye en ligne</span>
+                <span class="feature-desc">Vos données restent sur votre machine, rien n'est envoyé en ligne</span>
               </div>
             </div>
             <div class="welcome-feature">
@@ -81,8 +81,8 @@ interface AudioDevice {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-4.5 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
               </div>
               <div class="feature-text">
-                <span class="feature-title">Empreinte ecologique reduite</span>
-                <span class="feature-desc">Aucun serveur distant sollicite, tout tourne sur votre machine</span>
+                <span class="feature-title">Empreinte écologique réduite</span>
+                <span class="feature-desc">Aucun serveur distant sollicité, tout tourne sur votre machine</span>
               </div>
             </div>
           </div>
@@ -116,18 +116,18 @@ interface AudioDevice {
               Chargement...
             </p>
             <p *ngIf="micState === 'requesting'" class="mic-status">
-              Demande d'acces au micro...
+              Demande d'accès au micro...
             </p>
             <p *ngIf="micState === 'active'" class="mic-status" [class.active]="audioLevel > 0.02">
-              {{ audioLevel > 0.02 ? 'Signal detecte !' : 'Parlez pour tester...' }}
+              {{ audioLevel > 0.02 ? 'Signal détecté !' : 'Parlez pour tester...' }}
             </p>
             <p *ngIf="micState === 'error'" class="mic-status mic-error">
-              Acces au micro refuse. Verifiez Preferences Systeme &gt; Confidentialite &gt; Microphone.
+              Accès au micro refusé. Vérifiez Préférences Système &gt; Confidentialité &gt; Microphone.
             </p>
           </div>
 
           <p *ngIf="micState === 'active' && !micSignalDetected" class="mic-warning">
-            Aucun signal detecte. Vous pouvez continuer, mais verifiez votre micro avant d'enregistrer.
+            Aucun signal détecté. Vous pouvez continuer, mais vérifiez votre micro avant d'enregistrer.
           </p>
 
           <div class="btn-group">
@@ -141,16 +141,54 @@ interface AudioDevice {
           </div>
         </div>
 
-        <!-- Step 2: Install -->
+        <!-- Step 2: System Audio -->
         <div class="step-content" *ngIf="step === 2">
+          <h1>Audio Système</h1>
+          <p class="subtitle">Capturez le son des applications (réunions, vidéos...)</p>
+
+          <div *ngIf="!systemAudioSupported" class="system-audio-unsupported">
+            <p class="mic-warning">Nécessite macOS 14.2 ou supérieur</p>
+            <p class="setting-hint">Votre système ne supporte pas cette fonctionnalité. Vous pouvez continuer sans.</p>
+          </div>
+
+          <div *ngIf="systemAudioSupported" class="system-audio-setup">
+            <div class="setting-row">
+              <div class="setting-label-group">
+                <label>Activer la capture audio système</label>
+                <span class="setting-hint">Transcrit le son des apps en plus du micro</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <div class="mic-test" *ngIf="systemAudioEnabled">
+              <div class="vu-meter">
+                <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+              </div>
+              <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
+                {{ systemAudioLevel > 0.02 ? 'Audio système détecté !' : 'Lancez une vidéo ou de la musique...' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="secondary-btn" (click)="stopSystemAudioTest(); prevStep()">Retour</button>
+            <button class="primary-btn" (click)="stopSystemAudioTest(); nextStep()">Continuer</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Install -->
+        <div class="step-content" *ngIf="step === 3">
           <h1>Installation</h1>
-          <p class="subtitle">Sourdine a besoin de telecharger quelques composants pour fonctionner</p>
+          <p class="subtitle">Sourdine a besoin de télécharger quelques composants pour fonctionner</p>
 
           <!-- Before install -->
           <div *ngIf="installState === 'idle'" class="install-info">
             <div class="install-item">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-              <span>Detection de voix</span>
+              <span>Détection de voix</span>
             </div>
             <div class="install-item">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -158,7 +196,7 @@ interface AudioDevice {
             </div>
             <div class="install-item">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span>Assistant IA local (resumes, chat)</span>
+              <span>Assistant IA local (résumés, chat)</span>
             </div>
             <p class="install-size">Environ 5 Go au total</p>
           </div>
@@ -178,12 +216,12 @@ interface AudioDevice {
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
               <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
-            <p class="install-done-text">Installation terminee</p>
+            <p class="install-done-text">Installation terminée</p>
           </div>
 
           <!-- Error -->
           <div *ngIf="installState === 'error'" class="install-error">
-            <p class="mic-error">Une erreur est survenue. Verifiez votre connexion et reessayez.</p>
+            <p class="mic-error">Une erreur est survenue. Vérifiez votre connexion et réessayez.</p>
           </div>
 
           <div class="btn-group">
@@ -204,10 +242,10 @@ interface AudioDevice {
           </div>
         </div>
 
-        <!-- Step 3: Ready -->
-        <div class="step-content" *ngIf="step === 3">
-          <h1>Pret !</h1>
-          <p class="subtitle">Sourdine est configure. Commencez votre premiere session.</p>
+        <!-- Step 4: Ready -->
+        <div class="step-content" *ngIf="step === 4">
+          <h1>Prêt !</h1>
+          <p class="subtitle">Sourdine est configuré. Commencez votre première session.</p>
 
           <div class="ready-icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -239,7 +277,7 @@ interface AudioDevice {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg-primary);
+      background: var(--bg-main);
       padding: 24px;
     }
 
@@ -312,7 +350,7 @@ interface AudioDevice {
       padding: 12px;
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      background: var(--bg-primary);
+      background: var(--bg-main);
       color: var(--text-primary);
       font-size: 14px;
       cursor: pointer;
@@ -323,7 +361,7 @@ interface AudioDevice {
     }
     .option-group button.selected {
       border-color: var(--accent-primary);
-      background: rgba(99, 102, 241, 0.1);
+      background: var(--accent-primary-tint);
     }
 
     /* Welcome */
@@ -346,7 +384,7 @@ interface AudioDevice {
       gap: 14px;
       padding: 12px 14px;
       border-radius: 10px;
-      background: var(--bg-primary);
+      background: var(--bg-main);
     }
     .feature-icon {
       flex-shrink: 0;
@@ -380,7 +418,7 @@ interface AudioDevice {
       padding: 10px 12px;
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      background: var(--bg-primary);
+      background: var(--bg-main);
       color: var(--text-primary);
       font-size: 13px;
       outline: none;
@@ -435,7 +473,7 @@ interface AudioDevice {
 
     .vu-meter {
       height: 8px;
-      background: var(--bg-primary);
+      background: var(--bg-main);
       border-radius: 4px;
       overflow: hidden;
       margin-bottom: 12px;
@@ -459,6 +497,78 @@ interface AudioDevice {
       font-size: 12px;
       color: #f59e0b;
       margin-bottom: 16px;
+    }
+
+    /* System Audio */
+    .system-audio-setup {
+      text-align: left;
+      margin-bottom: 24px;
+    }
+    .system-audio-setup .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .system-audio-setup .setting-label-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .system-audio-setup .setting-label-group label {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .system-audio-setup .setting-hint {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .system-audio-unsupported {
+      text-align: center;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--border-subtle);
+      border-radius: 24px;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--accent-primary);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(20px);
     }
 
     /* Install */
@@ -493,7 +603,7 @@ interface AudioDevice {
     .progress-bar {
       width: 100%;
       height: 6px;
-      background: var(--bg-primary);
+      background: var(--bg-main);
       border-radius: 3px;
       overflow: hidden;
     }
@@ -549,7 +659,7 @@ interface AudioDevice {
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
   step = 0;
-  steps = [0, 1, 2, 3];
+  steps = [0, 1, 2, 3, 4];
 
   // Mic
   audioLevel = 0;
@@ -557,6 +667,12 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   micSignalDetected = false;
   audioDevices: AudioDevice[] = [];
   selectedDeviceId = '';
+
+  // System Audio
+  systemAudioSupported = false;
+  systemAudioEnabled = false;
+  systemAudioLevel = 0;
+  private systemAudioLevelCleanup: (() => void) | null = null;
 
   // Install
   models: ModelInfo[] = [];
@@ -578,11 +694,14 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     await this.loadModels();
     this.setupProgressListener();
+    this.checkSystemAudioSupport();
   }
 
   ngOnDestroy(): void {
     this.stopMicTest();
+    this.stopSystemAudioTest();
     this.progressCleanup?.();
+    this.systemAudioLevelCleanup?.();
   }
 
   get allModelsDownloaded(): boolean {
@@ -605,7 +724,11 @@ export class OnboardingComponent implements OnInit, OnDestroy {
       }
       this.stopMicTest();
     }
-    if (this.step === 2 && this.installState !== 'done') {
+    if (this.step === 2) {
+      this.stopSystemAudioTest();
+    }
+    // Block progression from Install step until done
+    if (this.step === 3 && this.installState !== 'done') {
       return;
     }
     this.step = Math.min(this.step + 1, this.steps.length - 1);
@@ -730,10 +853,57 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     this.audioLevel = 0;
   }
 
+  // ── System Audio ────────────────────────────────────────────────────
+
+  private async checkSystemAudioSupport(): Promise<void> {
+    const api = (window as any).sourdine?.systemAudio;
+    if (!api) return;
+    try {
+      this.systemAudioSupported = await api.isSupported();
+      this.setupSystemAudioLevelListener();
+      this.cdr.markForCheck();
+    } catch {
+      this.systemAudioSupported = false;
+    }
+  }
+
+  private setupSystemAudioLevelListener(): void {
+    const api = (window as any).sourdine?.systemAudio;
+    if (!api?.onLevel) return;
+
+    this.systemAudioLevelCleanup = api.onLevel((level: number) => {
+      this.zone.run(() => {
+        this.systemAudioLevel = level;
+        this.cdr.markForCheck();
+      });
+    });
+  }
+
+  onSystemAudioToggle(): void {
+    this.saveConfig('audio.systemAudioEnabled', this.systemAudioEnabled);
+    const api = (window as any).sourdine?.systemAudio;
+    if (!api) return;
+
+    if (this.systemAudioEnabled) {
+      api.start();
+    } else {
+      api.stop();
+      this.systemAudioLevel = 0;
+    }
+  }
+
+  stopSystemAudioTest(): void {
+    const api = (window as any).sourdine?.systemAudio;
+    if (api && this.systemAudioEnabled) {
+      api.stop();
+    }
+    this.systemAudioLevel = 0;
+  }
+
   // ── Install ───────────────────────────────────────────────────────
 
   private readonly INSTALL_LABELS: Record<string, string> = {
-    'silero-vad': 'Detection de voix...',
+    'silero-vad': 'Détection de voix...',
     'parakeet-tdt-v3': 'Transcription multilingue...',
     'mistral-7b-instruct-q4': 'Assistant IA local...',
   };
@@ -774,7 +944,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     }
 
     // Start first pending model
-    this.currentInstallLabel = this.INSTALL_LABELS[pending[0]] ?? 'Telechargement...';
+    this.currentInstallLabel = this.INSTALL_LABELS[pending[0]] ?? 'Téléchargement...';
     this.downloads[pending[0]] = { modelId: pending[0], progress: 0, total: 0, status: 'downloading' };
     api.download(pending[0]);
     this.cdr.markForCheck();
@@ -809,7 +979,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
               // Restart STT worker now that models are available
               (window as any).sourdine?.stt?.restart?.();
             } else {
-              this.currentInstallLabel = this.INSTALL_LABELS[pending[0]] ?? 'Telechargement...';
+              this.currentInstallLabel = this.INSTALL_LABELS[pending[0]] ?? 'Téléchargement...';
               this.downloads[pending[0]] = { modelId: pending[0], progress: 0, total: 0, status: 'downloading' };
               api.download(pending[0]);
             }
