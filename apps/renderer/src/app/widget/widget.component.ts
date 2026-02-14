@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ElectronIpcService } from '../services/electron-ipc.service';
@@ -9,20 +9,24 @@ import { ElectronIpcService } from '../services/electron-ipc.service';
   imports: [CommonModule],
   template: `
     <div class="audio-pill" [class.active]="isRecording">
-      <div class="vu-bars" (click)="onClick()">
-        <div class="vu-bar" *ngFor="let bar of vuBars; let i = index"
-          [style.height.px]="isRecording ? getBarHeight(i) : 4"
-          [style.opacity]="isRecording ? getBarOpacity(i) : 0.4"
-        ></div>
+      <div class="vu-bars" tabindex="0" role="button" (click)="onClick()" (keydown.enter)="onClick()">
+        @for (bar of vuBars; track $index; let i = $index) {
+          <div class="vu-bar"
+            [style.height.px]="isRecording ? getBarHeight(i) : 4"
+            [style.opacity]="isRecording ? getBarOpacity(i) : 0.4"
+          ></div>
+        }
       </div>
       <button class="chevron-btn" (click)="focusMain()">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
           <polyline points="2,6 5,3 8,6"/>
         </svg>
       </button>
-      <button *ngIf="isRecording" class="stop-btn" (click)="onClick()">
-        <span class="stop-square"></span>
-      </button>
+      @if (isRecording) {
+        <button class="stop-btn" (click)="onClick()">
+          <span class="stop-square"></span>
+        </button>
+      }
     </div>
   `,
   styles: [`
@@ -114,9 +118,8 @@ export class WidgetComponent implements OnInit, OnDestroy {
   vuBars = [0, 1, 2, 3, 4];
   isRecording = false;
   audioLevel = 0;
+  private readonly ipc = inject(ElectronIpcService);
   private sub?: Subscription;
-
-  constructor(private ipc: ElectronIpcService) {}
 
   ngOnInit(): void {
     // Make body transparent so the Electron transparent window works

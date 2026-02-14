@@ -16,11 +16,12 @@ class PcmCaptureProcessor extends AudioWorkletProcessor {
 
   /**
    * @param {Float32Array[][]} inputs
-   * @param {Float32Array[][]} outputs
-   * @param {Record<string, Float32Array>} parameters
+   * @param {Float32Array[][]} _outputs - Unused
+   * @param {Record<string, Float32Array>} _parameters - Unused
    * @returns {boolean}
    */
-  process(inputs, outputs, parameters) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  process(inputs, _outputs, _parameters) {
     const input = inputs[0];
     if (!input || !input[0]) return true;
 

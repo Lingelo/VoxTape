@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { SidebarComponent } from './sidebar/sidebar.component';
@@ -23,7 +23,9 @@ import { AudioCaptureService } from '../services/audio-capture.service';
 
       <div class="main-content">
         <!-- Backdrop to close panels on click outside -->
-        <div class="panel-backdrop" *ngIf="chatOpen || transcriptOpen" (click)="closeAllPanels()"></div>
+        @if (chatOpen || transcriptOpen) {
+          <div class="panel-backdrop" tabindex="0" role="button" (click)="closeAllPanels()" (keydown.enter)="closeAllPanels()"></div>
+        }
 
         <div class="editor-area">
           <sdn-note-editor></sdn-note-editor>
@@ -93,12 +95,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   chatInitialPrompt = '';
   transcriptOpen = false;
 
+  private readonly audioCapture = inject(AudioCaptureService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private subs: Subscription[] = [];
-
-  constructor(
-    private audioCapture: AudioCaptureService,
-    private cdr: ChangeDetectorRef
-  ) {}
 
   ngOnInit(): void {
     this.subs.push(

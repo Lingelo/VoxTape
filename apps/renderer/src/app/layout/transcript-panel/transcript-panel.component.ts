@@ -10,6 +10,7 @@ import {
   SimpleChanges,
   ChangeDetectorRef,
   ChangeDetectionStrategy,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -24,29 +25,40 @@ import { ElectronIpcService } from '../../services/electron-ipc.service';
   template: `
     <div class="transcript-panel">
       <div class="segments-container" #scrollContainer>
-        <div
-          *ngFor="let segment of segments; trackBy: trackSegment"
-          class="segment-block"
-          [attr.data-segment-id]="segment.id"
-          [class.highlighted]="isHighlighted(segment.id)"
-        >{{ segment.text }}</div>
+        @for (segment of segments; track segment.id) {
+          <div
+            class="segment-block"
+            [attr.data-segment-id]="segment.id"
+            [class.highlighted]="isHighlighted(segment.id)"
+          >{{ segment.text }}</div>
+        }
 
-        <div *ngIf="isSpeechActive" class="listening-indicator">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-        </div>
+        @if (isSpeechActive) {
+          <div class="listening-indicator">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        }
 
-        <div *ngIf="segments.length === 0 && !isSpeechActive" class="empty-state">
-          <ng-container [ngSwitch]="sttStatus">
-            <span *ngSwitchCase="'loading'">Preparation de la transcription<span class="loading-dots"></span></span>
-            <span *ngSwitchCase="'error'">
-              La transcription n'est pas disponible.
-              <button class="retry-btn" (click)="restartStt()">Reessayer</button>
-            </span>
-            <span *ngSwitchDefault>Les segments transcrits apparaitront ici.</span>
-          </ng-container>
-        </div>
+        @if (segments.length === 0 && !isSpeechActive) {
+          <div class="empty-state">
+            @switch (sttStatus) {
+              @case ('loading') {
+                <span>Preparation de la transcription<span class="loading-dots"></span></span>
+              }
+              @case ('error') {
+                <span>
+                  La transcription n'est pas disponible.
+                  <button class="retry-btn" (click)="restartStt()">Reessayer</button>
+                </span>
+              }
+              @default {
+                <span>Les segments transcrits apparaitront ici.</span>
+              }
+            }
+          </div>
+        }
       </div>
     </div>
   `,
@@ -158,14 +170,11 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, AfterViewChe
   segments: TranscriptSegment[] = [];
   isSpeechActive = false;
   sttStatus: 'loading' | 'ready' | 'error' = 'loading';
+  private readonly session = inject(SessionService);
+  private readonly ipc = inject(ElectronIpcService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private shouldAutoScroll = true;
   private subs: Subscription[] = [];
-
-  constructor(
-    private session: SessionService,
-    private ipc: ElectronIpcService,
-    private cdr: ChangeDetectorRef
-  ) {}
 
   ngOnInit(): void {
     this.subs.push(

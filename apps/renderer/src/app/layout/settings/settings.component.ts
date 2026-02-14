@@ -1,7 +1,38 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+
+interface DownloadedModel {
+  id: string;
+}
+
+interface SourdineSettingsApi {
+  config?: {
+    get: () => Promise<Config>;
+    set: (key: string, value: string | boolean | number | null) => Promise<void>;
+    reset: () => Promise<void>;
+  };
+  model?: {
+    list: () => Promise<{ known: ModelInfo[]; downloaded: DownloadedModel[] }>;
+    download: (modelId: string) => void;
+    onDownloadProgress: (cb: (payload: { modelId: string; progress: number; total: number }) => void) => () => void;
+  };
+  systemAudio?: {
+    isSupported: () => Promise<boolean>;
+    start: () => void;
+    stop: () => void;
+    onLevel: (cb: (level: number) => void) => () => void;
+  };
+}
+
+interface ModelInfo {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  description: string;
+}
 
 interface Config {
   language: string;
@@ -29,106 +60,127 @@ interface Config {
         <h1>Paramètres</h1>
       </div>
 
-      <div class="settings-body" *ngIf="config">
-        <!-- General -->
-        <section class="settings-section">
-          <h2>Général</h2>
+      @if (config) {
+        <div class="settings-body">
+          <!-- General -->
+          <section class="settings-section">
+            <h2>Général</h2>
 
-          <div class="setting-row">
-            <label>Thème</label>
-            <div class="theme-toggle">
-              <button
-                *ngFor="let t of themes"
-                [class.active]="config.theme === t.value"
-                (click)="setTheme(t.value)"
-              >
-                {{ t.label }}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Audio -->
-        <section class="settings-section">
-          <h2>Audio</h2>
-          <div class="setting-row">
-            <label>Microphone par défaut</label>
-            <div class="mic-controls">
-              <select [(ngModel)]="config.audio.defaultDeviceId" (change)="onMicChange()">
-                <option [ngValue]="null">Défaut du système</option>
-                <option *ngFor="let mic of microphones" [ngValue]="mic.deviceId">{{ mic.label }}</option>
-              </select>
-              <button class="test-mic-btn" [class.active]="isTestingMic" (click)="toggleMicTest()">
-                {{ isTestingMic ? 'Stop' : 'Test' }}
-              </button>
-            </div>
-          </div>
-          <div class="mic-test-box" *ngIf="isTestingMic">
-            <div class="vu-meter">
-              <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
-            </div>
-            <p class="mic-status" [class.active]="audioLevel > 0.02">
-              {{ audioLevel > 0.02 ? 'Signal détecté !' : 'Parlez pour tester...' }}
-            </p>
-          </div>
-          <div class="setting-row" *ngIf="systemAudioSupported">
-            <div class="setting-label-group">
-              <label>Capturer l'audio systeme</label>
-              <span class="setting-hint">Transcrit l'audio des applications (réunions, vidéos...)</span>
-            </div>
-            <div class="mic-controls">
-              <label class="toggle-switch">
-                <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" />
-                <span class="toggle-slider"></span>
-              </label>
-              <button
-                class="test-mic-btn"
-                [class.active]="isTestingSystemAudio"
-                [disabled]="!systemAudioEnabled"
-                (click)="toggleSystemAudioTest()"
-              >
-                {{ isTestingSystemAudio ? 'Stop' : 'Test' }}
-              </button>
-            </div>
-          </div>
-          <div class="mic-test-box" *ngIf="isTestingSystemAudio">
-            <div class="vu-meter">
-              <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
-            </div>
-            <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
-              {{ systemAudioLevel > 0.02 ? 'Audio système détecté !' : 'Lancez une vidéo ou de la musique...' }}
-            </p>
-          </div>
-          <div class="setting-row unsupported-hint" *ngIf="!systemAudioSupported">
-            <span class="setting-hint">Capture audio système : nécessite macOS 14.2+</span>
-          </div>
-        </section>
-
-        <!-- Models -->
-        <section class="settings-section">
-          <h2>Modèles</h2>
-
-          <div class="model-list">
-            <div *ngFor="let m of knownModels">
-              <div class="model-row">
-                <div class="model-info">
-                  <span class="model-name">{{ m.name }}</span>
-                  <span class="model-meta">{{ m.size }} · {{ m.description }}</span>
-                </div>
-                <div class="model-status">
-                  <span *ngIf="isModelDownloaded(m.id)" class="status-badge installed">Installé</span>
-                  <span *ngIf="!isModelDownloaded(m.id) && !isModelDownloading(m.id)" class="status-badge missing">Manquant</span>
-                  <span *ngIf="isModelDownloading(m.id)" class="status-badge downloading">{{ getDownloadPercent(m.id) }}%</span>
+            <div class="setting-row">
+              <span class="label-text">Thème</span>
+              <div class="theme-toggle" role="group" aria-label="Thème">
+                @for (t of themes; track t.value) {
                   <button
-                    *ngIf="!isModelDownloaded(m.id) && !isModelDownloading(m.id)"
-                    class="model-action-btn"
-                    (click)="downloadModel(m.id)"
-                  >Télécharger</button>
-                </div>
+                    [class.active]="config.theme === t.value"
+                    (click)="setTheme(t.value)"
+                  >
+                    {{ t.label }}
+                  </button>
+                }
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+
+          <!-- Audio -->
+          <section class="settings-section">
+            <h2>Audio</h2>
+            <div class="setting-row">
+              <label for="default-mic">Microphone par défaut</label>
+              <div class="mic-controls">
+                <select id="default-mic" [(ngModel)]="config.audio.defaultDeviceId" (change)="onMicChange()">
+                  <option [ngValue]="null">Défaut du système</option>
+                  @for (mic of microphones; track mic.deviceId) {
+                    <option [ngValue]="mic.deviceId">{{ mic.label }}</option>
+                  }
+                </select>
+                <button class="test-mic-btn" [class.active]="isTestingMic" (click)="toggleMicTest()">
+                  {{ isTestingMic ? 'Stop' : 'Test' }}
+                </button>
+              </div>
+            </div>
+            @if (isTestingMic) {
+              <div class="mic-test-box">
+                <div class="vu-meter">
+                  <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
+                </div>
+                <p class="mic-status" [class.active]="audioLevel > 0.02">
+                  {{ audioLevel > 0.02 ? 'Signal détecté !' : 'Parlez pour tester...' }}
+                </p>
+              </div>
+            }
+            @if (systemAudioSupported) {
+              <div class="setting-row">
+                <div class="setting-label-group">
+                  <span class="label-text">Capturer l'audio systeme</span>
+                  <span class="setting-hint">Transcrit l'audio des applications (réunions, vidéos...)</span>
+                </div>
+                <div class="mic-controls">
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" aria-label="Capturer l'audio systeme" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <button
+                    class="test-mic-btn"
+                    [class.active]="isTestingSystemAudio"
+                    [disabled]="!systemAudioEnabled"
+                    (click)="toggleSystemAudioTest()"
+                  >
+                    {{ isTestingSystemAudio ? 'Stop' : 'Test' }}
+                  </button>
+                </div>
+              </div>
+            }
+            @if (isTestingSystemAudio) {
+              <div class="mic-test-box">
+                <div class="vu-meter">
+                  <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+                </div>
+                <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
+                  {{ systemAudioLevel > 0.02 ? 'Audio système détecté !' : 'Lancez une vidéo ou de la musique...' }}
+                </p>
+              </div>
+            }
+            @if (!systemAudioSupported) {
+              <div class="setting-row unsupported-hint">
+                <span class="setting-hint">Capture audio système : nécessite macOS 14.2+</span>
+              </div>
+            }
+          </section>
+
+          <!-- Models -->
+          <section class="settings-section">
+            <h2>Modèles</h2>
+
+            <div class="model-list">
+              @for (m of knownModels; track m.id) {
+                <div>
+                  <div class="model-row">
+                    <div class="model-info">
+                      <span class="model-name">{{ m.name }}</span>
+                      <span class="model-meta">{{ m.size }} · {{ m.description }}</span>
+                    </div>
+                    <div class="model-status">
+                      @if (isModelDownloaded(m.id)) {
+                        <span class="status-badge installed">Installé</span>
+                      }
+                      @if (!isModelDownloaded(m.id) && !isModelDownloading(m.id)) {
+                        <span class="status-badge missing">Manquant</span>
+                      }
+                      @if (isModelDownloading(m.id)) {
+                        <span class="status-badge downloading">{{ getDownloadPercent(m.id) }}%</span>
+                      }
+                      @if (!isModelDownloaded(m.id) && !isModelDownloading(m.id)) {
+                        <button
+                          class="model-action-btn"
+                          (click)="downloadModel(m.id)"
+                        >Télécharger</button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
 
         <!-- About -->
         <section class="settings-section">
@@ -137,12 +189,13 @@ interface Config {
           <p class="about-text">100% local, zero cloud</p>
         </section>
 
-        <!-- Reset -->
-        <section class="settings-section">
-          <button class="reset-btn" (click)="resetApp()">Réinitialiser l'application</button>
-          <p class="reset-warning">Supprime toutes vos sessions, transcriptions et modèles téléchargés.</p>
-        </section>
-      </div>
+          <!-- Reset -->
+          <section class="settings-section">
+            <button class="reset-btn" (click)="resetApp()">Réinitialiser l'application</button>
+            <p class="reset-warning">Supprime toutes vos sessions, transcriptions et modèles téléchargés.</p>
+          </section>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -471,7 +524,7 @@ interface Config {
 export class SettingsComponent implements OnInit, OnDestroy {
   config: Config | null = null;
   microphones: MediaDeviceInfo[] = [];
-  knownModels: { id: string; name: string; type: string; size: string; description: string }[] = [];
+  knownModels: ModelInfo[] = [];
   downloadedModelIds: Set<string> = new Set();
   downloadProgress: Record<string, number> = {};
   systemAudioSupported = false;
@@ -495,19 +548,21 @@ export class SettingsComponent implements OnInit, OnDestroy {
     { value: 'system' as const, label: 'Système' },
   ];
 
-  constructor(
-    private router: Router,
-    private cdr: ChangeDetectorRef,
-    private ngZone: NgZone,
-  ) {}
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ngZone = inject(NgZone);
+
+  private get sourdineApi(): SourdineSettingsApi | undefined {
+    return (window as Window & { sourdine?: SourdineSettingsApi }).sourdine;
+  }
 
   async ngOnInit(): Promise<void> {
-    const api = (window as any).sourdine?.config;
+    const api = this.sourdineApi?.config;
     if (api) {
       const cfg = await api.get();
       this.ngZone.run(() => {
         this.config = cfg;
-        this.applyTheme(this.config!.theme);
+        if (this.config) this.applyTheme(this.config.theme);
         this.cdr.markForCheck();
       });
     }
@@ -518,7 +573,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private async checkSystemAudio(): Promise<void> {
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (!api) return;
     try {
       this.systemAudioSupported = await api.isSupported();
@@ -527,7 +582,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
     // Read persisted preference
     if (this.config) {
-      this.systemAudioEnabled = (this.config as any).audio?.systemAudioEnabled ?? false;
+      this.systemAudioEnabled = (this.config as Config & { audio?: { systemAudioEnabled?: boolean } }).audio?.systemAudioEnabled ?? false;
     }
     // Set up level listener
     this.setupSystemAudioLevelListener();
@@ -535,7 +590,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private setupSystemAudioLevelListener(): void {
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (!api?.onLevel) return;
 
     this.systemAudioLevelCleanup = api.onLevel((level: number) => {
@@ -563,7 +618,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private startSystemAudioTest(): void {
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (!api) return;
     api.start();
     this.isTestingSystemAudio = true;
@@ -571,7 +626,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private stopSystemAudioTest(): void {
-    const api = (window as any).sourdine?.systemAudio;
+    const api = this.sourdineApi?.systemAudio;
     if (api) {
       api.stop();
     }
@@ -581,18 +636,18 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private async loadModels(): Promise<void> {
-    const api = (window as any).sourdine?.model;
+    const api = this.sourdineApi?.model;
     if (!api) return;
     const result = await api.list();
     this.ngZone.run(() => {
       this.knownModels = result.known;
-      this.downloadedModelIds = new Set(result.downloaded.map((d: any) => d.id));
+      this.downloadedModelIds = new Set(result.downloaded.map((d: DownloadedModel) => d.id));
       this.cdr.markForCheck();
     });
   }
 
   private setupProgressListener(): void {
-    const api = (window as any).sourdine?.model;
+    const api = this.sourdineApi?.model;
     if (!api) return;
     this.progressCleanup = api.onDownloadProgress(
       (payload: { modelId: string; progress: number; total: number }) => {
@@ -624,7 +679,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   downloadModel(modelId: string): void {
-    const api = (window as any).sourdine?.model;
+    const api = this.sourdineApi?.model;
     if (!api) return;
     this.downloadProgress[modelId] = 0;
     api.download(modelId);
@@ -648,15 +703,15 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   async resetApp(): Promise<void> {
-    const api = (window as any).sourdine?.config;
+    const api = this.sourdineApi?.config;
     if (api) {
       await api.reset();
       this.router.navigate(['/onboarding']);
     }
   }
 
-  async save(key: string, value: any): Promise<void> {
-    const api = (window as any).sourdine?.config;
+  async save(key: string, value: string | boolean | number | null): Promise<void> {
+    const api = this.sourdineApi?.config;
     if (api) {
       await api.set(key, value);
     }
@@ -689,7 +744,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   // ── Mic Test ────────────────────────────────────────────────────────────────
 
   onMicChange(): void {
-    this.save('audio.defaultDeviceId', this.config?.audio.defaultDeviceId);
+    this.save('audio.defaultDeviceId', this.config?.audio?.defaultDeviceId ?? null);
     // If testing, restart with new device
     if (this.isTestingMic) {
       this.stopMicTest();
@@ -747,7 +802,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.mediaStream?.getTracks().forEach((t) => t.stop());
     this.mediaStream = null;
 
-    this.audioContext?.close().catch(() => {});
+    this.audioContext?.close().catch(() => { /* AudioContext close errors are expected */ });
     this.audioContext = null;
 
     this.isTestingMic = false;

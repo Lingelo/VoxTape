@@ -1,4 +1,4 @@
-import { Injectable, NgZone, OnDestroy } from '@angular/core';
+import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import type {
   LlmStatus,
@@ -43,8 +43,10 @@ export class LlmService implements OnDestroy {
   readonly complete$: Observable<LlmCompletePayload> = this._complete$.asObservable();
   readonly error$: Observable<LlmErrorPayload> = this._error$.asObservable();
 
-  constructor(private ngZone: NgZone) {
-    this.api = (window as any).sourdine?.llm;
+  private readonly ngZone = inject(NgZone);
+
+  constructor() {
+    this.api = (window as Window & { sourdine?: { llm?: SourdineApi['llm'] } }).sourdine?.llm;
     if (!this.api) return;
 
     this.cleanups.push(

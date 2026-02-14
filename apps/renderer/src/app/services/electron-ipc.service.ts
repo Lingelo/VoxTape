@@ -1,5 +1,14 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
+
+interface TranscriptSegment {
+  id: string;
+  text: string;
+  startTimeMs: number;
+  endTimeMs: number;
+  isFinal: boolean;
+  language?: string;
+}
 
 /** Type-safe bridge to the preload API exposed via contextBridge */
 interface SourdineApi {
@@ -9,7 +18,7 @@ interface SourdineApi {
     stopRecording(): void;
   };
   transcript: {
-    onSegment(cb: (segment: any) => void): () => void;
+    onSegment(cb: (segment: TranscriptSegment) => void): () => void;
     onPartial(cb: (data: { text: string }) => void): () => void;
   };
   stt: {
@@ -46,7 +55,7 @@ export class ElectronIpcService {
 
   private readonly _sttStatus$ = new BehaviorSubject<'loading' | 'ready' | 'error'>('loading');
   private readonly _speechDetected$ = new BehaviorSubject<boolean>(false);
-  private readonly _segment$ = new Subject<any>();
+  private readonly _segment$ = new Subject<TranscriptSegment>();
   private readonly _partial$ = new Subject<{ text: string }>();
   private readonly _widgetState$ = new BehaviorSubject<{ isRecording: boolean; audioLevel: number }>({
     isRecording: false,
@@ -56,12 +65,14 @@ export class ElectronIpcService {
 
   readonly sttStatus$: Observable<'loading' | 'ready' | 'error'> = this._sttStatus$.asObservable();
   readonly speechDetected$: Observable<boolean> = this._speechDetected$.asObservable();
-  readonly segment$: Observable<any> = this._segment$.asObservable();
+  readonly segment$: Observable<TranscriptSegment> = this._segment$.asObservable();
   readonly partial$: Observable<{ text: string }> = this._partial$.asObservable();
   readonly widgetState$: Observable<{ isRecording: boolean; audioLevel: number }> = this._widgetState$.asObservable();
   readonly systemAudioCapturing$: Observable<boolean> = this._systemAudioCapturing$.asObservable();
 
-  constructor(private ngZone: NgZone) {
+  private readonly ngZone = inject(NgZone);
+
+  constructor() {
     this.api = window.sourdine;
     if (!this.api) {
       console.warn('[ElectronIpcService] window.sourdine not available — running outside Electron?');
