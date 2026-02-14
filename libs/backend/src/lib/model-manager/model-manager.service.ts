@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { existsSync, readdirSync, rmSync, mkdirSync, statSync, renameSync } from 'fs';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import https from 'https';
 import { createWriteStream } from 'fs';
 
@@ -207,7 +207,8 @@ export class ModelManagerService extends EventEmitter {
 
     try {
       mkdirSync(tmpDir, { recursive: true });
-      execSync(`tar -xjf "${archivePath}" -C "${tmpDir}"`, { timeout: 120000 });
+      // Use execFileSync to prevent command injection via archivePath
+      execFileSync('tar', ['-xjf', archivePath, '-C', tmpDir], { timeout: 120000 });
 
       // Find extracted directory and move relevant files
       const entries = readdirSync(tmpDir);

@@ -10,7 +10,7 @@ const config: ForgeConfig = {
     appBundleId: 'com.sourdine.app',
     icon: resolve(process.cwd(), 'assets', 'icon'),
     asar: {
-      unpack: '{**/node_modules/sherpa-onnx-node/**,**/node_modules/better-sqlite3/**,**/node_modules/node-llama-cpp/**,**/*.node}',
+      unpack: '{**/node_modules/sherpa-onnx-node/**,**/node_modules/sherpa-onnx-darwin-*/**,**/node_modules/better-sqlite3/**,**/node_modules/node-llama-cpp/**,**/node_modules/@node-llama-cpp/**,**/*.node,**/*.dylib}',
     },
     ignore: (path: string) => {
       if (!path) return false;

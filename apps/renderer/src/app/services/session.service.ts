@@ -251,6 +251,17 @@ export class SessionService {
     this.resetSession();
   }
 
+  /** Refresh the sessions list from the database */
+  async refreshSessions(): Promise<void> {
+    await this.loadSessionsList();
+  }
+
+  /** Clear all cached state (call after app reset) */
+  clearAllState(): void {
+    this.resetSession();
+    this._sessions$.next([]);
+  }
+
   private parseEnhanceResponse(text: string): EnhancedNote[] {
     // Try to extract JSON from the response
     let jsonStr = text.trim();

@@ -15,12 +15,14 @@ let context: any = null;
 let contextSequence: any = null;
 let abortController: AbortController | null = null;
 
-/** Search for a model file across multiple directories */
+/** Search for a model file.
+ * SOURDINE_MODELS_DIR is set by main.ts to userData/models before spawning workers.
+ * Dev fallback searches project root/models for local development.
+ */
 function findModel(relativePath: string): string | null {
   const dirs = [
-    process.env.SOURDINE_MODELS_DIR,
-    join(__dirname, '..', '..', '..', 'models'),          // dev (project/models)
-    join(__dirname, '..', '..', 'resources', 'models'),   // prod (app.asar.unpacked)
+    process.env.SOURDINE_MODELS_DIR,                      // Primary: ~/Library/Application Support/Sourdine/models
+    join(__dirname, '..', '..', '..', 'models'),          // Dev fallback: project root/models
   ];
   for (const dir of dirs) {
     if (!dir) continue;
@@ -30,15 +32,18 @@ function findModel(relativePath: string): string | null {
   return null;
 }
 
+/** Find a .gguf model file in the llm directory.
+ * SOURDINE_MODELS_DIR is set by main.ts to userData/models before spawning workers.
+ * Dev fallback searches project root/models for local development.
+ */
 function findModelFile(): string | null {
   const fs = require('fs');
   const os = require('os');
   const dirs = [
-    process.env.SOURDINE_MODELS_DIR,
-    join(__dirname, '..', '..', '..', 'models'),
-    join(__dirname, '..', '..', 'resources', 'models'),
+    process.env.SOURDINE_MODELS_DIR,                      // Primary: ~/Library/Application Support/Sourdine/models
+    join(__dirname, '..', '..', '..', 'models'),          // Dev fallback: project root/models
   ];
-  // Fallback: legacy Electron userData path (pre app.setName migration)
+  // Legacy Electron userData path (pre app.setName migration) - models migrated to new location on startup
   if (process.platform === 'darwin') {
     dirs.push(join(os.homedir(), 'Library', 'Application Support', 'Electron', 'models'));
   }
@@ -99,6 +104,8 @@ async function handlePrompt(payload: {
   maxTokens?: number;
   temperature?: number;
 }): Promise<void> {
+  const { requestId, systemPrompt, userPrompt, maxTokens = 2048, temperature = 0.7 } = payload;
+
   // Auto-initialize if not yet loaded
   if (!model) {
     await initialize();
@@ -113,8 +120,6 @@ async function handlePrompt(payload: {
       return;
     }
   }
-
-  const { requestId, systemPrompt, userPrompt, maxTokens = 2048, temperature = 0.7 } = payload;
 
   process.send?.({ type: 'status', data: 'generating' });
   abortController = new AbortController();

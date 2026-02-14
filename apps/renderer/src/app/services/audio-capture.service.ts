@@ -23,6 +23,9 @@ export class AudioCaptureService implements OnDestroy {
   private readonly _audioLevel$ = new BehaviorSubject<number>(0);
   private readonly _systemAudioSupported$ = new BehaviorSubject<boolean>(false);
 
+  /** Stored reference to devicechange listener for cleanup */
+  private readonly deviceChangeHandler = () => this.refreshDevices();
+
   readonly isRecording$: Observable<boolean> = this._isRecording$.asObservable();
   readonly devices$: Observable<AudioDevice[]> = this._devices$.asObservable();
   /** Audio level 0-1, updated ~30fps during recording */
@@ -36,9 +39,7 @@ export class AudioCaptureService implements OnDestroy {
     this.refreshDevices();
     this.checkSystemAudioSupport();
 
-    navigator.mediaDevices?.addEventListener('devicechange', () => {
-      this.refreshDevices();
-    });
+    navigator.mediaDevices?.addEventListener('devicechange', this.deviceChangeHandler);
   }
 
   private async checkSystemAudioSupport(): Promise<void> {
@@ -100,10 +101,10 @@ export class AudioCaptureService implements OnDestroy {
         }
       }
 
-      // Use simple constraints (complex constraints can break on some systems)
+      // Use 'ideal' instead of 'exact' to allow graceful fallback when deviceId is invalid
       const constraints: MediaStreamConstraints = {
         audio: deviceId && deviceId !== 'default'
-          ? { deviceId: { exact: deviceId } }
+          ? { deviceId: { ideal: deviceId } }
           : true,
       };
 
@@ -223,6 +224,7 @@ export class AudioCaptureService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    navigator.mediaDevices?.removeEventListener('devicechange', this.deviceChangeHandler);
     this.cleanup();
   }
 }

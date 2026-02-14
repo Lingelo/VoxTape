@@ -105,6 +105,14 @@ export class DatabaseService implements OnModuleDestroy {
     } catch {
       // Column already exists — expected
     }
+
+    // Performance indexes
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_segments_session_id ON segments(session_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_notes_session_id ON ai_notes(session_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_updated_at ON sessions(updated_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_sessions_folder_id ON sessions(folder_id);
+    `);
   }
 
   // ── Sessions ──────────────────────────────────────────────────────

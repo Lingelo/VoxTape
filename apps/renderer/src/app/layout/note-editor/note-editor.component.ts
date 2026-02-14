@@ -211,6 +211,9 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   private editor: Editor | null = null;
   private subs: Subscription[] = [];
   private updatingFromExternal = false;
+  /** Stored event listener references for cleanup */
+  private loupeClickHandler: ((e: Event) => void) | null = null;
+  private inputHandler: ((e: Event) => void) | null = null;
 
   ngOnInit(): void {
     this.subs.push(
@@ -274,7 +277,7 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     // Handle loupe clicks via event delegation
-    this.editorElRef.nativeElement.addEventListener('click', (e: Event) => {
+    this.loupeClickHandler = (e: Event) => {
       const target = e.target as HTMLElement;
       if (target.classList.contains('ai-block-loupe')) {
         const block = target.closest('.ai-block');
@@ -285,10 +288,11 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }
       }
-    });
+    };
+    this.editorElRef.nativeElement.addEventListener('click', this.loupeClickHandler);
 
     // Mark AI blocks as user-edited when modified
-    this.editorElRef.nativeElement.addEventListener('input', (e: Event) => {
+    this.inputHandler = (e: Event) => {
       const target = e.target as HTMLElement;
       const block = target.closest?.('.ai-block');
       if (block && !block.classList.contains('ai-block--edited')) {
@@ -305,10 +309,18 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }
       }
-    });
+    };
+    this.editorElRef.nativeElement.addEventListener('input', this.inputHandler);
   }
 
   ngOnDestroy(): void {
+    // Remove event listeners to prevent memory leaks
+    if (this.loupeClickHandler) {
+      this.editorElRef?.nativeElement?.removeEventListener('click', this.loupeClickHandler);
+    }
+    if (this.inputHandler) {
+      this.editorElRef?.nativeElement?.removeEventListener('input', this.inputHandler);
+    }
     this.subs.forEach((s) => s.unsubscribe());
     this.editor?.destroy();
   }

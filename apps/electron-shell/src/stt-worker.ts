@@ -22,12 +22,14 @@ interface ChannelState {
 
 const channels: Record<string, ChannelState> = {};
 
-/** Search for a model file across multiple directories */
+/** Search for a model file.
+ * SOURDINE_MODELS_DIR is set by main.ts to userData/models before spawning workers.
+ * Dev fallback searches project root/models for local development.
+ */
 function findModel(relativePath: string): string | null {
   const dirs = [
-    process.env.SOURDINE_MODELS_DIR,
-    join(__dirname, '..', '..', '..', 'models'),          // dev (project/models)
-    join(__dirname, '..', '..', 'resources', 'models'),   // prod (app.asar.unpacked)
+    process.env.SOURDINE_MODELS_DIR,                      // Primary: ~/Library/Application Support/Sourdine/models
+    join(__dirname, '..', '..', '..', 'models'),          // Dev fallback: project root/models
   ];
   for (const dir of dirs) {
     if (!dir) continue;

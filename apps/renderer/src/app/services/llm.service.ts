@@ -36,12 +36,15 @@ export class LlmService implements OnDestroy {
   private readonly _streamedText$ = new BehaviorSubject<string>('');
   private readonly _complete$ = new Subject<LlmCompletePayload>();
   private readonly _error$ = new Subject<LlmErrorPayload>();
+  private readonly _initError$ = new BehaviorSubject<string | null>(null);
 
   readonly status$: Observable<LlmStatus> = this._status$.asObservable();
   readonly token$: Observable<LlmTokenPayload> = this._token$.asObservable();
   readonly streamedText$: Observable<string> = this._streamedText$.asObservable();
   readonly complete$: Observable<LlmCompletePayload> = this._complete$.asObservable();
   readonly error$: Observable<LlmErrorPayload> = this._error$.asObservable();
+  /** Emits initialization error message, null if no error */
+  readonly initError$: Observable<string | null> = this._initError$.asObservable();
 
   private readonly ngZone = inject(NgZone);
 
@@ -65,7 +68,14 @@ export class LlmService implements OnDestroy {
         this.ngZone.run(() => this._complete$.next(payload));
       }),
       this.api.onError((payload) => {
-        this.ngZone.run(() => this._error$.next(payload));
+        this.ngZone.run(() => {
+          // Handle initialization errors specially
+          if (payload.requestId === '__init__') {
+            this._initError$.next(payload.error);
+          } else {
+            this._error$.next(payload);
+          }
+        });
       })
     );
   }
@@ -75,7 +85,14 @@ export class LlmService implements OnDestroy {
   }
 
   initialize(): void {
+    // Clear any previous init error before attempting
+    this._initError$.next(null);
     this.api?.initialize();
+  }
+
+  /** Get current initialization error, if any */
+  get initError(): string | null {
+    return this._initError$.value;
   }
 
   enhance(notes: string, transcript: string): string {
