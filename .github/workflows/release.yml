@@ -32,9 +32,6 @@ jobs:
       - name: Build native audio capture module
         run: npm run build:native
 
-      - name: Download STT models
-        run: npm run download-model
-
       - name: Build and package (arm64)
         run: npm run make
         env:
