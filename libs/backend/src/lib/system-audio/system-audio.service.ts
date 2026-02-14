@@ -1,11 +1,14 @@
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { EventEmitter } from 'events';
 import { AudioService } from '../audio/audio.service.js';
 
 @Injectable()
-export class SystemAudioService implements OnModuleDestroy {
+export class SystemAudioService extends EventEmitter implements OnModuleDestroy {
   private capturing = false;
 
-  constructor(@Inject(AudioService) private readonly audioService: AudioService) {}
+  constructor(@Inject(AudioService) private readonly audioService: AudioService) {
+    super();
+  }
 
   get isCapturing(): boolean {
     return this.capturing;
@@ -41,6 +44,7 @@ export class SystemAudioService implements OnModuleDestroy {
     console.log(`[SystemAudio] SCK permission granted: ${sckGranted}`);
 
     const audioService = this.audioService;
+    const self = this;
     let chunkCount = 0;
     try {
       nativeAudio.startCapture((err: Error | null, chunk: Buffer) => {
@@ -51,10 +55,18 @@ export class SystemAudioService implements OnModuleDestroy {
           chunk.byteOffset,
           chunk.length / 2,
         );
-        if (chunkCount % 100 === 1) {
-          const maxAbs = samples.reduce((m, s) => Math.max(m, Math.abs(s)), 0);
-          console.log(`[SystemAudio] chunk #${chunkCount}: ${samples.length} samples, peak=${maxAbs}`);
+
+        // Calculate RMS level and emit every 5 chunks (~150ms)
+        if (chunkCount % 5 === 0) {
+          let sum = 0;
+          for (let i = 0; i < samples.length; i++) {
+            sum += samples[i] * samples[i];
+          }
+          const rms = Math.sqrt(sum / samples.length);
+          const level = Math.min(1, rms / 10000); // Normalize to 0-1
+          self.emit('level', level);
         }
+
         // Route to AudioService mixer instead of directly to STT
         audioService.handleSystemAudioChunk(samples);
       });
@@ -76,6 +88,7 @@ export class SystemAudioService implements OnModuleDestroy {
     }
 
     this.capturing = false;
+    this.emit('level', 0);
     console.log('[SystemAudio] Capture stopped');
   }
 

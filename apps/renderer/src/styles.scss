@@ -19,6 +19,17 @@
   --bg-pill:        #2a2a2e;
   --selection:      rgba(74, 222, 128, 0.15);
 
+  /* ── Design System Tokens ─────────────────────────────────────────── */
+  --radius-sm:    4px;   /* badges, tags */
+  --radius-md:    8px;   /* boutons, inputs, selects */
+  --radius-lg:    12px;  /* conteneurs */
+  --radius-xl:    16px;  /* cards, pills */
+
+  /* Teintes sémantiques */
+  --accent-primary-tint: rgba(74, 222, 128, 0.1);
+  --accent-warning-tint: rgba(245, 158, 11, 0.1);
+  --accent-error-tint:   rgba(239, 68, 68, 0.1);
+
   --font-editor:    'Inter', -apple-system, system-ui, sans-serif;
   --font-transcript:'Inter', sans-serif;
   --font-timestamp: 'Inter', monospace;
@@ -42,6 +53,11 @@
   --accent-generate:#7a8c32;
   --bg-pill:        #e8e8eb;
   --selection:      rgba(34, 197, 94, 0.15);
+
+  /* Teintes sémantiques (light mode) */
+  --accent-primary-tint: rgba(34, 197, 94, 0.1);
+  --accent-warning-tint: rgba(245, 158, 11, 0.1);
+  --accent-error-tint:   rgba(239, 68, 68, 0.1);
 
   color-scheme: light;
 }

@@ -88,18 +88,29 @@ export class AudioCaptureService implements OnDestroy {
     }
 
     try {
+      // Request microphone permission on macOS first
+      const mediaApi = (window as any).sourdine?.media;
+      if (mediaApi) {
+        const granted = await mediaApi.requestMicAccess();
+        if (!granted) {
+          throw new Error('Microphone access denied');
+        }
+      }
+
+      // Use simple constraints (complex constraints can break on some systems)
       const constraints: MediaStreamConstraints = {
-        audio: {
-          channelCount: 1,
-          sampleRate: { ideal: 16000 },
-          echoCancellation: true,
-          noiseSuppression: true,
-          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
-        },
+        audio: deviceId && deviceId !== 'default'
+          ? { deviceId: { exact: deviceId } }
+          : true,
       };
 
       this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      this.audioContext = new AudioContext({ sampleRate: 48000 });
+      this.audioContext = new AudioContext();
+
+      // Force resume in case it's suspended
+      if (this.audioContext.state !== 'running') {
+        await this.audioContext.resume();
+      }
 
       await this.audioContext.audioWorklet.addModule('assets/worklets/pcm-capture.worklet.js');
 
@@ -113,6 +124,13 @@ export class AudioCaptureService implements OnDestroy {
 
       micSource.connect(this.analyser);
       micSource.connect(this.workletNode);
+
+      // Some browsers need connection to destination to activate audio graph
+      // Use a gain of 0 to avoid feedback
+      const silentGain = this.audioContext.createGain();
+      silentGain.gain.value = 0;
+      this.analyser.connect(silentGain);
+      silentGain.connect(this.audioContext.destination);
 
       // Forward PCM chunks to Electron main process via IPC
       this.workletNode.port.onmessage = (event) => {
@@ -172,6 +190,7 @@ export class AudioCaptureService implements OnDestroy {
 
       // Apply a slight curve for better visual response
       const level = Math.min(1, rms * 2.5);
+
       this.ngZone.run(() => this._audioLevel$.next(level));
 
       this.levelAnimationId = requestAnimationFrame(poll);

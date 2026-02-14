@@ -466,8 +466,9 @@ function setupIpc(): void {
     configService.reset();
     databaseService.clearAll();
     // Delete all downloaded models
+    const modelsPath = process.env.SOURDINE_MODELS_DIR || join(app.getPath('userData'), 'models');
     for (const subdir of ['llm', 'vad', 'stt']) {
-      const dir = join(modelsDir, subdir);
+      const dir = join(modelsPath, subdir);
       if (existsSync(dir)) {
         for (const file of readdirSync(dir)) {
           rmSync(join(dir, file), { force: true });
@@ -553,6 +554,11 @@ function setupIpc(): void {
 
   ipcMain.handle('system-audio:supported', () => {
     return systemAudioService.isSupported();
+  });
+
+  // Forward system audio level to renderer
+  systemAudioService.on('level', (level: number) => {
+    mainWindow?.webContents.send('system-audio:level', level);
   });
 }
 

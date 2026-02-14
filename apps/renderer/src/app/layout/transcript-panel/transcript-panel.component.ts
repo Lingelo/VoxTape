@@ -126,7 +126,7 @@ import { ElectronIpcService } from '../../services/electron-ipc.service';
       margin-top: 4px;
       padding: 6px 16px;
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       background: none;
       color: var(--text-primary);
       font-size: 12px;

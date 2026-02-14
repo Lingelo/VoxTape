@@ -161,7 +161,7 @@ interface SessionGroup {
       gap: 8px;
       padding: 8px 12px;
       margin: 0 8px 8px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: 1px dashed var(--border-subtle);
       background: none;
       color: var(--text-secondary);
@@ -180,7 +180,7 @@ interface SessionGroup {
       gap: 8px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 6px 10px;
       margin-bottom: 12px;
     }
@@ -220,7 +220,7 @@ interface SessionGroup {
       flex-direction: column;
       gap: 2px;
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       transition: background 0.15s;
     }
@@ -314,7 +314,7 @@ interface SessionGroup {
       align-items: center;
       gap: 10px;
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       color: var(--text-secondary);
       cursor: pointer;
       font-size: 14px;

@@ -80,8 +80,8 @@ import type { LlmStatus } from '@sourdine/shared-types';
             (close)="closeChat.emit()"
           ></sdn-chat-panel>
 
-          <!-- Input bar (always visible, hidden only when chat is open since chat has its own) -->
-          <div class="pill-input" *ngIf="!chatOpen">
+          <!-- Input bar (hidden when chat or transcript is open) -->
+          <div class="pill-input" *ngIf="!chatOpen && !transcriptOpen">
             <input
               class="chat-input"
               type="text"
@@ -117,8 +117,8 @@ import type { LlmStatus } from '@sourdine/shared-types';
       padding: 10px 24px;
       border-radius: 24px;
       border: none;
-      background: var(--accent-generate, #6b7a2e);
-      color: #fff;
+      background: var(--accent-primary);
+      color: #1a1a1a;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
@@ -126,7 +126,7 @@ import type { LlmStatus } from '@sourdine/shared-types';
       white-space: nowrap;
     }
     .generate-btn:hover:not(:disabled) {
-      filter: brightness(1.15);
+      filter: brightness(1.1);
       transform: translateY(-1px);
     }
     .generate-btn:disabled {
@@ -134,7 +134,8 @@ import type { LlmStatus } from '@sourdine/shared-types';
       cursor: not-allowed;
     }
     .generate-btn.processing {
-      background: var(--accent-generate, #6b7a2e);
+      background: var(--accent-primary);
+      opacity: 0.8;
     }
 
     /* ── Bottom bar (two pills side by side) ── */
@@ -264,7 +265,7 @@ import type { LlmStatus } from '@sourdine/shared-types';
       height: 24px;
       cursor: pointer;
       padding: 2px 4px;
-      border-radius: 6px;
+      border-radius: 8px;
       transition: background 0.15s;
     }
     .vu-bars:hover {
@@ -301,7 +302,7 @@ import type { LlmStatus } from '@sourdine/shared-types';
     .stop-btn {
       width: 24px;
       height: 24px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: none;
       background: rgba(255, 255, 255, 0.08);
       cursor: pointer;
@@ -381,6 +382,9 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Load saved device from config
+    this.loadSavedDevice();
+
     this.subs.push(
       this.audioCapture.devices$.subscribe((d) => {
         if (!this.selectedDeviceId && d.length > 0) {
@@ -398,6 +402,20 @@ export class ControlBarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subs.forEach((s) => s.unsubscribe());
+  }
+
+  private async loadSavedDevice(): Promise<void> {
+    try {
+      const api = (window as any).sourdine?.config;
+      if (api) {
+        const cfg = await api.get();
+        if (cfg?.audio?.defaultDeviceId) {
+          this.selectedDeviceId = cfg.audio.defaultDeviceId;
+        }
+      }
+    } catch {
+      // Ignore config errors
+    }
   }
 
   get showGenerateBtn(): boolean {

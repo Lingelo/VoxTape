@@ -83,9 +83,8 @@ interface ChatMessage {
           (click)="onSend()"
           [disabled]="!input.trim() || isGenerating"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
           </svg>
         </button>
       </div>
@@ -183,7 +182,7 @@ interface ChatMessage {
       align-items: center;
       gap: 10px;
       padding: 8px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       transition: background 0.1s;
     }
