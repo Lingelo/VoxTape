@@ -130,6 +130,18 @@ Le workflow va :
 2. Creer le DMG
 3. Publier une release GitHub avec les artefacts
 
+## Installation (Utilisateurs)
+
+1. Telecharger le DMG depuis [Releases](https://github.com/Lingelo/Sourdine/releases)
+2. Ouvrir le DMG et glisser Sourdine dans Applications
+3. **Important** — L'app n'est pas signee (pas de certificat Apple Developer). macOS va afficher une erreur "app endommagee". Executez cette commande pour contourner :
+
+   ```bash
+   xattr -cr /Applications/Sourdine.app
+   ```
+
+4. Lancer Sourdine — L'assistant d'onboarding vous guidera pour telecharger les modeles IA (~5 Go)
+
 ## Contribuer
 
 Les contributions sont bienvenues ! N'hesitez pas a ouvrir une issue ou une PR.
