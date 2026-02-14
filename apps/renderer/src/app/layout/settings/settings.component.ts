@@ -58,6 +58,19 @@ interface Config {
               <option *ngFor="let mic of microphones" [ngValue]="mic.deviceId">{{ mic.label }}</option>
             </select>
           </div>
+          <div class="setting-row" *ngIf="systemAudioSupported">
+            <div class="setting-label-group">
+              <label>Capturer l'audio systeme</label>
+              <span class="setting-hint">Transcrit l'audio des applications (reunions, videos...)</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="save('audio.systemAudioEnabled', systemAudioEnabled)" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="setting-row unsupported-hint" *ngIf="!systemAudioSupported">
+            <span class="setting-hint">Capture audio systeme : necessite macOS 14.2+</span>
+          </div>
         </section>
 
         <!-- Models -->
@@ -80,39 +93,6 @@ interface Config {
                     class="model-action-btn"
                     (click)="downloadModel(m.id)"
                   >Télécharger</button>
-                </div>
-              </div>
-              <!-- LLM params toggle -->
-              <button
-                *ngIf="m.type === 'llm' && isModelDownloaded(m.id)"
-                class="model-params-toggle"
-                (click)="showLlmParams = !showLlmParams"
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" [class.expanded]="showLlmParams">
-                  <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-                Parametres avances
-              </button>
-              <div class="model-params" *ngIf="m.type === 'llm' && isModelDownloaded(m.id) && showLlmParams">
-                <div class="setting-row">
-                  <label>Taille du contexte</label>
-                  <select [(ngModel)]="config.llm.contextSize" (change)="save('llm.contextSize', config.llm.contextSize)">
-                    <option [ngValue]="2048">2048</option>
-                    <option [ngValue]="4096">4096</option>
-                    <option [ngValue]="8192">8192</option>
-                  </select>
-                </div>
-                <div class="setting-row">
-                  <label>Température</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    [(ngModel)]="config.llm.temperature"
-                    (change)="save('llm.temperature', config.llm.temperature)"
-                  />
-                  <span class="value-label">{{ config.llm.temperature }}</span>
                 </div>
               </div>
             </div>
@@ -219,18 +199,6 @@ interface Config {
       outline: none;
     }
 
-    .setting-row input[type="range"] {
-      flex: 1;
-      max-width: 200px;
-    }
-
-    .value-label {
-      font-size: 13px;
-      color: var(--text-secondary);
-      min-width: 30px;
-      text-align: right;
-    }
-
     .theme-toggle {
       display: flex;
       background: var(--bg-surface);
@@ -330,30 +298,58 @@ interface Config {
     .model-action-btn:hover {
       background: rgba(99, 102, 241, 0.1);
     }
-    .model-params-toggle {
+    .setting-label-group {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      background: none;
-      border: none;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .setting-hint {
+      font-size: 11px;
       color: var(--text-secondary);
-      font-size: 12px;
+      opacity: 0.7;
+    }
+    .unsupported-hint {
+      justify-content: flex-start;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
       cursor: pointer;
-      padding: 4px 0;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--border-subtle);
+      border-radius: 22px;
+      transition: background 0.2s;
     }
-    .model-params-toggle:hover {
-      color: var(--text-primary);
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
     }
-    .model-params-toggle svg {
-      transition: transform 0.15s;
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--accent-primary);
     }
-    .model-params-toggle svg.expanded {
-      transform: rotate(90deg);
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
     }
-    .model-params {
-      padding: 8px 0 12px 16px;
-      margin-bottom: 8px;
-    }
+
     .reset-btn {
       padding: 8px 20px;
       border: 1px solid #ef4444;
@@ -375,7 +371,8 @@ export class SettingsComponent implements OnInit {
   knownModels: { id: string; name: string; type: string; size: string; description: string }[] = [];
   downloadedModelIds: Set<string> = new Set();
   downloadProgress: Record<string, number> = {};
-  showLlmParams = false;
+  systemAudioSupported = false;
+  systemAudioEnabled = false;
   private progressCleanup: (() => void) | null = null;
 
   themes = [
@@ -403,6 +400,22 @@ export class SettingsComponent implements OnInit {
     this.loadMicrophones();
     this.loadModels();
     this.setupProgressListener();
+    this.checkSystemAudio();
+  }
+
+  private async checkSystemAudio(): Promise<void> {
+    const api = (window as any).sourdine?.systemAudio;
+    if (!api) return;
+    try {
+      this.systemAudioSupported = await api.isSupported();
+    } catch {
+      this.systemAudioSupported = false;
+    }
+    // Read persisted preference
+    if (this.config) {
+      this.systemAudioEnabled = (this.config as any).audio?.systemAudioEnabled ?? false;
+    }
+    this.cdr.markForCheck();
   }
 
   private async loadModels(): Promise<void> {

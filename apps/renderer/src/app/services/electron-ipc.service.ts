@@ -26,6 +26,12 @@ interface SourdineApi {
     requestMicAccess(): Promise<boolean>;
     requestScreenAccess(): Promise<boolean>;
   };
+  systemAudio: {
+    start(): void;
+    stop(): void;
+    isSupported(): Promise<boolean>;
+    onStatus(cb: (capturing: boolean) => void): () => void;
+  };
 }
 
 declare global {
@@ -46,12 +52,14 @@ export class ElectronIpcService {
     isRecording: false,
     audioLevel: 0,
   });
+  private readonly _systemAudioCapturing$ = new BehaviorSubject<boolean>(false);
 
   readonly sttStatus$: Observable<'loading' | 'ready' | 'error'> = this._sttStatus$.asObservable();
   readonly speechDetected$: Observable<boolean> = this._speechDetected$.asObservable();
   readonly segment$: Observable<any> = this._segment$.asObservable();
   readonly partial$: Observable<{ text: string }> = this._partial$.asObservable();
   readonly widgetState$: Observable<{ isRecording: boolean; audioLevel: number }> = this._widgetState$.asObservable();
+  readonly systemAudioCapturing$: Observable<boolean> = this._systemAudioCapturing$.asObservable();
 
   constructor(private ngZone: NgZone) {
     this.api = window.sourdine;
@@ -81,6 +89,10 @@ export class ElectronIpcService {
 
     this.api.widget.onState((state) => {
       this.ngZone.run(() => this._widgetState$.next(state));
+    });
+
+    this.api.systemAudio.onStatus((capturing) => {
+      this.ngZone.run(() => this._systemAudioCapturing$.next(capturing));
     });
   }
 
@@ -116,4 +128,15 @@ export class ElectronIpcService {
     return this.api?.media.requestScreenAccess() ?? false;
   }
 
+  systemAudioStart(): void {
+    this.api?.systemAudio.start();
+  }
+
+  systemAudioStop(): void {
+    this.api?.systemAudio.stop();
+  }
+
+  async systemAudioIsSupported(): Promise<boolean> {
+    return this.api?.systemAudio.isSupported() ?? false;
+  }
 }

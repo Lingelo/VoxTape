@@ -2,17 +2,25 @@
  * STT Worker — runs as a child process with ELECTRON_RUN_AS_NODE=1
  *
  * Loads Silero VAD + Parakeet TDT v3 via sherpa-onnx-node (native bindings).
- * Receives audio chunks from the main process, runs VAD, and transcribes
- * complete utterances.
+ * Supports two independent audio channels (mic + system), each with its own
+ * VAD instance, sharing a single recognizer. This prevents audio source
+ * interleaving from confusing the VAD speech detection.
  */
 
 import { join } from 'path';
 import { existsSync } from 'fs';
 
 let recognizer: any = null;
-let vad: any = null;
-let isRecording = false;
-let segmentCounter = 0;
+
+interface ChannelState {
+  vad: any;
+  isRecording: boolean;
+  wasSpeaking: boolean;
+  segmentCounter: number;
+  source: 'mic' | 'system';
+}
+
+const channels: Record<string, ChannelState> = {};
 
 /** Search for a model file across multiple directories */
 function findModel(relativePath: string): string | null {
@@ -27,6 +35,26 @@ function findModel(relativePath: string): string | null {
     if (existsSync(full)) return full;
   }
   return null;
+}
+
+function createVad(sherpaOnnx: any, vadModelPath: string): any {
+  return new sherpaOnnx.Vad(
+    {
+      sileroVad: {
+        model: vadModelPath,
+        threshold: 0.5,
+        minSilenceDuration: 0.3,
+        minSpeechDuration: 0.25,
+        windowSize: 512,
+        maxSpeechDuration: 15,
+      },
+      sampleRate: 16000,
+      numThreads: 1,
+      provider: 'cpu',
+      debug: 0,
+    },
+    30 // bufferSizeInSeconds
+  );
 }
 
 async function initialize(): Promise<void> {
@@ -55,28 +83,30 @@ async function initialize(): Promise<void> {
     }
     console.log('[stt-worker] STT model:', parakeetEncoder);
 
-    // Initialize Silero VAD (native)
-    console.log('[stt-worker] Creating VAD...');
-    vad = new sherpaOnnx.Vad(
-      {
-        sileroVad: {
-          model: vadModelPath,
-          threshold: 0.5,
-          minSilenceDuration: 0.3,
-          minSpeechDuration: 0.25,
-          windowSize: 512,
-          maxSpeechDuration: 15,
-        },
-        sampleRate: 16000,
-        numThreads: 1,
-        provider: 'cpu',
-        debug: 0,
-      },
-      30 // bufferSizeInSeconds
-    );
-    console.log('[stt-worker] VAD created');
+    // Create two VAD instances — one per audio source
+    console.log('[stt-worker] Creating VAD (mic)...');
+    const micVad = createVad(sherpaOnnx, vadModelPath);
+    console.log('[stt-worker] Creating VAD (system)...');
+    const sysVad = createVad(sherpaOnnx, vadModelPath);
+    console.log('[stt-worker] VADs created');
 
-    // Create offline recognizer (native)
+    channels['mic'] = {
+      vad: micVad,
+      isRecording: false,
+      wasSpeaking: false,
+      segmentCounter: 0,
+      source: 'mic',
+    };
+
+    channels['system'] = {
+      vad: sysVad,
+      isRecording: false,
+      wasSpeaking: false,
+      segmentCounter: 0,
+      source: 'system',
+    };
+
+    // Single shared recognizer (the expensive part: ~640MB model)
     console.log('[stt-worker] Creating offline recognizer...');
     recognizer = new sherpaOnnx.OfflineRecognizer({
       featConfig: {
@@ -107,10 +137,9 @@ async function initialize(): Promise<void> {
   }
 }
 
-let wasSpeaking = false;
-
-function processAudioChunk(samples: number[]): void {
-  if (!isRecording || !recognizer || !vad) return;
+function processAudioChunk(samples: number[], channel: string): void {
+  const ch = channels[channel];
+  if (!ch || !ch.isRecording || !recognizer || !ch.vad) return;
 
   // Convert Int16 -> Float32 for VAD and recognizer
   const float32Samples = new Float32Array(samples.length);
@@ -118,33 +147,32 @@ function processAudioChunk(samples: number[]): void {
     float32Samples[i] = samples[i] / 32768.0;
   }
 
-  // Feed audio to Silero VAD
-  vad.acceptWaveform(float32Samples);
+  // Feed audio to this channel's VAD
+  ch.vad.acceptWaveform(float32Samples);
 
-  const isSpeaking = vad.isDetected();
+  const isSpeaking = ch.vad.isDetected();
 
-  if (isSpeaking && !wasSpeaking) {
-    process.send?.({ type: 'speech-detected', data: true });
-    wasSpeaking = true;
-  } else if (!isSpeaking && wasSpeaking) {
-    process.send?.({ type: 'speech-detected', data: false });
-    wasSpeaking = false;
+  if (isSpeaking && !ch.wasSpeaking) {
+    process.send?.({ type: 'speech-detected', data: true, channel });
+    ch.wasSpeaking = true;
+  } else if (!isSpeaking && ch.wasSpeaking) {
+    process.send?.({ type: 'speech-detected', data: false, channel });
+    ch.wasSpeaking = false;
   }
 
   // Process completed speech segments from VAD
-  while (!vad.isEmpty()) {
-    const segment = vad.front(false);
-    vad.pop();
-    transcribeSegment(segment.samples, segment.start);
+  while (!ch.vad.isEmpty()) {
+    const segment = ch.vad.front(false);
+    ch.vad.pop();
+    transcribeSegment(segment.samples, segment.start, ch);
   }
 }
 
-function transcribeSegment(samples: Float32Array, startSample: number): void {
+function transcribeSegment(samples: Float32Array, startSample: number, ch: ChannelState): void {
   if (!recognizer || samples.length === 0) return;
 
   try {
     const stream = recognizer.createStream();
-    // sherpa-onnx-node uses { samples, sampleRate } object
     stream.acceptWaveform({ samples, sampleRate: 16000 });
     recognizer.decode(stream);
 
@@ -156,15 +184,16 @@ function transcribeSegment(samples: Float32Array, startSample: number): void {
       const startTimeMs = (startSample / 16000) * 1000;
       const endTimeMs = startTimeMs + durationMs;
 
-      segmentCounter++;
+      ch.segmentCounter++;
       process.send?.({
         type: 'segment',
         data: {
-          id: `seg-${segmentCounter}`,
+          id: `seg-${ch.source}-${ch.segmentCounter}`,
           text,
           startTimeMs: Math.max(0, startTimeMs),
           endTimeMs,
           isFinal: true,
+          source: ch.source,
         },
       });
     }
@@ -173,35 +202,66 @@ function transcribeSegment(samples: Float32Array, startSample: number): void {
   }
 }
 
+function startChannel(channel: string): void {
+  const ch = channels[channel];
+  if (!ch) return;
+  ch.isRecording = true;
+  ch.wasSpeaking = false;
+  ch.segmentCounter = 0;
+  ch.vad?.reset();
+}
+
+function stopChannel(channel: string): void {
+  const ch = channels[channel];
+  if (!ch) return;
+
+  if (ch.vad) {
+    ch.vad.flush();
+    while (!ch.vad.isEmpty()) {
+      const segment = ch.vad.front(false);
+      ch.vad.pop();
+      transcribeSegment(segment.samples, segment.start, ch);
+    }
+  }
+  ch.isRecording = false;
+  ch.wasSpeaking = false;
+  process.send?.({ type: 'speech-detected', data: false, channel });
+}
+
 // Message handler
 process.on('message', (msg: any) => {
   switch (msg.type) {
-    case 'audio-chunk':
-      processAudioChunk(msg.data);
+    case 'audio-chunk': {
+      const channel = msg.channel || 'mic';
+      processAudioChunk(msg.data, channel);
       break;
-    case 'start-recording':
-      isRecording = true;
-      wasSpeaking = false;
-      segmentCounter = 0;
-      vad?.reset();
-      break;
-    case 'stop-recording':
-      if (vad) {
-        vad.flush();
-        while (!vad.isEmpty()) {
-          const segment = vad.front(false);
-          vad.pop();
-          transcribeSegment(segment.samples, segment.start);
-        }
+    }
+    case 'start-recording': {
+      // Start all channels (or specific one if specified)
+      const ch = msg.channel;
+      if (ch) {
+        startChannel(ch);
+      } else {
+        startChannel('mic');
+        startChannel('system');
       }
-      isRecording = false;
-      wasSpeaking = false;
-      process.send?.({ type: 'speech-detected', data: false });
       break;
+    }
+    case 'stop-recording': {
+      const ch = msg.channel;
+      if (ch) {
+        stopChannel(ch);
+      } else {
+        stopChannel('mic');
+        stopChannel('system');
+      }
+      break;
+    }
     case 'shutdown':
-      isRecording = false;
+      for (const ch of Object.values(channels)) {
+        ch.isRecording = false;
+      }
       recognizer = null;
-      vad = null;
       process.exit(0);
       break;
   }

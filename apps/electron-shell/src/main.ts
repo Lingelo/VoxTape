@@ -23,6 +23,7 @@ import {
   ExportService,
   ConfigService,
   ModelManagerService,
+  SystemAudioService,
 } from '@sourdine/backend';
 import type { LlmPromptPayload } from '@sourdine/shared-types';
 
@@ -38,6 +39,7 @@ let databaseService: DatabaseService;
 let exportService: ExportService;
 let configService: ConfigService;
 let modelManager: ModelManagerService;
+let systemAudioService: SystemAudioService;
 let isRecording = false;
 
 app.setName('Sourdine');
@@ -60,6 +62,7 @@ async function bootstrapNest(): Promise<void> {
   exportService = appContext.get(ExportService);
   configService = appContext.get(ConfigService);
   modelManager = appContext.get(ModelManagerService);
+  systemAudioService = appContext.get(SystemAudioService);
 
   // Set worker paths relative to this bundle
   sttService.setWorkerPath(join(__dirname, 'stt-worker.js'));
@@ -170,17 +173,9 @@ function createMainWindow(): void {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
-  mainWindow.on('blur', () => {
-    if (isRecording && widgetWindow && !widgetWindow.isDestroyed()) {
-      widgetWindow.showInactive();
-    }
-  });
-
-  mainWindow.on('focus', () => {
-    if (widgetWindow && !widgetWindow.isDestroyed()) {
-      widgetWindow.hide();
-    }
-  });
+  // Widget disabled — keep handlers as no-ops for now
+  mainWindow.on('blur', () => {});
+  mainWindow.on('focus', () => {});
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -189,8 +184,8 @@ function createMainWindow(): void {
 
 function createWidgetWindow(): void {
   widgetWindow = new BrowserWindow({
-    width: 120,
-    height: 44,
+    width: 140,
+    height: 42,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -281,6 +276,10 @@ function stopRecording(): void {
   isRecording = false;
 
   audioService.stopRecording();
+  // Also stop system audio capture if active
+  if (systemAudioService?.isCapturing) {
+    systemAudioService.stop();
+  }
   broadcastWidgetState();
   updateTrayMenu();
 
@@ -540,6 +539,21 @@ function setupIpc(): void {
     await sttService.restart();
     return { ok: true };
   });
+
+  // ── System Audio IPC ──────────────────────────────────────────────
+  ipcMain.on('system-audio:start', () => {
+    systemAudioService.start();
+    mainWindow?.webContents.send('system-audio:status', systemAudioService.isCapturing);
+  });
+
+  ipcMain.on('system-audio:stop', () => {
+    systemAudioService.stop();
+    mainWindow?.webContents.send('system-audio:status', systemAudioService.isCapturing);
+  });
+
+  ipcMain.handle('system-audio:supported', () => {
+    return systemAudioService.isSupported();
+  });
 }
 
 // ── App Lifecycle ──────────────────────────────────────────────────────────
@@ -562,7 +576,7 @@ app.whenReady().then(async () => {
 
   // Create windows
   createMainWindow();
-  createWidgetWindow();
+  // Widget disabled: createWidgetWindow();
   createTray();
 
   // Application menu
@@ -631,6 +645,10 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', async () => {
   globalShortcut.unregisterAll();
+  // Stop system audio capture before quitting
+  if (systemAudioService?.isCapturing) {
+    systemAudioService.stop();
+  }
   await Promise.all([
     sttService?.shutdown(),
     llmService?.shutdown(),

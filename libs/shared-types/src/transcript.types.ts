@@ -1,3 +1,5 @@
+export type AudioSource = 'mic' | 'system';
+
 export interface TranscriptSegment {
   id: string;
   text: string;
@@ -5,4 +7,5 @@ export interface TranscriptSegment {
   endTimeMs: number;
   isFinal: boolean;
   language?: string;
+  source?: AudioSource;
 }

@@ -20,6 +20,7 @@ export default defineConfig({
         '@nestjs/common',
         'reflect-metadata',
         'rxjs',
+        '@sourdine/native-audio-capture',
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`),
       ],

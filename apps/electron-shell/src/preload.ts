@@ -158,6 +158,17 @@ const sourdineApi = {
     requestScreenAccess: (): Promise<boolean> => ipcRenderer.invoke('media:request-screen'),
   },
 
+  systemAudio: {
+    start: (): void => ipcRenderer.send('system-audio:start'),
+    stop: (): void => ipcRenderer.send('system-audio:stop'),
+    isSupported: (): Promise<boolean> => ipcRenderer.invoke('system-audio:supported'),
+    onStatus: (callback: (capturing: boolean) => void): (() => void) => {
+      const handler = (_event: any, capturing: any) => callback(capturing);
+      ipcRenderer.on('system-audio:status', handler);
+      return () => ipcRenderer.removeListener('system-audio:status', handler);
+    },
+  },
+
   model: {
     list: (): Promise<any> => ipcRenderer.invoke('model:list'),
     download: (modelId: string): void => ipcRenderer.send('model:download', modelId),
