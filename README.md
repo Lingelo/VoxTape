@@ -1,106 +1,140 @@
-# New Nx Repository
+# Sourdine
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Application macOS de transcription de reunions et prise de notes assistee par IA. Tout fonctionne **100% en local** — aucune API externe, aucune donnee envoyee sur le cloud.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+![macOS](https://img.shields.io/badge/macOS-12%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-## Finish your Nx platform setup
+## Fonctionnalites
 
-🚀 [Finish setting up your workspace](https://cloud.nx.app/connect/So96YHr8vH) to get faster builds with remote caching, distributed task execution, and self-healing CI. [Learn more about Nx Cloud](https://nx.dev/ci/intro/why-nx-cloud).
-## Generate a library
+- **Transcription en temps reel** — Capture audio micro + systeme (appels Teams, Meet, etc.)
+- **IA locale** — Resume, points cles, actions via Mistral 7B (node-llama-cpp)
+- **Chat contextuel** — Posez des questions sur vos reunions
+- **100% hors-ligne** — Aucune connexion internet requise apres telechargement des modeles
+- **Vie privee** — Vos donnees restent sur votre machine
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+## Prerequis
+
+- **macOS 12+** (Monterey ou plus recent)
+- **Node.js 20+** (recommande: utiliser [nvm](https://github.com/nvm-sh/nvm))
+- **16 Go RAM minimum** (pour le modele LLM)
+- **~6 Go d'espace disque** (modeles IA)
+
+### Optionnel (pour la capture audio systeme)
+
+- **Rust** — Pour compiler le module natif de capture audio systeme
+  ```bash
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  ```
+
+## Installation
+
+```bash
+# Cloner le repo
+git clone https://github.com/Lingelo/Sourdine.git
+cd Sourdine
+
+# Installer les dependances (rebuild automatique des modules natifs pour Electron)
+npm install
+
+# Telecharger les modeles IA (~640 Mo pour STT, ~4.4 Go pour LLM)
+npm run download-model       # Silero VAD + Parakeet TDT
+npm run download-llm-model   # Mistral 7B Q4_K_M
 ```
 
-## Run tasks
+## Developpement
 
-To build the library use:
-
-```sh
-npx nx build pkg1
+```bash
+# Lancer l'app en mode dev (Angular hot-reload + Electron)
+npm run dev
 ```
 
-To run any task with Nx use:
+L'application s'ouvre automatiquement. Le serveur Angular tourne sur `http://localhost:4200`.
 
-```sh
-npx nx <target> <project-name>
+### Commandes utiles
+
+| Commande | Description |
+|----------|-------------|
+| `npm run dev` | Mode developpement avec hot-reload |
+| `npm run build` | Build de production |
+| `npm run package` | Creer Sourdine.app (non signe) |
+| `npm run make` | Creer DMG + ZIP distribuables |
+
+### Structure du projet
+
+```
+sourdine/
+├── apps/
+│   ├── electron-shell/     # Process principal Electron + workers
+│   └── renderer/           # Interface Angular
+├── libs/
+│   ├── backend/            # Services NestJS (audio, STT, LLM, DB)
+│   ├── native-audio-capture/  # Module Rust pour capture audio systeme
+│   └── shared-types/       # Types TypeScript partages
+├── models/                 # Modeles IA (telecharges)
+└── scripts/                # Scripts de build et packaging
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
+## Architecture
 
 ```
-npx nx release
+┌─────────────────────────────────────────────────┐
+│  Electron Main Process                          │
+│  ┌─────────────────────────────────────────┐    │
+│  │  NestJS Backend                         │    │
+│  │  AudioModule → SttService → stt-worker ─┼──→ sherpa-onnx (Parakeet TDT)
+│  │  LlmModule → LlmService → llm-worker ───┼──→ node-llama-cpp (Mistral 7B)
+│  │  DatabaseModule (SQLite)                │    │
+│  └─────────────────────────────────────────┘    │
+└────────────────┬────────────────────────────────┘
+                 │ IPC (contextBridge)
+┌────────────────┴────────────────────────────────┐
+│  Renderer Process (Angular 21)                  │
+│  SessionService, AudioCaptureService, LlmService│
+└─────────────────────────────────────────────────┘
 ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+### Modeles IA utilises
 
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+| Modele | Taille | Usage |
+|--------|--------|-------|
+| [Silero VAD](https://github.com/snakers4/silero-vad) | 2 Mo | Detection de voix |
+| [Parakeet TDT 0.6B](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) | 640 Mo | Transcription (STT) |
+| [Mistral 7B Q4_K_M](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) | 4.4 Go | Resume et chat |
 
-## Keep TypeScript project references up to date
+## Packaging
 
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
+### Build local
 
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+```bash
+# Creer l'app macOS
+npm run package
+# → out/Sourdine-darwin-arm64/Sourdine.app
 
-```sh
-npx nx sync
+# Creer un DMG
+npm run make
+# → out/make/Sourdine-x.x.x-arm64.dmg
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+### Release GitHub
 
-```sh
-npx nx sync:check
+Les releases sont automatisees via GitHub Actions. Pour publier une nouvelle version :
+
+```bash
+# Creer un tag de version
+git tag v0.1.0
+git push origin v0.1.0
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+Le workflow CI va automatiquement :
+1. Builder l'application pour macOS (arm64 + x64)
+2. Creer le DMG
+3. Publier une release GitHub avec les artefacts
 
-## Nx Cloud
+## Contribuer
 
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+Les contributions sont bienvenues ! N'hesitez pas a ouvrir une issue ou une PR.
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Licence
 
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+MIT
