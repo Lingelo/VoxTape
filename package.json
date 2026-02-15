@@ -58,6 +58,7 @@
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "jsdom": "^27.1.0",
+    "node-addon-api": "^6.1.0",
     "nx": "22.5.0",
     "prettier": "^2.6.2",
     "react-refresh": "^0.10.0",
