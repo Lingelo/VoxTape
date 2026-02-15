@@ -1,0 +1,286 @@
+:host {
+  display: block;
+}
+
+.control-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 14px;
+  flex-shrink: 0;
+}
+
+// Generate notes (floating button)
+.generate-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 24px;
+  border: none;
+  background: var(--accent-primary);
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  &.processing {
+    background: var(--accent-primary);
+    opacity: 0.8;
+  }
+}
+
+// Bottom bar (two pills side by side)
+.bottom-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+// Audio pill (detached mini-pill)
+.audio-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  border-radius: 16px;
+  background: var(--bg-pill, #2a2a2e);
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+  height: 38px;
+
+  &.active {
+    border-color: var(--accent-recording, #ef4444);
+  }
+}
+
+// Main pill (always present, expandable)
+.main-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--bg-pill, #2a2a2e);
+  border: 1px solid var(--border-subtle);
+  min-width: 0;
+  overflow: hidden;
+  cursor: text;
+
+  &:not(.expanded) {
+    height: 38px;
+    justify-content: center;
+  }
+
+  &.expanded {
+    animation: pillExpand 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: default;
+
+    .pill-input {
+      border-top: 1px solid var(--border-subtle);
+    }
+  }
+}
+
+// Pill input bar (bottom of pill)
+.pill-input {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+// Pill body (expanded content)
+.pill-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 50vh;
+  overflow: hidden;
+
+  sdn-transcript-panel {
+    display: block;
+    overflow-y: auto;
+    flex: 1;
+  }
+}
+
+// Pill header
+.pill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.pill-header-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pill-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill-timer {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.pill-header-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+@keyframes pillExpand {
+  from {
+    max-height: 38px;
+    opacity: 0.7;
+  }
+  to {
+    max-height: 70vh;
+    opacity: 1;
+  }
+}
+
+// VU bars (KITT style, centered)
+.vu-bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 8px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.vu-bar {
+  width: 2.5px;
+  min-height: 3px;
+  border-radius: 1.5px;
+  background: var(--text-secondary);
+  transition: height 0.06s ease-out, opacity 0.06s ease-out;
+}
+
+.chevron-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.5;
+  margin-left: 2px;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  transition: opacity 0.15s, transform 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &.open {
+    transform: rotate(180deg);
+    opacity: 0.8;
+  }
+}
+
+// Stop button
+.stop-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.2);
+  }
+}
+
+.stop-square {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent-recording, #ef4444);
+}
+
+// Chat input
+.chat-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+
+  &::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+  }
+}
+
+// Spinner
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

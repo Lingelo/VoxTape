@@ -16,79 +16,8 @@ import { AudioCaptureService } from '../services/audio-capture.service';
     ControlBarComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="titlebar-drag"></div>
-    <div class="layout">
-      <sdn-sidebar></sdn-sidebar>
-
-      <div class="main-content">
-        <!-- Backdrop to close panels on click outside -->
-        @if (chatOpen || transcriptOpen) {
-          <div class="panel-backdrop" tabindex="0" role="button" (click)="closeAllPanels()" (keydown.enter)="closeAllPanels()"></div>
-        }
-
-        <div class="editor-area">
-          <sdn-note-editor></sdn-note-editor>
-        </div>
-
-        <sdn-control-bar
-          [transcriptOpen]="transcriptOpen"
-          [chatOpen]="chatOpen"
-          [chatInitialPrompt]="chatInitialPrompt"
-          (openChat)="openChat($event)"
-          (closeChat)="chatOpen = false; chatInitialPrompt = ''"
-          (showTranscript)="toggleTranscript()"
-          (closeTranscript)="transcriptOpen = false"
-        ></sdn-control-bar>
-      </div>
-    </div>
-  `,
-  styles: [`
-    :host { display: block; height: 100vh; overflow: hidden; }
-
-    .layout {
-      display: flex;
-      height: 100%;
-    }
-
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      padding-top: 38px;
-    }
-
-    .editor-area {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .titlebar-drag {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 38px;
-      -webkit-app-region: drag;
-      z-index: 50;
-    }
-
-    .panel-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 10;
-    }
-    sdn-control-bar {
-      position: relative;
-      z-index: 11;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  `],
+  templateUrl: './main-layout.component.html',
+  styleUrl: './main-layout.component.scss',
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {
   chatOpen = false;

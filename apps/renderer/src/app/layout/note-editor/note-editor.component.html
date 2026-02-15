@@ -1,0 +1,23 @@
+<div class="editor-container">
+  <input
+    class="title-input"
+    type="text"
+    [value]="title"
+    (input)="onTitleChange($event)"
+    [placeholder]="'notes.titlePlaceholder' | translate"
+  />
+
+  <!-- AI Summary (top, main content after recording) -->
+  @if (aiSummary) {
+    <div class="ai-summary">
+      <div class="ai-summary-body" [innerHTML]="renderedSummary"></div>
+    </div>
+  }
+
+  <!-- Tiptap editor (hidden when AI summary exists) -->
+  <div
+    class="tiptap-editor"
+    #editorEl
+    [class.hidden]="!!aiSummary"
+  ></div>
+</div>

@@ -1,0 +1,97 @@
+<div class="control-wrapper">
+  <!-- Floating "Generate notes" button (when done, above the pill) -->
+  @if (showGenerateBtn) {
+    <button
+      class="generate-btn"
+      [class.processing]="status === 'processing'"
+      [disabled]="status === 'processing'"
+      (click)="onEnhance()"
+    >
+      @if (status !== 'processing') {
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/>
+          <circle cx="18" cy="4" r="2" fill="currentColor"/>
+          <circle cx="5" cy="5" r="1.5" fill="currentColor"/>
+          <circle cx="20" cy="12" r="1" fill="currentColor"/>
+        </svg>
+      }
+      @if (status === 'processing') {
+        <span class="spinner"></span>
+      }
+      {{ status === 'processing' ? ('notes.generating' | translate) : ('notes.generate' | translate) }}
+    </button>
+  }
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar" [class.expanded]="chatOpen || transcriptOpen">
+    <!-- Audio pill (detached) -->
+    <div class="audio-pill" [class.active]="isRecording">
+      <div class="vu-bars" tabindex="0" role="button" (click)="toggleRecording()" (keydown.enter)="toggleRecording()">
+        @for (bar of vuBars; track $index; let i = $index) {
+          <div class="vu-bar"
+            [style.height.px]="isRecording ? getBarHeight(i) : 4"
+            [style.opacity]="isRecording ? getBarOpacity(i) : 0.4"
+          ></div>
+        }
+      </div>
+      <button class="chevron-btn" [class.open]="transcriptOpen" (click)="showTranscript.emit()" [title]="'transcript.title' | translate">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polyline points="2,6 5,3 8,6"/>
+        </svg>
+      </button>
+      @if (isRecording) {
+        <button class="stop-btn" (click)="toggleRecording()">
+          <span class="stop-square"></span>
+        </button>
+      }
+    </div>
+
+    <!-- Main pill — always present, expands upward -->
+    <div class="main-pill" [class.expanded]="chatOpen || transcriptOpen">
+
+      <!-- Transcript body (expanded content) -->
+      @if (transcriptOpen) {
+        <div class="pill-body">
+          <div class="pill-header">
+            <span class="pill-header-title">{{ 'transcript.title' | translate }}</span>
+            <div class="pill-header-actions">
+              @if (elapsed > 0) {
+                <span class="pill-timer">{{ formatElapsed(elapsed) }}</span>
+              }
+              <button class="pill-header-btn" (click)="closeTranscript.emit()" [title]="'transcript.minimize' | translate">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="2" y1="6" x2="10" y2="6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <sdn-transcript-panel></sdn-transcript-panel>
+        </div>
+      }
+
+      <!-- Chat body (expanded content, includes its own input) -->
+      @if (chatOpen) {
+        <sdn-chat-panel
+          [initialPrompt]="chatInitialPrompt"
+          (closePanel)="closeChat.emit()"
+        ></sdn-chat-panel>
+      }
+
+      <!-- Input bar (hidden when chat or transcript is open) -->
+      @if (!chatOpen && !transcriptOpen) {
+        <div class="pill-input">
+          <input
+            class="chat-input"
+            type="text"
+            [(ngModel)]="chatInput"
+            (keydown.enter)="onChatSubmit()"
+            (keydown.escape)="transcriptOpen ? closeTranscript.emit() : null"
+            (focus)="onInputFocus()"
+            [placeholder]="'chat.placeholder' | translate"
+            [disabled]="status === 'processing'"
+          />
+        </div>
+      }
+    </div>
+  </div>
+</div>

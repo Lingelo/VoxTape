@@ -1,0 +1,452 @@
+:host {
+  display: block;
+  height: 100vh;
+}
+
+.drag-region {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 42px;
+  -webkit-app-region: drag;
+  z-index: 10;
+}
+
+.onboarding {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-main);
+  padding: 24px;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 40px;
+}
+
+.steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-subtle);
+  transition: all 0.2s;
+
+  &.active {
+    background: var(--accent-primary);
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  &.completed {
+    background: var(--accent-primary);
+  }
+}
+
+.step-content {
+  text-align: center;
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.field {
+  margin-bottom: 16px;
+  text-align: left;
+
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+}
+
+.option-group {
+  display: flex;
+  gap: 8px;
+
+  button {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      border-color: var(--accent-primary);
+    }
+
+    &.selected {
+      border-color: var(--accent-primary);
+      background: var(--accent-primary-tint);
+    }
+  }
+}
+
+// Welcome
+.welcome-logo {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+}
+
+.welcome-features {
+  text-align: left;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.welcome-feature {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--bg-main);
+}
+
+.feature-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--accent-primary);
+}
+
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feature-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.feature-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.mic-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+
+  &:focus {
+    border-color: var(--accent-primary);
+  }
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-primary);
+  color: #1a1a1a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.secondary-btn {
+  padding: 12px 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--accent-hover);
+  }
+}
+
+.btn-group {
+  display: flex;
+  gap: 12px;
+
+  .primary-btn {
+    flex: 1;
+  }
+}
+
+// Mic test
+.mic-test {
+  margin-bottom: 16px;
+  padding: 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.vu-meter {
+  height: 8px;
+  background: var(--bg-main);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.vu-bar {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 4px;
+  transition: width 0.1s;
+}
+
+.mic-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+  margin: 0;
+
+  &.active {
+    color: var(--accent-primary);
+  }
+}
+
+.mic-error {
+  color: #ef4444 !important;
+  font-size: 12px !important;
+}
+
+.mic-warning {
+  font-size: 12px;
+  color: #f59e0b;
+  margin-bottom: 16px;
+}
+
+// System Audio
+.system-audio-setup {
+  text-align: left;
+  margin-bottom: 24px;
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .setting-label-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+  }
+
+  .setting-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+}
+
+.system-audio-unsupported {
+  text-align: center;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .toggle-slider {
+      background: var(--accent-primary);
+
+      &::before {
+        transform: translateX(20px);
+      }
+    }
+  }
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--border-subtle);
+  border-radius: 24px;
+  transition: background 0.2s;
+
+  &::before {
+    content: '';
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+}
+
+// Install
+.install-info {
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.install-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.install-size {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  text-align: center;
+}
+
+.install-progress {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.install-step-label {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-main);
+  border-radius: 3px;
+  overflow: hidden;
+
+  &.large {
+    height: 8px;
+    border-radius: 4px;
+  }
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.install-percent {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.install-done {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.install-done-text {
+  font-size: 16px;
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+.install-error {
+  margin-bottom: 24px;
+}
+
+.done-badge {
+  font-size: 13px;
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+.error-badge {
+  font-size: 13px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.ready-icon {
+  margin: 24px 0 32px;
+}

@@ -1,0 +1,25 @@
+<div class="titlebar-drag"></div>
+<div class="layout">
+  <sdn-sidebar></sdn-sidebar>
+
+  <div class="main-content">
+    <!-- Backdrop to close panels on click outside -->
+    @if (chatOpen || transcriptOpen) {
+      <div class="panel-backdrop" tabindex="0" role="button" (click)="closeAllPanels()" (keydown.enter)="closeAllPanels()"></div>
+    }
+
+    <div class="editor-area">
+      <sdn-note-editor></sdn-note-editor>
+    </div>
+
+    <sdn-control-bar
+      [transcriptOpen]="transcriptOpen"
+      [chatOpen]="chatOpen"
+      [chatInitialPrompt]="chatInitialPrompt"
+      (openChat)="openChat($event)"
+      (closeChat)="chatOpen = false; chatInitialPrompt = ''"
+      (showTranscript)="toggleTranscript()"
+      (closeTranscript)="transcriptOpen = false"
+    ></sdn-control-bar>
+  </div>
+</div>

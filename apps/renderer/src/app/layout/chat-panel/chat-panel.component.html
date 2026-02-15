@@ -1,0 +1,73 @@
+<div class="chat-expand">
+  <!-- Messages area -->
+  <div class="chat-messages" #messagesContainer>
+    @if (messages.length === 0 && !isGenerating) {
+      <div class="chat-empty">
+        <p>{{ 'chat.empty' | translate }}</p>
+      </div>
+    }
+
+    @for (msg of messages; track $index) {
+      <div class="chat-msg" [class]="msg.role">
+        <div class="msg-bubble" [innerHTML]="msg.html || msg.content"></div>
+      </div>
+    }
+
+    @if (isGenerating) {
+      <div class="chat-msg assistant">
+        <div class="msg-bubble typing">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Recipes dropdown -->
+  @if (showRecipes) {
+    <div class="recipes-dropdown">
+      @for (r of filteredRecipes; track r.command; let i = $index) {
+        <div
+          class="recipe-item"
+          tabindex="0"
+          role="option"
+          [attr.aria-selected]="i === recipeIndex"
+          [class.active]="i === recipeIndex"
+          (click)="selectRecipe(r)"
+          (keydown.enter)="selectRecipe(r)"
+          (mouseenter)="recipeIndex = i"
+        >
+          <span class="recipe-cmd">{{ r.command }}</span>
+          <span class="recipe-label">{{ r.label }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Input bar (continuation of the main-pill) -->
+  <div class="chat-input-bar">
+    <input
+      class="chat-input"
+      type="text"
+      [(ngModel)]="input"
+      (input)="onInputChange()"
+      (keydown.enter)="onEnter($event)"
+      (keydown.escape)="onEscape()"
+      (keydown.arrowDown)="onArrowDown($event)"
+      (keydown.arrowUp)="onArrowUp($event)"
+      [placeholder]="'chat.placeholder' | translate"
+      [disabled]="isGenerating"
+      #chatInputEl
+    />
+    <button
+      class="send-btn"
+      (click)="onSend()"
+      [disabled]="!input.trim() || isGenerating"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    </button>
+  </div>
+</div>

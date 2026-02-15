@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -24,180 +25,9 @@ import type { EnhancedNote } from '@sourdine/shared-types';
   selector: 'sdn-note-editor',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
-  template: `
-    <div class="editor-container">
-      <input
-        class="title-input"
-        type="text"
-        [value]="title"
-        (input)="onTitleChange($event)"
-        placeholder="Titre de la session..."
-      />
-
-      <!-- AI Summary (top, main content after recording) -->
-      @if (aiSummary) {
-        <div class="ai-summary">
-          <div class="ai-summary-body" [innerHTML]="renderedSummary"></div>
-        </div>
-      }
-
-      <!-- Tiptap editor (hidden when AI summary exists) -->
-      <div
-        class="tiptap-editor"
-        #editorEl
-        [class.hidden]="!!aiSummary"
-      ></div>
-    </div>
-  `,
-  styles: [`
-    :host { display: block; height: 100%; }
-
-    .editor-container {
-      display: flex;
-      flex-direction: column;
-      min-height: 100%;
-      padding: 24px 32px;
-    }
-
-    .title-input {
-      font-size: 24px;
-      font-weight: 600;
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      outline: none;
-      padding: 0;
-      margin-bottom: 24px;
-      font-family: var(--font-editor);
-    }
-    .title-input::placeholder {
-      color: var(--text-secondary);
-      opacity: 0.5;
-    }
-
-    .tiptap-editor {
-      flex: 1;
-      min-height: 200px;
-    }
-
-    /* Tiptap ProseMirror styles */
-    :host ::ng-deep .tiptap {
-      outline: none;
-      font-size: 16px;
-      line-height: 1.6;
-      font-family: var(--font-editor);
-      color: var(--text-primary);
-      min-height: 200px;
-    }
-
-    :host ::ng-deep .tiptap p {
-      margin: 0 0 4px 0;
-    }
-
-    :host ::ng-deep .tiptap p.is-editor-empty:first-child::before {
-      content: attr(data-placeholder);
-      float: left;
-      color: var(--text-secondary);
-      opacity: 0.5;
-      pointer-events: none;
-      height: 0;
-    }
-
-    :host ::ng-deep .tiptap ul, :host ::ng-deep .tiptap ol {
-      padding-left: 24px;
-      margin: 4px 0;
-    }
-
-    /* AI Block styles */
-    :host ::ng-deep .ai-block {
-      position: relative;
-      padding: 10px 40px 10px 14px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border-left: 3px solid var(--accent-primary);
-      background: var(--bg-surface);
-    }
-
-    :host ::ng-deep .ai-block .ai-block-content {
-      color: var(--text-ai);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    :host ::ng-deep .ai-block--edited .ai-block-content {
-      color: var(--text-primary);
-    }
-
-    :host ::ng-deep .ai-block--summary {
-      border-left-color: var(--accent-primary);
-    }
-    :host ::ng-deep .ai-block--decision {
-      border-left-color: #f59e0b;
-    }
-    :host ::ng-deep .ai-block--action-item {
-      border-left-color: #3b82f6;
-    }
-    :host ::ng-deep .ai-block--key-point {
-      border-left-color: #8b5cf6;
-    }
-
-    :host ::ng-deep .ai-block-loupe {
-      position: absolute;
-      right: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      opacity: 0.4;
-      transition: opacity 0.15s;
-      padding: 4px;
-    }
-    :host ::ng-deep .ai-block-loupe:hover {
-      opacity: 1;
-    }
-
-    .ai-summary {
-      margin-bottom: 20px;
-      padding: 16px 20px;
-      background: var(--bg-surface);
-      border-radius: 10px;
-      border: 1px solid var(--border-subtle);
-    }
-
-    :host ::ng-deep .ai-summary-body h2 {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--accent-primary);
-      margin: 14px 0 6px 0;
-    }
-    :host ::ng-deep .ai-summary-body h2:first-child {
-      margin-top: 0;
-    }
-    :host ::ng-deep .ai-summary-body p {
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text-primary);
-      margin: 0 0 4px 0;
-    }
-    :host ::ng-deep .ai-summary-body ul {
-      padding-left: 20px;
-      margin: 4px 0;
-    }
-    :host ::ng-deep .ai-summary-body li {
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-    }
-
-    .tiptap-editor.hidden {
-      display: none;
-    }
-
-  `],
+  imports: [CommonModule, TranslateModule],
+  templateUrl: './note-editor.component.html',
+  styleUrl: './note-editor.component.scss',
 })
 export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('editorEl') editorElRef!: ElementRef<HTMLDivElement>;
@@ -208,6 +38,7 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   renderedSummary = '';
   private readonly session = inject(SessionService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
   private editor: Editor | null = null;
   private subs: Subscription[] = [];
   private updatingFromExternal = false;
@@ -239,7 +70,7 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       extensions: [
         StarterKit,
         Placeholder.configure({
-          placeholder: 'Prenez vos notes ici pendant l\'enregistrement...',
+          placeholder: this.translate.instant('notes.placeholder'),
         }),
         AiBlock,
       ],
