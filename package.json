@@ -1,7 +1,7 @@
 {
   "name": "sourdine",
   "productName": "Sourdine",
-  "version": "0.1.1-beta",
+  "version": "0.1.2-beta",
   "license": "MIT",
   "main": "apps/electron-shell/dist/main.js",
   "scripts": {
