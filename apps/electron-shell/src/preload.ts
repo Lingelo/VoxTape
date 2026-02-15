@@ -52,22 +52,6 @@ const sourdineApi = {
     restart: (): Promise<void> => ipcRenderer.invoke('stt:restart'),
   },
 
-  widget: {
-    onState: (
-      callback: (state: { isRecording: boolean; audioLevel: number }) => void
-    ): (() => void) => {
-      const handler = (_event: any, state: any) => callback(state);
-      ipcRenderer.on('widget:state', handler);
-      return () => ipcRenderer.removeListener('widget:state', handler);
-    },
-    toggleRecording: (): void => {
-      ipcRenderer.send('widget:toggle-recording');
-    },
-    focusMain: (): void => {
-      ipcRenderer.send('widget:focus-main');
-    },
-  },
-
   llm: {
     initialize: (): void => {
       ipcRenderer.send('llm:initialize');
