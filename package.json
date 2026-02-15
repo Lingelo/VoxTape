@@ -1,7 +1,7 @@
 {
   "name": "sourdine",
   "productName": "Sourdine",
-  "version": "0.1.2-beta",
+  "version": "0.2.0-beta",
   "license": "MIT",
   "main": "apps/electron-shell/dist/main.js",
   "scripts": {
@@ -78,7 +78,6 @@
     "libs/*"
   ],
   "dependencies": {
-    "@sourdine/native-audio-capture": "file:libs/native-audio-capture",
     "@angular/common": "~21.1.0",
     "@angular/compiler": "~21.1.0",
     "@angular/core": "~21.1.0",
@@ -88,6 +87,9 @@
     "@nestjs/common": "^11.1.13",
     "@nestjs/core": "^11.1.13",
     "@nestjs/platform-express": "^11.0.0",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^17.0.0",
+    "@sourdine/native-audio-capture": "file:libs/native-audio-capture",
     "@tiptap/core": "^3.19.0",
     "@tiptap/extension-placeholder": "^3.19.0",
     "@tiptap/pm": "^3.19.0",
