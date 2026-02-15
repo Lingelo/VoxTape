@@ -47,6 +47,14 @@ const config: ForgeConfig = {
     new MakerDMG({
       format: 'ULFO',
       name: 'Sourdine',
+      contents: [
+        { x: 130, y: 150, type: 'file', path: resolve(process.cwd(), 'out', 'Sourdine-darwin-arm64', 'Sourdine.app') },
+        { x: 410, y: 150, type: 'link', path: '/Applications' },
+      ],
+      window: {
+        size: { width: 540, height: 380 },
+      },
+      icon: resolve(process.cwd(), 'assets', 'icon.icns'),
     }),
     new MakerZIP({}, ['darwin', 'linux', 'win32']),
   ],
