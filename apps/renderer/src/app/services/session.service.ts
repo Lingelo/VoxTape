@@ -1,5 +1,5 @@
-import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, Subject, Subscription, debounceTime } from 'rxjs';
+import { Injectable, OnDestroy, inject } from '@angular/core';
+import { BehaviorSubject, Observable, Subject, Subscription, debounceTime, takeUntil } from 'rxjs';
 import { ElectronIpcService } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
 import { LlmService } from './llm.service';
@@ -45,7 +45,7 @@ interface SourdineSessionApi {
 }
 
 @Injectable({ providedIn: 'root' })
-export class SessionService {
+export class SessionService implements OnDestroy {
   private readonly _id$ = new BehaviorSubject<string>(this.generateId());
   private readonly _status$ = new BehaviorSubject<SessionStatus>('idle');
   private readonly _segments$ = new BehaviorSubject<TranscriptSegment[]>([]);
@@ -60,9 +60,13 @@ export class SessionService {
   private recordingStartTime = 0;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
   private llmSubs: Subscription[] = [];
+  /** Pending setTimeout handles for cleanup */
+  private pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
 
   // Auto-save subject
   private readonly _saveRequested$ = new Subject<void>();
+  /** Destroy signal for RxJS takeUntil pattern */
+  private readonly _destroy$ = new Subject<void>();
 
   private readonly ipc = inject(ElectronIpcService);
   private readonly audioCapture = inject(AudioCaptureService);
@@ -80,20 +84,46 @@ export class SessionService {
   readonly sessions$: Observable<SessionListItem[]> = this._sessions$.asObservable();
 
   constructor() {
-    // Subscribe to incoming transcript segments
-    this.ipc.segment$.subscribe((segment: TranscriptSegment) => {
-      const current = this._segments$.value;
-      this._segments$.next([...current, segment]);
-      this.requestSave();
-    });
+    // Subscribe to incoming transcript segments with cleanup
+    this.ipc.segment$
+      .pipe(takeUntil(this._destroy$))
+      .subscribe((segment: TranscriptSegment) => {
+        const current = this._segments$.value;
+        this._segments$.next([...current, segment]);
+        this.requestSave();
+      });
 
     // Auto-save with 2s debounce
-    this._saveRequested$.pipe(debounceTime(2000)).subscribe(() => {
-      this.saveSession();
-    });
+    this._saveRequested$
+      .pipe(debounceTime(2000), takeUntil(this._destroy$))
+      .subscribe(() => {
+        this.saveSession();
+      });
 
     // Load sessions list on startup
     this.loadSessionsList();
+  }
+
+  ngOnDestroy(): void {
+    // Signal all subscriptions to complete
+    this._destroy$.next();
+    this._destroy$.complete();
+
+    // Clear any pending timers
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+
+    // Clear pending timeouts
+    for (const timeout of this.pendingTimeouts) {
+      clearTimeout(timeout);
+    }
+    this.pendingTimeouts = [];
+
+    // Clean up LLM subscriptions
+    this.llmSubs.forEach((s) => s.unsubscribe());
+    this.llmSubs = [];
   }
 
   async startRecording(deviceId?: string): Promise<void> {
@@ -326,7 +356,8 @@ export class SessionService {
     const api = this.sourdineApi?.session;
     if (!api) {
       // Preload not ready yet, retry after a short delay
-      setTimeout(() => this.loadSessionsList(), 500);
+      const timeout = setTimeout(() => this.loadSessionsList(), 500);
+      this.pendingTimeouts.push(timeout);
       return;
     }
 
@@ -335,7 +366,8 @@ export class SessionService {
       this._sessions$.next(sessions || []);
     } catch {
       // DB not available yet, retry
-      setTimeout(() => this.loadSessionsList(), 1000);
+      const timeout = setTimeout(() => this.loadSessionsList(), 1000);
+      this.pendingTimeouts.push(timeout);
     }
   }
 

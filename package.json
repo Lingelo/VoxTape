@@ -16,7 +16,9 @@
     "package": "node scripts/package.mjs",
     "make": "node scripts/package.mjs --make",
     "build:native": "cd libs/native-audio-capture && npx napi build --platform --release",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "private": true,
   "devDependencies": {
