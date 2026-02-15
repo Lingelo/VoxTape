@@ -5,6 +5,7 @@ import type {
   SessionState,
   TranscriptSegment,
   EnhancedNote,
+  ChatMessage,
   Folder,
   SessionSummary,
   SearchResult,
@@ -67,6 +68,15 @@ export class DatabaseService implements OnModuleDestroy {
         PRIMARY KEY (session_id, id)
       );
 
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id TEXT NOT NULL,
+        session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+        role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+        content TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000),
+        PRIMARY KEY (session_id, id)
+      );
+
       -- FTS5 for full-text search
       CREATE VIRTUAL TABLE IF NOT EXISTS sessions_fts USING fts5(
         title, user_notes, content=sessions, content_rowid=rowid
@@ -110,6 +120,7 @@ export class DatabaseService implements OnModuleDestroy {
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_segments_session_id ON segments(session_id);
       CREATE INDEX IF NOT EXISTS idx_ai_notes_session_id ON ai_notes(session_id);
+      CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session_id);
       CREATE INDEX IF NOT EXISTS idx_sessions_updated_at ON sessions(updated_at DESC);
       CREATE INDEX IF NOT EXISTS idx_sessions_folder_id ON sessions(folder_id);
     `);
@@ -124,6 +135,7 @@ export class DatabaseService implements OnModuleDestroy {
     aiSummary?: string;
     segments: TranscriptSegment[];
     aiNotes: EnhancedNote[];
+    chatMessages?: ChatMessage[];
     durationMs: number;
     folderId?: string | null;
     createdAt: number;
@@ -150,6 +162,12 @@ export class DatabaseService implements OnModuleDestroy {
     const deleteAiNotesStmt = this.db.prepare('DELETE FROM ai_notes WHERE session_id = ?');
     const insertAiNoteStmt = this.db.prepare(`
       INSERT OR REPLACE INTO ai_notes (id, session_id, type, text, segment_ids)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    const deleteChatMessagesStmt = this.db.prepare('DELETE FROM chat_messages WHERE session_id = ?');
+    const insertChatMessageStmt = this.db.prepare(`
+      INSERT OR REPLACE INTO chat_messages (id, session_id, role, content, created_at)
       VALUES (?, ?, ?, ?, ?)
     `);
 
@@ -190,6 +208,18 @@ export class DatabaseService implements OnModuleDestroy {
           JSON.stringify(note.segmentIds)
         );
       }
+
+      // Replace chat messages
+      deleteChatMessagesStmt.run(data.id);
+      for (const msg of data.chatMessages || []) {
+        insertChatMessageStmt.run(
+          msg.id,
+          data.id,
+          msg.role,
+          msg.content,
+          msg.createdAt
+        );
+      }
     });
 
     transaction();
@@ -205,6 +235,10 @@ export class DatabaseService implements OnModuleDestroy {
 
     const aiNotes = this.db
       .prepare('SELECT * FROM ai_notes WHERE session_id = ?')
+      .all(id) as any[];
+
+    const chatMessages = this.db
+      .prepare('SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at')
       .all(id) as any[];
 
     return {
@@ -226,6 +260,12 @@ export class DatabaseService implements OnModuleDestroy {
         type: n.type,
         text: n.text,
         segmentIds: JSON.parse(n.segment_ids),
+      })),
+      chatMessages: chatMessages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        createdAt: m.created_at,
       })),
       aiSummary: session.ai_summary || '',
       folderId: session.folder_id,
@@ -359,6 +399,7 @@ export class DatabaseService implements OnModuleDestroy {
   }
 
   clearAll(): void {
+    this.db.exec('DELETE FROM chat_messages');
     this.db.exec('DELETE FROM ai_notes');
     this.db.exec('DELETE FROM segments');
     this.db.exec('DELETE FROM sessions');

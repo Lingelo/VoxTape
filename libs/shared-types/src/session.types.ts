@@ -3,6 +3,13 @@ import { EnhancedNote } from './llm.types.js';
 
 export type SessionStatus = 'idle' | 'recording' | 'processing' | 'done';
 
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: number;
+}
+
 export interface SessionState {
   id: string;
   title: string;
@@ -12,6 +19,7 @@ export interface SessionState {
   userNotes: string;
   aiSummary?: string;
   aiNotes: EnhancedNote[];
+  chatMessages?: ChatMessage[];
   folderId: string | null;
   createdAt: number;
   updatedAt: number;
@@ -20,7 +28,3 @@ export interface SessionState {
 
 export type SttStatus = 'loading' | 'ready' | 'error';
 
-export interface WidgetState {
-  isRecording: boolean;
-  audioLevel: number; // 0-1 normalized
-}

@@ -17,10 +17,9 @@ import { Subscription } from 'rxjs';
 import { LlmService } from '../../services/llm.service';
 import { SessionService } from '../../services/session.service';
 import { RECIPES, Recipe } from '../../services/recipes';
+import type { ChatMessage } from '@sourdine/shared-types';
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
+interface ChatMessageWithHtml extends ChatMessage {
   html?: string;
 }
 
@@ -269,7 +268,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
 
   sessionTitle = '';
   input = '';
-  messages: ChatMessage[] = [];
+  messages: ChatMessageWithHtml[] = [];
   isGenerating = false;
   showRecipes = false;
   filteredRecipes: Recipe[] = [];

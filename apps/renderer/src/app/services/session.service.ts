@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable, Subject, Subscription, debounceTime, takeU
 import { ElectronIpcService } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
 import { LlmService } from './llm.service';
-import type { EnhancedNote } from '@sourdine/shared-types';
+import type { EnhancedNote, ChatMessage } from '@sourdine/shared-types';
 
 export interface TranscriptSegment {
   id: string;
@@ -32,6 +32,7 @@ interface SessionData {
   segments?: TranscriptSegment[];
   aiNotes?: EnhancedNote[];
   aiSummary?: string;
+  chatMessages?: ChatMessage[];
   durationMs?: number;
 }
 
@@ -54,7 +55,7 @@ export class SessionService implements OnDestroy {
   private readonly _elapsed$ = new BehaviorSubject<number>(0);
   private readonly _aiNotes$ = new BehaviorSubject<EnhancedNote[]>([]);
   private readonly _aiSummary$ = new BehaviorSubject<string>('');
-  private readonly _chatMessages$ = new BehaviorSubject<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  private readonly _chatMessages$ = new BehaviorSubject<ChatMessage[]>([]);
   private readonly _sessions$ = new BehaviorSubject<SessionListItem[]>([]);
 
   private recordingStartTime = 0;
@@ -80,7 +81,7 @@ export class SessionService implements OnDestroy {
   readonly elapsed$: Observable<number> = this._elapsed$.asObservable();
   readonly aiNotes$: Observable<EnhancedNote[]> = this._aiNotes$.asObservable();
   readonly aiSummary$: Observable<string> = this._aiSummary$.asObservable();
-  readonly chatMessages$: Observable<{ role: 'user' | 'assistant'; content: string }[]> = this._chatMessages$.asObservable();
+  readonly chatMessages$: Observable<ChatMessage[]> = this._chatMessages$.asObservable();
   readonly sessions$: Observable<SessionListItem[]> = this._sessions$.asObservable();
 
   constructor() {
@@ -224,7 +225,14 @@ export class SessionService implements OnDestroy {
   }
 
   addChatMessage(msg: { role: 'user' | 'assistant'; content: string }): void {
-    this._chatMessages$.next([...this._chatMessages$.value, msg]);
+    const chatMessage: ChatMessage = {
+      id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      role: msg.role,
+      content: msg.content,
+      createdAt: Date.now(),
+    };
+    this._chatMessages$.next([...this._chatMessages$.value, chatMessage]);
+    this.requestSave();
   }
 
   resetSession(): void {
@@ -257,7 +265,7 @@ export class SessionService implements OnDestroy {
     this._segments$.next(data.segments || []);
     this._aiNotes$.next(data.aiNotes || []);
     this._aiSummary$.next(data.aiSummary || '');
-    this._chatMessages$.next([]);
+    this._chatMessages$.next(data.chatMessages || []);
     this._elapsed$.next(data.durationMs || 0);
     this._status$.next('done');
   }
@@ -344,6 +352,7 @@ export class SessionService implements OnDestroy {
       segments: this._segments$.value,
       aiNotes: this._aiNotes$.value,
       aiSummary: this._aiSummary$.value,
+      chatMessages: this._chatMessages$.value,
       durationMs: this._elapsed$.value,
       createdAt: this.recordingStartTime || Date.now(),
       updatedAt: Date.now(),
