@@ -56,6 +56,7 @@ export class DatabaseService implements OnModuleDestroy {
         end_time_ms INTEGER NOT NULL,
         is_final INTEGER NOT NULL DEFAULT 1,
         language TEXT,
+        speaker INTEGER,
         PRIMARY KEY (session_id, id)
       );
 
@@ -116,6 +117,13 @@ export class DatabaseService implements OnModuleDestroy {
       // Column already exists — expected
     }
 
+    // Migration: add speaker column to segments
+    try {
+      this.db.exec(`ALTER TABLE segments ADD COLUMN speaker INTEGER`);
+    } catch {
+      // Column already exists — expected
+    }
+
     // Performance indexes
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_segments_session_id ON segments(session_id);
@@ -155,8 +163,8 @@ export class DatabaseService implements OnModuleDestroy {
 
     const deleteSegmentsStmt = this.db.prepare('DELETE FROM segments WHERE session_id = ?');
     const insertSegmentStmt = this.db.prepare(`
-      INSERT OR REPLACE INTO segments (id, session_id, text, start_time_ms, end_time_ms, is_final, language)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO segments (id, session_id, text, start_time_ms, end_time_ms, is_final, language, speaker)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const deleteAiNotesStmt = this.db.prepare('DELETE FROM ai_notes WHERE session_id = ?');
@@ -193,7 +201,8 @@ export class DatabaseService implements OnModuleDestroy {
           seg.startTimeMs,
           seg.endTimeMs,
           seg.isFinal ? 1 : 0,
-          seg.language ?? null
+          seg.language ?? null,
+          seg.speaker ?? null
         );
       }
 
@@ -253,6 +262,7 @@ export class DatabaseService implements OnModuleDestroy {
         endTimeMs: s.end_time_ms,
         isFinal: !!s.is_final,
         language: s.language,
+        speaker: s.speaker ?? undefined,
       })),
       userNotes: session.user_notes,
       aiNotes: aiNotes.map((n) => ({

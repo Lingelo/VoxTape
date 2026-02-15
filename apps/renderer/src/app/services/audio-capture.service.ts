@@ -101,10 +101,10 @@ export class AudioCaptureService implements OnDestroy {
         }
       }
 
-      // Use 'ideal' instead of 'exact' to allow graceful fallback when deviceId is invalid
+      // Use 'exact' to ensure we capture the specific selected device
       const constraints: MediaStreamConstraints = {
         audio: deviceId && deviceId !== 'default'
-          ? { deviceId: { ideal: deviceId } }
+          ? { deviceId: { exact: deviceId } }
           : true,
       };
 

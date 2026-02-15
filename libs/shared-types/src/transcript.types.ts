@@ -8,4 +8,6 @@ export interface TranscriptSegment {
   isFinal: boolean;
   language?: string;
   source?: AudioSource;
+  /** Speaker ID from diarization (0, 1, 2, ...) */
+  speaker?: number;
 }

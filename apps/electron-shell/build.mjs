@@ -1,6 +1,6 @@
 /**
  * Build script for electron-shell.
- * Runs 3 Vite builds: main, preload, stt-worker.
+ * Runs 5 Vite builds: main, preload, stt-worker, llm-worker, diarization-worker.
  */
 import { build } from 'vite';
 import { resolve, dirname } from 'path';
@@ -18,6 +18,7 @@ async function run() {
     { name: 'preload', configFile: resolve(__dirname, 'vite.preload.config.ts') },
     { name: 'stt-worker', configFile: resolve(__dirname, 'vite.worker.config.ts') },
     { name: 'llm-worker', configFile: resolve(__dirname, 'vite.llm-worker.config.ts') },
+    { name: 'diarization-worker', configFile: resolve(__dirname, 'vite.diarization-worker.config.ts') },
   ];
 
   for (const { name, configFile } of configs) {
