@@ -292,7 +292,7 @@ export class DatabaseService implements OnModuleDestroy {
                (SELECT COUNT(*) FROM segments WHERE session_id = s.id) as segment_count,
                (s.ai_summary IS NOT NULL AND s.ai_summary != '') as has_summary
         FROM sessions s
-        ORDER BY s.updated_at DESC
+        ORDER BY s.created_at DESC
       `)
       .all() as any[];
 

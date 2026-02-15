@@ -25,8 +25,12 @@
   <!-- Bottom bar -->
   <div class="bottom-bar" [class.expanded]="chatOpen || transcriptOpen">
     <!-- Audio pill (detached) -->
-    <div class="audio-pill" [class.active]="isRecording">
-      <div class="vu-bars" tabindex="0" role="button" (click)="toggleRecording()" (keydown.enter)="toggleRecording()">
+    <div class="audio-pill" [class.active]="isRecording" [class.disabled]="isRecordingElsewhere">
+      <div class="vu-bars" tabindex="0" role="button"
+        (click)="!isRecordingElsewhere && toggleRecording()"
+        (keydown.enter)="!isRecordingElsewhere && toggleRecording()"
+        [class.disabled]="isRecordingElsewhere"
+        [title]="isRecordingElsewhere ? ('transcript.recordingElsewhere' | translate) : ''">
         @for (bar of vuBars; track $index; let i = $index) {
           <div class="vu-bar"
             [style.height.px]="isRecording ? getBarHeight(i) : 4"

@@ -65,6 +65,9 @@
                 (keydown.enter)="openSession(s.id)"
               >
                 <div class="session-row">
+                  @if (s.id === recordingSessionId) {
+                    <span class="recording-indicator"></span>
+                  }
                   <span class="session-title">{{ s.title }}</span>
                   <button
                     class="action-btn export-btn"

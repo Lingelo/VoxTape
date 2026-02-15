@@ -32,6 +32,7 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges {
   segments: TranscriptSegment[] = [];
   isSpeechActive = false;
   sttStatus: 'loading' | 'ready' | 'error' = 'loading';
+  isRecordingElsewhere = false;
   private readonly session = inject(SessionService);
   private readonly ipc = inject(ElectronIpcService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -52,6 +53,10 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges {
       }),
       this.ipc.sttStatus$.subscribe((status) => {
         this.sttStatus = status;
+        this.cdr.markForCheck();
+      }),
+      this.session.isRecordingElsewhere$.subscribe((elsewhere) => {
+        this.isRecordingElsewhere = elsewhere;
         this.cdr.markForCheck();
       })
     );
@@ -105,5 +110,9 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+  }
+
+  goToRecordingSession(): void {
+    this.session.goToRecordingSession();
   }
 }
