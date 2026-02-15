@@ -8,6 +8,20 @@ interface TranscriptSegment {
   endTimeMs: number;
   isFinal: boolean;
   language?: string;
+  speaker?: number;
+}
+
+export type DiarizationStatus = 'loading' | 'ready' | 'processing' | 'not-available' | 'error';
+
+export interface DiarizationSegment {
+  startMs: number;
+  endMs: number;
+  speaker: number;
+}
+
+export interface DiarizationResult {
+  segments: DiarizationSegment[];
+  error?: string;
 }
 
 /** Type-safe bridge to the preload API exposed via contextBridge */
@@ -25,6 +39,10 @@ interface SourdineApi {
     onStatus(cb: (status: 'loading' | 'ready' | 'error') => void): () => void;
     onSpeechDetected(cb: (detected: boolean) => void): () => void;
     restart(): Promise<void>;
+  };
+  diarization: {
+    onStatus(cb: (status: DiarizationStatus) => void): () => void;
+    onResult(cb: (result: DiarizationResult) => void): () => void;
   };
   media: {
     requestMicAccess(): Promise<boolean>;
@@ -53,12 +71,16 @@ export class ElectronIpcService {
   private readonly _segment$ = new Subject<TranscriptSegment>();
   private readonly _partial$ = new Subject<{ text: string }>();
   private readonly _systemAudioCapturing$ = new BehaviorSubject<boolean>(false);
+  private readonly _diarizationStatus$ = new BehaviorSubject<DiarizationStatus>('loading');
+  private readonly _diarizationResult$ = new Subject<DiarizationResult>();
 
   readonly sttStatus$: Observable<'loading' | 'ready' | 'error'> = this._sttStatus$.asObservable();
   readonly speechDetected$: Observable<boolean> = this._speechDetected$.asObservable();
   readonly segment$: Observable<TranscriptSegment> = this._segment$.asObservable();
   readonly partial$: Observable<{ text: string }> = this._partial$.asObservable();
   readonly systemAudioCapturing$: Observable<boolean> = this._systemAudioCapturing$.asObservable();
+  readonly diarizationStatus$: Observable<DiarizationStatus> = this._diarizationStatus$.asObservable();
+  readonly diarizationResult$: Observable<DiarizationResult> = this._diarizationResult$.asObservable();
 
   private readonly ngZone = inject(NgZone);
 
@@ -90,6 +112,15 @@ export class ElectronIpcService {
 
     this.api.systemAudio.onStatus((capturing) => {
       this.ngZone.run(() => this._systemAudioCapturing$.next(capturing));
+    });
+
+    // Diarization events
+    this.api.diarization?.onStatus((status) => {
+      this.ngZone.run(() => this._diarizationStatus$.next(status));
+    });
+
+    this.api.diarization?.onResult((result) => {
+      this.ngZone.run(() => this._diarizationResult$.next(result));
     });
   }
 

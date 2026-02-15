@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, Subscription, debounceTime, takeUntil } from 'rxjs';
-import { ElectronIpcService } from './electron-ipc.service';
+import { ElectronIpcService, DiarizationSegment } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
 import { LlmService } from './llm.service';
 import type { EnhancedNote, ChatMessage } from '@sourdine/shared-types';
@@ -12,6 +12,8 @@ export interface TranscriptSegment {
   endTimeMs: number;
   isFinal: boolean;
   language?: string;
+  /** Speaker ID from diarization (0, 1, 2, ...) */
+  speaker?: number;
 }
 
 export type SessionStatus = 'idle' | 'recording' | 'processing' | 'done';
@@ -92,6 +94,17 @@ export class SessionService implements OnDestroy {
         const current = this._segments$.value;
         this._segments$.next([...current, segment]);
         this.requestSave();
+      });
+
+    // Subscribe to diarization results (applied after recording stops)
+    this.ipc.diarizationResult$
+      .pipe(takeUntil(this._destroy$))
+      .subscribe((result) => {
+        if (result.error) {
+          console.warn('[SessionService] Diarization error:', result.error);
+          return;
+        }
+        this.applyDiarizationResults(result.segments);
       });
 
     // Auto-save with 2s debounce
@@ -342,8 +355,8 @@ export class SessionService implements OnDestroy {
     const api = this.sourdineApi?.session;
     if (!api) return;
 
-    // Don't persist sessions with no segments
-    if (this._segments$.value.length === 0) return;
+    // Don't persist empty sessions (need at least segments OR notes)
+    if (this._segments$.value.length === 0 && !this._userNotes$.value.trim()) return;
 
     await api.save({
       id: this._id$.value,
@@ -398,5 +411,45 @@ export class SessionService implements OnDestroy {
 
   private generateId(): string {
     return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  /**
+   * Apply diarization results to transcript segments.
+   * Matches diarization segments with transcript segments based on timestamp overlap.
+   */
+  private applyDiarizationResults(diarizationSegments: DiarizationSegment[]): void {
+    if (diarizationSegments.length === 0) return;
+
+    const transcriptSegments = this._segments$.value;
+    if (transcriptSegments.length === 0) return;
+
+    let updated = false;
+    const updatedSegments = transcriptSegments.map((seg) => {
+      // Find the best matching diarization segment (most overlap)
+      let bestMatch: { speaker: number; overlap: number } | null = null;
+
+      for (const dSeg of diarizationSegments) {
+        // Calculate overlap
+        const overlapStart = Math.max(seg.startTimeMs, dSeg.startMs);
+        const overlapEnd = Math.min(seg.endTimeMs, dSeg.endMs);
+        const overlap = Math.max(0, overlapEnd - overlapStart);
+
+        if (overlap > 0 && (!bestMatch || overlap > bestMatch.overlap)) {
+          bestMatch = { speaker: dSeg.speaker, overlap };
+        }
+      }
+
+      if (bestMatch && seg.speaker !== bestMatch.speaker) {
+        updated = true;
+        return { ...seg, speaker: bestMatch.speaker };
+      }
+      return seg;
+    });
+
+    if (updated) {
+      this._segments$.next(updatedSegments);
+      this.requestSave();
+      console.log('[SessionService] Applied diarization results to', updatedSegments.length, 'segments');
+    }
   }
 }

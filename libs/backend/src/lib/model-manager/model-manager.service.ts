@@ -9,7 +9,7 @@ import { createWriteStream } from 'fs';
 export interface ModelInfo {
   id: string;
   name: string;
-  type: 'stt' | 'llm' | 'vad';
+  type: 'stt' | 'llm' | 'vad' | 'diarization';
   url: string;
   size: string;
   description: string;
@@ -58,6 +58,19 @@ const KNOWN_MODELS: ModelInfo[] = [
     description: 'Assistant IA local (résumés, chat)',
     filename: 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf',
   },
+  // Diarization models disabled - too slow for real-time use
+  // {
+  //   id: 'pyannote-segmentation-3',
+  //   name: 'Pyannote Segmentation 3.0',
+  //   type: 'diarization',
+  //   ...
+  // },
+  // {
+  //   id: '3dspeaker-embedding',
+  //   name: '3D-Speaker Embedding',
+  //   type: 'diarization',
+  //   ...
+  // },
 ];
 
 @Injectable()
@@ -69,6 +82,7 @@ export class ModelManagerService extends EventEmitter {
     mkdirSync(join(this.modelsDir, 'llm'), { recursive: true });
     mkdirSync(join(this.modelsDir, 'stt'), { recursive: true });
     mkdirSync(join(this.modelsDir, 'vad'), { recursive: true });
+    mkdirSync(join(this.modelsDir, 'diarization'), { recursive: true });
   }
 
   listKnown(): ModelInfo[] {
@@ -153,6 +167,7 @@ export class ModelManagerService extends EventEmitter {
   private subdirForModel(model: ModelInfo): string {
     if (model.type === 'vad') return 'vad';
     if (model.type === 'llm') return 'llm';
+    if (model.type === 'diarization') return 'diarization';
     return 'stt';
   }
 

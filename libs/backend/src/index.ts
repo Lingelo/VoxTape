@@ -15,3 +15,5 @@ export * from './lib/model-manager/model-manager.service.js';
 export * from './lib/model-manager/model-manager.module.js';
 export * from './lib/system-audio/system-audio.service.js';
 export * from './lib/system-audio/system-audio.module.js';
+export * from './lib/diarization/diarization.service.js';
+export * from './lib/diarization/diarization.module.js';

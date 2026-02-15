@@ -24,6 +24,7 @@ import {
   ConfigService,
   ModelManagerService,
   SystemAudioService,
+  DiarizationService,
 } from '@sourdine/backend';
 import type { LlmPromptPayload } from '@sourdine/shared-types';
 
@@ -39,6 +40,7 @@ let exportService: ExportService;
 let configService: ConfigService;
 let modelManager: ModelManagerService;
 let systemAudioService: SystemAudioService;
+let diarizationService: DiarizationService;
 let isRecording = false;
 
 app.setName('Sourdine');
@@ -62,10 +64,12 @@ async function bootstrapNest(): Promise<void> {
   configService = appContext.get(ConfigService);
   modelManager = appContext.get(ModelManagerService);
   systemAudioService = appContext.get(SystemAudioService);
+  diarizationService = appContext.get(DiarizationService);
 
   // Set worker paths relative to this bundle
   sttService.setWorkerPath(join(__dirname, 'stt-worker.js'));
   llmService.setWorkerPath(join(__dirname, 'llm-worker.js'));
+  diarizationService.setWorkerPath(join(__dirname, 'diarization-worker.js'));
 
   // Initialize database, config, and model manager
   const userData = app.getPath('userData');
@@ -91,7 +95,7 @@ async function bootstrapNest(): Promise<void> {
 
   for (const legacyDir of legacyDirs) {
     if (!existsSync(legacyDir)) continue;
-    for (const subdir of ['llm', 'vad', 'stt']) {
+    for (const subdir of ['llm', 'vad', 'stt', 'diarization']) {
       const src = join(legacyDir, subdir);
       const dest = join(modelsDir, subdir);
       if (!existsSync(src)) continue;
@@ -228,6 +232,8 @@ function startRecording(): void {
   isRecording = true;
 
   audioService.startRecording();
+  // Diarization disabled - too slow for real-time use
+  // diarizationService.startRecording();
   updateTrayMenu();
 
   mainWindow?.webContents.send('audio:recording-start');
@@ -238,6 +244,8 @@ function stopRecording(): void {
   isRecording = false;
 
   audioService.stopRecording();
+  // Diarization disabled - too slow for real-time use
+  // diarizationService.stopRecording();
   // Also stop system audio capture if active
   if (systemAudioService?.isCapturing) {
     systemAudioService.stop();
@@ -275,6 +283,15 @@ function setupIpc(): void {
 
   sttService.on('speech-detected', (detected) => {
     mainWindow?.webContents.send('stt:speech-detected', detected);
+  });
+
+  // Forward diarization events to renderer
+  diarizationService.on('status', (status) => {
+    mainWindow?.webContents.send('diarization:status', status);
+  });
+
+  diarizationService.on('result', (result) => {
+    mainWindow?.webContents.send('diarization:result', result);
   });
 
   // ── LLM IPC ──────────────────────────────────────────────────────────
@@ -482,11 +499,11 @@ function setupIpc(): void {
     databaseService.clearAll();
     // Delete all downloaded models
     const modelsPath = process.env.SOURDINE_MODELS_DIR || join(app.getPath('userData'), 'models');
-    for (const subdir of ['llm', 'vad', 'stt']) {
+    for (const subdir of ['llm', 'vad', 'stt', 'diarization']) {
       const dir = join(modelsPath, subdir);
       if (existsSync(dir)) {
         for (const file of readdirSync(dir)) {
-          rmSync(join(dir, file), { force: true });
+          rmSync(join(dir, file), { recursive: true, force: true });
         }
       }
     }
@@ -588,6 +605,12 @@ app.whenReady().then(async () => {
     console.error('[Main] STT initialization failed:', err.message);
     console.error('[Main] Transcription will not be available.');
   });
+
+  // Diarization disabled - too slow for real-time use
+  // diarizationService.initialize().catch((err) => {
+  //   console.error('[Main] Diarization initialization failed:', err.message);
+  //   console.error('[Main] Speaker identification will not be available.');
+  // });
 
   // Set dock icon on macOS
   if (process.platform === 'darwin' && app.dock) {

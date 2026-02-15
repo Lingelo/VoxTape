@@ -52,6 +52,26 @@ const sourdineApi = {
     restart: (): Promise<void> => ipcRenderer.invoke('stt:restart'),
   },
 
+  diarization: {
+    onStatus: (
+      callback: (status: 'loading' | 'ready' | 'not-available' | 'error') => void
+    ): (() => void) => {
+      const handler = (_event: any, status: any) => callback(status);
+      ipcRenderer.on('diarization:status', handler);
+      return () => ipcRenderer.removeListener('diarization:status', handler);
+    },
+    onResult: (
+      callback: (result: {
+        segments: Array<{ startMs: number; endMs: number; speaker: number }>;
+        error?: string;
+      }) => void
+    ): (() => void) => {
+      const handler = (_event: any, result: any) => callback(result);
+      ipcRenderer.on('diarization:result', handler);
+      return () => ipcRenderer.removeListener('diarization:result', handler);
+    },
+  },
+
   llm: {
     initialize: (): void => {
       ipcRenderer.send('llm:initialize');
