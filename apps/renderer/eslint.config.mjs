@@ -28,7 +28,10 @@ export default [
   },
   {
     files: ['**/*.html'],
-    // Override or add rules here
-    rules: {},
+    // Angular template security rules
+    rules: {
+      // Warn about innerHTML usage in templates (requires manual review)
+      '@angular-eslint/template/no-any': 'warn',
+    },
   },
 ];

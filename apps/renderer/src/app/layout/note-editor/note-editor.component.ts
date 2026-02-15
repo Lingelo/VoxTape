@@ -390,9 +390,9 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         // Skip lines that look like "Titre: xxx" (extracted separately)
         if (line.match(/^Titre\s*:/i)) return '';
         // Headings (### ## #)
-        if (line.startsWith('### ')) return `<h2>${line.slice(4)}</h2>`;
-        if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
-        if (line.startsWith('# ')) return `<h2>${line.slice(2)}</h2>`;
+        if (line.startsWith('### ')) return `<h2>${this.escapeHtml(line.slice(4))}</h2>`;
+        if (line.startsWith('## ')) return `<h2>${this.escapeHtml(line.slice(3))}</h2>`;
+        if (line.startsWith('# ')) return `<h2>${this.escapeHtml(line.slice(2))}</h2>`;
         // List items
         if (line.startsWith('- ')) return `<li>${this.inlineFormat(line.slice(2))}</li>`;
         if (line.match(/^\* /)) return `<li>${this.inlineFormat(line.slice(2))}</li>`;
@@ -406,8 +406,11 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
   }
 
+  /** Apply inline markdown formatting (bold, italic) with HTML escaping */
   private inlineFormat(text: string): string {
-    return text
+    // Escape HTML first to prevent XSS, then apply markdown formatting
+    const escaped = this.escapeHtml(text);
+    return escaped
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
   }

@@ -490,11 +490,47 @@ function setupIpc(): void {
   });
 
   // ── Config IPC ────────────────────────────────────────────────────
+
+  // Whitelist of allowed config keys with their expected types
+  const CONFIG_WHITELIST: Record<string, 'string' | 'number' | 'boolean' | 'string|null'> = {
+    'language': 'string',
+    'theme': 'string',
+    'audio.defaultDeviceId': 'string|null',
+    'audio.systemAudioEnabled': 'boolean',
+    'llm.modelPath': 'string|null',
+    'llm.contextSize': 'number',
+    'llm.temperature': 'number',
+    'stt.modelPath': 'string|null',
+    'onboardingComplete': 'boolean',
+  };
+
+  function validateConfigValue(key: string, value: unknown): boolean {
+    const expectedType = CONFIG_WHITELIST[key];
+    if (!expectedType) return false;
+
+    if (expectedType === 'string|null') {
+      return value === null || typeof value === 'string';
+    }
+    return typeof value === expectedType;
+  }
+
   ipcMain.handle('config:get', () => {
     return configService.getAll();
   });
 
-  ipcMain.handle('config:set', (_event, key: string, value: any) => {
+  ipcMain.handle('config:set', (_event, key: string, value: unknown) => {
+    // Validate key is in whitelist
+    if (!(key in CONFIG_WHITELIST)) {
+      console.warn(`[config:set] Rejected unknown config key: ${key}`);
+      return { ok: false, error: 'Invalid config key' };
+    }
+
+    // Validate value type
+    if (!validateConfigValue(key, value)) {
+      console.warn(`[config:set] Rejected invalid value type for key: ${key}`);
+      return { ok: false, error: 'Invalid value type' };
+    }
+
     configService.set(key, value);
     // Live-update LLM config when relevant keys change
     if (key.startsWith('llm.')) {

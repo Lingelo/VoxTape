@@ -441,8 +441,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     return md
       .split('\n')
       .map((line) => {
-        if (line.startsWith('## ')) return `<h3>${line.slice(3)}</h3>`;
-        if (line.startsWith('# ')) return `<h3>${line.slice(2)}</h3>`;
+        if (line.startsWith('## ')) return `<h3>${this.escapeHtml(line.slice(3))}</h3>`;
+        if (line.startsWith('# ')) return `<h3>${this.escapeHtml(line.slice(2))}</h3>`;
         if (line.startsWith('- ')) return `<li>${this.inlineFormat(line.slice(2))}</li>`;
         if (line.trim() === '') return '';
         return `<p>${this.inlineFormat(line)}</p>`;
@@ -451,9 +451,21 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       .replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
   }
 
+  /** Apply inline markdown formatting (bold, italic) with HTML escaping */
   private inlineFormat(text: string): string {
-    return text
+    // Escape HTML first to prevent XSS, then apply markdown formatting
+    const escaped = this.escapeHtml(text);
+    return escaped
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }

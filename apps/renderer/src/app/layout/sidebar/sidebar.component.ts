@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 import { SessionService } from '../../services/session.service';
+import { sanitizeExcerpt } from '@sourdine/shared-types';
 
 interface SessionItem {
   id: string;
@@ -447,7 +448,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
   private async performSearch(term: string): Promise<void> {
     const api = (window as Window & { sourdine?: { search?: { query: (term: string) => Promise<SearchResult[]> } } }).sourdine?.search;
     if (!api) return;
-    this.searchResults = await api.query(term);
+    const results = await api.query(term);
+    // Sanitize excerpts to prevent XSS while preserving <mark> tags
+    this.searchResults = results.map((r) => ({
+      ...r,
+      excerpt: sanitizeExcerpt(r.excerpt),
+    }));
   }
 
   private groupByDate(sessions: SessionItem[]): SessionGroup[] {
