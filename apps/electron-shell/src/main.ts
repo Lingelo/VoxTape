@@ -30,7 +30,6 @@ import type { LlmPromptPayload } from '@sourdine/shared-types';
 // ── State ──────────────────────────────────────────────────────────────────
 
 let mainWindow: BrowserWindow | null = null;
-let widgetWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let sttService: SttService;
 let audioService: AudioService;
@@ -173,44 +172,8 @@ function createMainWindow(): void {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
-  // Widget disabled — keep handlers as no-ops for now
-  mainWindow.on('blur', () => {});
-  mainWindow.on('focus', () => {});
-
   mainWindow.on('closed', () => {
     mainWindow = null;
-  });
-}
-
-function createWidgetWindow(): void {
-  widgetWindow = new BrowserWindow({
-    width: 140,
-    height: 42,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    resizable: false,
-    focusable: false,
-    hasShadow: false,
-    backgroundColor: '#00000000',
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-    },
-  });
-
-  const widgetUrl = isDev
-    ? 'http://localhost:4200/widget'
-    : `file://${join(__dirname, '..', 'renderer', 'index.html')}#/widget`;
-
-  widgetWindow.loadURL(widgetUrl);
-  widgetWindow.hide(); // Hidden by default, shown when recording + main unfocused
-
-  widgetWindow.on('closed', () => {
-    widgetWindow = null;
   });
 }
 
@@ -265,7 +228,6 @@ function startRecording(): void {
   isRecording = true;
 
   audioService.startRecording();
-  broadcastWidgetState();
   updateTrayMenu();
 
   mainWindow?.webContents.send('audio:recording-start');
@@ -280,19 +242,9 @@ function stopRecording(): void {
   if (systemAudioService?.isCapturing) {
     systemAudioService.stop();
   }
-  broadcastWidgetState();
   updateTrayMenu();
 
-  if (widgetWindow && !widgetWindow.isDestroyed()) {
-    widgetWindow.hide();
-  }
-
   mainWindow?.webContents.send('audio:recording-stop');
-}
-
-function broadcastWidgetState(): void {
-  const state = { isRecording, audioLevel: 0 };
-  widgetWindow?.webContents.send('widget:state', state);
 }
 
 // ── IPC Wiring ─────────────────────────────────────────────────────────────
@@ -302,29 +254,11 @@ function setupIpc(): void {
   ipcMain.on('audio:chunk', (_event, samples: number[]) => {
     audioService.handleAudioChunk(new Int16Array(samples));
 
-    // Calculate audio level for widget VU meter
-    if (isRecording && samples.length > 0) {
-      const rms = Math.sqrt(
-        samples.reduce((sum: number, s: number) => sum + s * s, 0) / samples.length
-      );
-      const level = Math.min(1, rms / 10000); // Normalize to 0-1
-      widgetWindow?.webContents.send('widget:state', {
-        isRecording,
-        audioLevel: level,
-      });
-    }
   });
 
   // Recording control from renderer
   ipcMain.on('audio:recording-start', () => startRecording());
   ipcMain.on('audio:recording-stop', () => stopRecording());
-
-  // Widget controls
-  ipcMain.on('widget:toggle-recording', () => toggleRecording());
-  ipcMain.on('widget:focus-main', () => {
-    mainWindow?.show();
-    mainWindow?.focus();
-  });
 
   // Forward STT events to renderer windows
   sttService.on('segment', (segment) => {
@@ -663,7 +597,6 @@ app.whenReady().then(async () => {
 
   // Create windows
   createMainWindow();
-  // Widget disabled: createWidgetWindow();
   createTray();
 
   // Application menu

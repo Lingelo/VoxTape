@@ -26,11 +26,6 @@ interface SourdineApi {
     onSpeechDetected(cb: (detected: boolean) => void): () => void;
     restart(): Promise<void>;
   };
-  widget: {
-    onState(cb: (state: { isRecording: boolean; audioLevel: number }) => void): () => void;
-    toggleRecording(): void;
-    focusMain(): void;
-  };
   media: {
     requestMicAccess(): Promise<boolean>;
     requestScreenAccess(): Promise<boolean>;
@@ -57,17 +52,12 @@ export class ElectronIpcService {
   private readonly _speechDetected$ = new BehaviorSubject<boolean>(false);
   private readonly _segment$ = new Subject<TranscriptSegment>();
   private readonly _partial$ = new Subject<{ text: string }>();
-  private readonly _widgetState$ = new BehaviorSubject<{ isRecording: boolean; audioLevel: number }>({
-    isRecording: false,
-    audioLevel: 0,
-  });
   private readonly _systemAudioCapturing$ = new BehaviorSubject<boolean>(false);
 
   readonly sttStatus$: Observable<'loading' | 'ready' | 'error'> = this._sttStatus$.asObservable();
   readonly speechDetected$: Observable<boolean> = this._speechDetected$.asObservable();
   readonly segment$: Observable<TranscriptSegment> = this._segment$.asObservable();
   readonly partial$: Observable<{ text: string }> = this._partial$.asObservable();
-  readonly widgetState$: Observable<{ isRecording: boolean; audioLevel: number }> = this._widgetState$.asObservable();
   readonly systemAudioCapturing$: Observable<boolean> = this._systemAudioCapturing$.asObservable();
 
   private readonly ngZone = inject(NgZone);
@@ -98,10 +88,6 @@ export class ElectronIpcService {
       this.ngZone.run(() => this._partial$.next(data));
     });
 
-    this.api.widget.onState((state) => {
-      this.ngZone.run(() => this._widgetState$.next(state));
-    });
-
     this.api.systemAudio.onStatus((capturing) => {
       this.ngZone.run(() => this._systemAudioCapturing$.next(capturing));
     });
@@ -121,14 +107,6 @@ export class ElectronIpcService {
 
   stopRecording(): void {
     this.api?.audio.stopRecording();
-  }
-
-  widgetToggleRecording(): void {
-    this.api?.widget.toggleRecording();
-  }
-
-  widgetFocusMain(): void {
-    this.api?.widget.focusMain();
   }
 
   async restartStt(): Promise<void> {

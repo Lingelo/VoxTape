@@ -9,11 +9,6 @@ export const appRoutes: Route[] = [
       import('./layout/main-layout.component').then((m) => m.MainLayoutComponent),
   },
   {
-    path: 'widget',
-    loadComponent: () =>
-      import('./widget/widget.component').then((m) => m.WidgetComponent),
-  },
-  {
     path: 'settings',
     loadComponent: () =>
       import('./layout/settings/settings.component').then((m) => m.SettingsComponent),
