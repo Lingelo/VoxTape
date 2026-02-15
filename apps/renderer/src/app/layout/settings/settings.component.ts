@@ -183,6 +183,29 @@ interface Config {
             </div>
           </section>
 
+        <!-- Keyboard Shortcuts -->
+        <section class="settings-section">
+          <h2>Raccourcis clavier</h2>
+          <div class="shortcuts-list">
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Démarrer / arrêter l'enregistrement</span>
+              <kbd>⌘R</kbd>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Fermer les panneaux</span>
+              <kbd>Esc</kbd>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Envoyer un message (chat)</span>
+              <kbd>Entrée</kbd>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Commandes rapides (chat)</span>
+              <kbd>/</kbd>
+            </div>
+          </div>
+        </section>
+
         <!-- About -->
         <section class="settings-section">
           <h2>À propos</h2>
@@ -519,6 +542,32 @@ interface Config {
     }
     .mic-status.active {
       color: var(--accent-primary);
+    }
+
+    .shortcuts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+    .shortcut-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    kbd {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text-primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
   `],
 })
