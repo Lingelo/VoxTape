@@ -18,40 +18,16 @@
 
 ---
 
-Sourdine est une application macOS de bureau pour la transcription en temps réel de vos réunions (Teams, Meet, Zoom...) avec génération automatique de notes, résumés et points clés. **Tout fonctionne localement** — aucune API externe, aucune donnée envoyée sur le cloud, aucun abonnement.
+Application macOS pour la transcription en temps réel de vos réunions (Teams, Meet, Zoom...) avec génération automatique de résumés et points clés. **Tout fonctionne localement** — aucune API externe, aucune donnée envoyée sur le cloud.
 
 ## Fonctionnalités
 
-- **Transcription en temps réel** — Capture simultanée du micro et de l'audio système (appels vidéo, podcasts, etc.)
-- **IA locale** — Résumé automatique, points clés, actions à suivre via Mistral 7B
-- **Chat contextuel** — Posez des questions sur vos réunions passées
-- **Recherche full-text** — Retrouvez rapidement n'importe quel sujet discuté
-- **Organisation par dossiers** — Classez vos sessions de transcription
-- **Export** — Exportez vos notes en Markdown ou texte brut
-- **100% hors-ligne** — Aucune connexion internet requise après le téléchargement initial des modèles
-- **Vie privée garantie** — Vos données ne quittent jamais votre machine
-
-## Aperçu
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  🎙️ Session en cours                              ⏱️ 00:45:23   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  [Marie] On devrait finaliser le design d'ici vendredi.        │
-│  [Pierre] D'accord, je m'occupe des maquettes Figma.           │
-│  [Marie] Parfait. On fait un point mercredi ?                   │
-│  [Pierre] Ça marche, je t'envoie un invite.                    │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  📝 Notes IA                                                    │
-│  ─────────────────────────────────────────────────────────────  │
-│  **Résumé** : Discussion sur la finalisation du design         │
-│  **Actions** :                                                  │
-│  - Pierre : Créer les maquettes Figma                          │
-│  - Marie : Organiser un point mercredi                         │
-└─────────────────────────────────────────────────────────────────┘
-```
+- **Transcription temps réel** — Capture simultanée micro + audio système
+- **IA locale** — Résumé, points clés, actions via Mistral 7B
+- **Chat contextuel** — Questions sur vos réunions passées
+- **Recherche full-text** — SQLite FTS5
+- **Export** — Markdown ou texte brut
+- **100% hors-ligne** — Aucune connexion requise après téléchargement des modèles
 
 ## Prérequis
 
@@ -62,26 +38,16 @@ Sourdine est une application macOS de bureau pour la transcription en temps rée
 | **Stockage** | 10 Go | 20 Go |
 | **Processeur** | Apple Silicon (M1) | M2/M3/M4 |
 
-> **Note** : La capture audio système nécessite macOS 14.2+ (ScreenCaptureKit). Les Mac Intel ne sont pas officiellement supportés.
-
-### Optionnel (pour le développement)
-
-- **Node.js 20+** — Recommandé : utiliser [nvm](https://github.com/nvm-sh/nvm)
-- **Rust** — Pour compiler le module natif de capture audio système
-  ```bash
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-  ```
+> La capture audio système nécessite macOS 14.2+ (ScreenCaptureKit). Les Mac Intel ne sont pas supportés.
 
 ## Installation (Utilisateurs)
 
-### Téléchargement
-
 1. Télécharger le DMG depuis [Releases](https://github.com/Lingelo/Sourdine/releases)
-2. Ouvrir le DMG et glisser Sourdine dans Applications
+2. Glisser Sourdine dans Applications
 
 ### Contournement Gatekeeper
 
-L'application n'est pas signée (pas de certificat Apple Developer). macOS affichera une erreur "application endommagée". Exécutez cette commande :
+L'application n'est pas signée. macOS affichera "application endommagée". Exécutez :
 
 ```bash
 xattr -cr /Applications/Sourdine.app
@@ -90,145 +56,94 @@ xattr -cr /Applications/Sourdine.app
 ### Premier lancement
 
 1. Lancer Sourdine
-2. L'assistant d'onboarding vous guidera pour télécharger les modèles IA (~5 Go)
-3. Autoriser l'accès au micro et à l'enregistrement d'écran dans Préférences Système
+2. L'assistant télécharge les modèles IA (~5 Go)
+3. Autoriser l'accès micro + enregistrement d'écran dans Préférences Système
 
-## Installation (Développeurs)
+## Développement
+
+### Prérequis
+
+- **Node.js 20+** (recommandé : [nvm](https://github.com/nvm-sh/nvm))
+- **Rust** (optionnel, pour la capture audio système)
+  ```bash
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  ```
+
+### Démarrage rapide
 
 ```bash
-# Cloner le repo
+# Cloner et installer
 git clone https://github.com/Lingelo/Sourdine.git
 cd Sourdine
-
-# Installer les dépendances
 npm install
 
 # Télécharger les modèles IA
-npm run download-model       # STT: Silero VAD + Parakeet TDT (~640 Mo)
-npm run download-llm-model   # LLM: Mistral 7B Q4_K_M (~4.4 Go)
+npm run download-model       # STT (~640 Mo)
+npm run download-llm-model   # LLM (~4.4 Go)
 
-# Lancer en mode développement
+# Lancer en mode dev (hot-reload)
 npm run dev
 ```
 
-L'application s'ouvre automatiquement. Le serveur Angular tourne sur `http://localhost:4200`.
+L'application s'ouvre automatiquement. Angular tourne sur `http://localhost:4200`.
 
-### Commandes utiles
+### Commandes
 
 | Commande | Description |
 |----------|-------------|
 | `npm run dev` | Mode développement avec hot-reload |
+| `npm test` | Lancer les tests (Vitest) |
 | `npm run build` | Build de production |
-| `npm run package` | Créer Sourdine.app (non signé) |
-| `npm run make` | Créer DMG + ZIP distribuables |
-| `npm run build:native` | Compiler le module Rust manuellement |
+| `npm run package` | Créer Sourdine.app |
+| `npm run make` | Créer DMG + ZIP |
+| `npm run build:native` | Compiler le module Rust |
 
 ## Architecture
 
-Sourdine utilise une architecture multi-processus pour garantir stabilité et performances :
-
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Electron Main Process                                          │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  NestJS Backend (DI container)                            │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
-│  │  │ AudioModule │  │  SttModule  │  │    LlmModule    │   │  │
-│  │  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘   │  │
-│  │         │                │                   │            │  │
-│  │         ▼                ▼                   ▼            │  │
-│  │    ┌─────────┐     ┌──────────┐       ┌──────────┐       │  │
-│  │    │  Rust   │     │stt-worker│       │llm-worker│       │  │
-│  │    │ Module  │     │(sherpa)  │       │(llama)   │       │  │
-│  │    └─────────┘     └──────────┘       └──────────┘       │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
-│  │  │ Database    │  │   Config    │  │     Export      │   │  │
-│  │  │ (SQLite)    │  │   Module    │  │     Module      │   │  │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘   │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ IPC (contextBridge)
-┌────────────────────────────┴────────────────────────────────────┐
-│  Renderer Process (Angular 21 SPA)                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │   Session   │  │    Audio    │  │         LLM             │  │
-│  │   Service   │  │   Capture   │  │        Service          │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Electron Main Process                                      │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  NestJS Backend                                       │  │
+│  │  AudioModule → SttModule → stt-worker (sherpa-onnx)   │  │
+│  │  LlmModule ────────────→ llm-worker (node-llama-cpp)  │  │
+│  │  DatabaseModule (SQLite) | ConfigModule | ExportModule│  │
+│  └───────────────────────────────────────────────────────┘  │
+│  IPC Hub (contextBridge)                                    │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────┴───────────────────────────────────┐
+│  Renderer Process (Angular 21 SPA)                          │
+│  SessionService | AudioCaptureService | LlmService          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Stack technique
+### Structure Nx
 
-| Couche | Technologies |
-|--------|--------------|
-| **Desktop** | Electron 34 |
-| **Frontend** | Angular 21, SCSS, Signals |
-| **Backend** | NestJS 11, RxJS |
-| **Database** | SQLite (better-sqlite3), FTS5 |
-| **STT** | sherpa-onnx (Parakeet TDT + Silero VAD) |
-| **LLM** | node-llama-cpp (Mistral 7B) |
-| **Audio** | ScreenCaptureKit (Rust/napi-rs) |
-| **Build** | Nx monorepo, Vite, Electron Forge |
+| Projet | Stack | Description |
+|--------|-------|-------------|
+| `apps/electron-shell` | Electron + Vite | Process principal + workers STT/LLM |
+| `apps/renderer` | Angular 21 | Interface utilisateur |
+| `libs/backend` | NestJS 11 | Services (audio, STT, LLM, DB, export) |
+| `libs/shared-types` | TypeScript | Interfaces et constantes IPC |
+| `libs/native-audio-capture` | Rust + napi-rs | Capture audio système (ScreenCaptureKit) |
 
-### Structure du projet
+### Modèles IA
 
-```
-sourdine/
-├── apps/
-│   ├── electron-shell/        # Process principal Electron + workers
-│   │   ├── src/main.ts        # Point d'entrée Electron
-│   │   ├── src/preload.ts     # Bridge IPC sécurisé
-│   │   ├── src/stt-worker.ts  # Worker transcription
-│   │   └── src/llm-worker.ts  # Worker LLM
-│   └── renderer/              # Interface Angular
-│       └── src/app/           # Components, services, routes
-├── libs/
-│   ├── backend/               # Services NestJS
-│   │   └── src/lib/
-│   │       ├── audio/         # Capture et mixage audio
-│   │       ├── stt/           # Orchestration transcription
-│   │       ├── llm/           # Orchestration LLM
-│   │       ├── database/      # Accès SQLite
-│   │       └── export/        # Export Markdown/texte
-│   ├── native-audio-capture/  # Module Rust ScreenCaptureKit
-│   └── shared-types/          # Types TypeScript partagés
-├── models/                    # Modèles IA (téléchargés)
-└── scripts/                   # Scripts de build et packaging
-```
-
-### Modèles IA utilisés
-
-| Modèle | Taille | Usage | Performance |
-|--------|--------|-------|-------------|
-| [Silero VAD](https://github.com/snakers4/silero-vad) | 2 Mo | Détection de voix | ~1ms/chunk |
-| [Parakeet TDT 0.6B](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) | 640 Mo | Transcription (STT) | Temps réel |
-| [Mistral 7B Q4_K_M](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) | 4.4 Go | Résumé et chat | ~20 tokens/s (M2) |
-
-## Roadmap
-
-- [ ] Support multi-langue (actuellement français/anglais)
-- [ ] Identification des locuteurs (speaker diarization)
-- [ ] Synchronisation cloud optionnelle (chiffrée)
-- [ ] Intégration calendrier (Google Calendar, Outlook)
-- [ ] Plugins pour Teams, Meet, Zoom
-- [ ] Version Windows/Linux
+| Modèle | Taille | Usage |
+|--------|--------|-------|
+| Silero VAD | 2 Mo | Détection de voix |
+| Parakeet TDT 0.6B | 640 Mo | Transcription (STT) |
+| Mistral 7B Q4_K_M | 4.4 Go | Résumé et chat |
 
 ## Contribuer
 
-Les contributions sont bienvenues ! N'hésitez pas à ouvrir une issue ou une PR.
-
 1. Fork le projet
 2. Créer une branche (`git checkout -b feature/ma-feature`)
-3. Commit les changements (`git commit -m 'feat: ajout de ma feature'`)
+3. Commit (`git commit -m 'feat: ajout de ma feature'`)
 4. Push (`git push origin feature/ma-feature`)
 5. Ouvrir une Pull Request
 
 ## Licence
 
-MIT — Voir [LICENSE](LICENSE) pour plus de détails.
-
----
-
-<p align="center">
-  Fait avec ❤️ par <a href="https://github.com/Lingelo">Angelo Lima</a>
-</p>
+MIT — Voir [LICENSE](LICENSE)
