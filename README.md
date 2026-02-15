@@ -1,51 +1,113 @@
 # Sourdine
 
-Application macOS de transcription de reunions et prise de notes assistee par IA. Tout fonctionne **100% en local** — aucune API externe, aucune donnee envoyee sur le cloud.
+<p align="center">
+  <img src="assets/icon.icns" alt="Sourdine Logo" width="128" height="128">
+</p>
 
-![macOS](https://img.shields.io/badge/macOS-12%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+<p align="center">
+  <strong>Transcription de réunions et prise de notes assistée par IA — 100% locale, 100% privée</strong>
+</p>
 
-## Fonctionnalites
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-14.2%2B-blue?logo=apple" alt="macOS">
+  <img src="https://img.shields.io/badge/Electron-34-47848F?logo=electron" alt="Electron">
+  <img src="https://img.shields.io/badge/Angular-21-DD0031?logo=angular" alt="Angular">
+  <img src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs" alt="NestJS">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+</p>
 
-- **Transcription en temps reel** — Capture audio micro + systeme (appels Teams, Meet, etc.)
-- **IA locale** — Resume, points cles, actions via Mistral 7B (node-llama-cpp)
-- **Chat contextuel** — Posez des questions sur vos reunions
-- **100% hors-ligne** — Aucune connexion internet requise apres telechargement des modeles
-- **Vie privee** — Vos donnees restent sur votre machine
+---
 
-## Prerequis
+Sourdine est une application macOS de bureau pour la transcription en temps réel de vos réunions (Teams, Meet, Zoom...) avec génération automatique de notes, résumés et points clés. **Tout fonctionne localement** — aucune API externe, aucune donnée envoyée sur le cloud, aucun abonnement.
 
-- **macOS 12+** (Monterey ou plus recent)
-- **Node.js 20+** (recommande: utiliser [nvm](https://github.com/nvm-sh/nvm))
-- **16 Go RAM minimum** (pour le modele LLM)
-- **~6 Go d'espace disque** (modeles IA)
+## Fonctionnalités
 
-### Optionnel (pour la capture audio systeme)
+- **Transcription en temps réel** — Capture simultanée du micro et de l'audio système (appels vidéo, podcasts, etc.)
+- **IA locale** — Résumé automatique, points clés, actions à suivre via Mistral 7B
+- **Chat contextuel** — Posez des questions sur vos réunions passées
+- **Recherche full-text** — Retrouvez rapidement n'importe quel sujet discuté
+- **Organisation par dossiers** — Classez vos sessions de transcription
+- **Export** — Exportez vos notes en Markdown ou texte brut
+- **100% hors-ligne** — Aucune connexion internet requise après le téléchargement initial des modèles
+- **Vie privée garantie** — Vos données ne quittent jamais votre machine
 
-- **Rust** — Pour compiler le module natif de capture audio systeme
+## Aperçu
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  🎙️ Session en cours                              ⏱️ 00:45:23   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  [Marie] On devrait finaliser le design d'ici vendredi.        │
+│  [Pierre] D'accord, je m'occupe des maquettes Figma.           │
+│  [Marie] Parfait. On fait un point mercredi ?                   │
+│  [Pierre] Ça marche, je t'envoie un invite.                    │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  📝 Notes IA                                                    │
+│  ─────────────────────────────────────────────────────────────  │
+│  **Résumé** : Discussion sur la finalisation du design         │
+│  **Actions** :                                                  │
+│  - Pierre : Créer les maquettes Figma                          │
+│  - Marie : Organiser un point mercredi                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Prérequis
+
+| Composant | Minimum | Recommandé |
+|-----------|---------|------------|
+| **macOS** | 14.2 (Sonoma) | 15+ (Sequoia) |
+| **RAM** | 16 Go | 32 Go |
+| **Stockage** | 10 Go | 20 Go |
+| **Processeur** | Apple Silicon (M1) | M2/M3/M4 |
+
+> **Note** : La capture audio système nécessite macOS 14.2+ (ScreenCaptureKit). Les Mac Intel ne sont pas officiellement supportés.
+
+### Optionnel (pour le développement)
+
+- **Node.js 20+** — Recommandé : utiliser [nvm](https://github.com/nvm-sh/nvm)
+- **Rust** — Pour compiler le module natif de capture audio système
   ```bash
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   ```
 
-## Installation
+## Installation (Utilisateurs)
+
+### Téléchargement
+
+1. Télécharger le DMG depuis [Releases](https://github.com/Lingelo/Sourdine/releases)
+2. Ouvrir le DMG et glisser Sourdine dans Applications
+
+### Contournement Gatekeeper
+
+L'application n'est pas signée (pas de certificat Apple Developer). macOS affichera une erreur "application endommagée". Exécutez cette commande :
+
+```bash
+xattr -cr /Applications/Sourdine.app
+```
+
+### Premier lancement
+
+1. Lancer Sourdine
+2. L'assistant d'onboarding vous guidera pour télécharger les modèles IA (~5 Go)
+3. Autoriser l'accès au micro et à l'enregistrement d'écran dans Préférences Système
+
+## Installation (Développeurs)
 
 ```bash
 # Cloner le repo
 git clone https://github.com/Lingelo/Sourdine.git
 cd Sourdine
 
-# Installer les dependances (rebuild automatique des modules natifs pour Electron)
+# Installer les dépendances
 npm install
 
-# Telecharger les modeles IA (~640 Mo pour STT, ~4.4 Go pour LLM)
-npm run download-model       # Silero VAD + Parakeet TDT
-npm run download-llm-model   # Mistral 7B Q4_K_M
-```
+# Télécharger les modèles IA
+npm run download-model       # STT: Silero VAD + Parakeet TDT (~640 Mo)
+npm run download-llm-model   # LLM: Mistral 7B Q4_K_M (~4.4 Go)
 
-## Developpement
-
-```bash
-# Lancer l'app en mode dev (Angular hot-reload + Electron)
+# Lancer en mode développement
 npm run dev
 ```
 
@@ -55,97 +117,118 @@ L'application s'ouvre automatiquement. Le serveur Angular tourne sur `http://loc
 
 | Commande | Description |
 |----------|-------------|
-| `npm run dev` | Mode developpement avec hot-reload |
+| `npm run dev` | Mode développement avec hot-reload |
 | `npm run build` | Build de production |
-| `npm run package` | Creer Sourdine.app (non signe) |
-| `npm run make` | Creer DMG + ZIP distribuables |
+| `npm run package` | Créer Sourdine.app (non signé) |
+| `npm run make` | Créer DMG + ZIP distribuables |
+| `npm run build:native` | Compiler le module Rust manuellement |
+
+## Architecture
+
+Sourdine utilise une architecture multi-processus pour garantir stabilité et performances :
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Electron Main Process                                          │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  NestJS Backend (DI container)                            │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
+│  │  │ AudioModule │  │  SttModule  │  │    LlmModule    │   │  │
+│  │  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘   │  │
+│  │         │                │                   │            │  │
+│  │         ▼                ▼                   ▼            │  │
+│  │    ┌─────────┐     ┌──────────┐       ┌──────────┐       │  │
+│  │    │  Rust   │     │stt-worker│       │llm-worker│       │  │
+│  │    │ Module  │     │(sherpa)  │       │(llama)   │       │  │
+│  │    └─────────┘     └──────────┘       └──────────┘       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
+│  │  │ Database    │  │   Config    │  │     Export      │   │  │
+│  │  │ (SQLite)    │  │   Module    │  │     Module      │   │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────────┘   │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ IPC (contextBridge)
+┌────────────────────────────┴────────────────────────────────────┐
+│  Renderer Process (Angular 21 SPA)                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │   Session   │  │    Audio    │  │         LLM             │  │
+│  │   Service   │  │   Capture   │  │        Service          │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Stack technique
+
+| Couche | Technologies |
+|--------|--------------|
+| **Desktop** | Electron 34 |
+| **Frontend** | Angular 21, SCSS, Signals |
+| **Backend** | NestJS 11, RxJS |
+| **Database** | SQLite (better-sqlite3), FTS5 |
+| **STT** | sherpa-onnx (Parakeet TDT + Silero VAD) |
+| **LLM** | node-llama-cpp (Mistral 7B) |
+| **Audio** | ScreenCaptureKit (Rust/napi-rs) |
+| **Build** | Nx monorepo, Vite, Electron Forge |
 
 ### Structure du projet
 
 ```
 sourdine/
 ├── apps/
-│   ├── electron-shell/     # Process principal Electron + workers
-│   └── renderer/           # Interface Angular
+│   ├── electron-shell/        # Process principal Electron + workers
+│   │   ├── src/main.ts        # Point d'entrée Electron
+│   │   ├── src/preload.ts     # Bridge IPC sécurisé
+│   │   ├── src/stt-worker.ts  # Worker transcription
+│   │   └── src/llm-worker.ts  # Worker LLM
+│   └── renderer/              # Interface Angular
+│       └── src/app/           # Components, services, routes
 ├── libs/
-│   ├── backend/            # Services NestJS (audio, STT, LLM, DB)
-│   ├── native-audio-capture/  # Module Rust pour capture audio systeme
-│   └── shared-types/       # Types TypeScript partages
-├── models/                 # Modeles IA (telecharges)
-└── scripts/                # Scripts de build et packaging
+│   ├── backend/               # Services NestJS
+│   │   └── src/lib/
+│   │       ├── audio/         # Capture et mixage audio
+│   │       ├── stt/           # Orchestration transcription
+│   │       ├── llm/           # Orchestration LLM
+│   │       ├── database/      # Accès SQLite
+│   │       └── export/        # Export Markdown/texte
+│   ├── native-audio-capture/  # Module Rust ScreenCaptureKit
+│   └── shared-types/          # Types TypeScript partagés
+├── models/                    # Modèles IA (téléchargés)
+└── scripts/                   # Scripts de build et packaging
 ```
 
-## Architecture
+### Modèles IA utilisés
 
-```
-┌─────────────────────────────────────────────────┐
-│  Electron Main Process                          │
-│  ┌─────────────────────────────────────────┐    │
-│  │  NestJS Backend                         │    │
-│  │  AudioModule → SttService → stt-worker ─┼──→ sherpa-onnx (Parakeet TDT)
-│  │  LlmModule → LlmService → llm-worker ───┼──→ node-llama-cpp (Mistral 7B)
-│  │  DatabaseModule (SQLite)                │    │
-│  └─────────────────────────────────────────┘    │
-└────────────────┬────────────────────────────────┘
-                 │ IPC (contextBridge)
-┌────────────────┴────────────────────────────────┐
-│  Renderer Process (Angular 21)                  │
-│  SessionService, AudioCaptureService, LlmService│
-└─────────────────────────────────────────────────┘
-```
+| Modèle | Taille | Usage | Performance |
+|--------|--------|-------|-------------|
+| [Silero VAD](https://github.com/snakers4/silero-vad) | 2 Mo | Détection de voix | ~1ms/chunk |
+| [Parakeet TDT 0.6B](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) | 640 Mo | Transcription (STT) | Temps réel |
+| [Mistral 7B Q4_K_M](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) | 4.4 Go | Résumé et chat | ~20 tokens/s (M2) |
 
-### Modeles IA utilises
+## Roadmap
 
-| Modele | Taille | Usage |
-|--------|--------|-------|
-| [Silero VAD](https://github.com/snakers4/silero-vad) | 2 Mo | Detection de voix |
-| [Parakeet TDT 0.6B](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) | 640 Mo | Transcription (STT) |
-| [Mistral 7B Q4_K_M](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF) | 4.4 Go | Resume et chat |
-
-## Packaging
-
-### Build local
-
-```bash
-# Creer l'app macOS
-npm run package
-# → out/Sourdine-darwin-arm64/Sourdine.app
-
-# Creer un DMG
-npm run make
-# → out/make/Sourdine-x.x.x-arm64.dmg
-```
-
-### Release GitHub
-
-Les releases sont declenchees manuellement via GitHub Actions :
-
-1. Aller dans **Actions** > **Release**
-2. Cliquer sur **Run workflow**
-3. Entrer la version (ex: `v0.1.0-beta`)
-4. Lancer le workflow
-
-Le workflow va :
-1. Builder l'application pour macOS (arm64)
-2. Creer le DMG
-3. Publier une release GitHub avec les artefacts
-
-## Installation (Utilisateurs)
-
-1. Telecharger le DMG depuis [Releases](https://github.com/Lingelo/Sourdine/releases)
-2. Ouvrir le DMG et glisser Sourdine dans Applications
-3. **Important** — L'app n'est pas signee (pas de certificat Apple Developer). macOS va afficher une erreur "app endommagee". Executez cette commande pour contourner :
-
-   ```bash
-   xattr -cr /Applications/Sourdine.app
-   ```
-
-4. Lancer Sourdine — L'assistant d'onboarding vous guidera pour telecharger les modeles IA (~5 Go)
+- [ ] Support multi-langue (actuellement français/anglais)
+- [ ] Identification des locuteurs (speaker diarization)
+- [ ] Synchronisation cloud optionnelle (chiffrée)
+- [ ] Intégration calendrier (Google Calendar, Outlook)
+- [ ] Plugins pour Teams, Meet, Zoom
+- [ ] Version Windows/Linux
 
 ## Contribuer
 
-Les contributions sont bienvenues ! N'hesitez pas a ouvrir une issue ou une PR.
+Les contributions sont bienvenues ! N'hésitez pas à ouvrir une issue ou une PR.
+
+1. Fork le projet
+2. Créer une branche (`git checkout -b feature/ma-feature`)
+3. Commit les changements (`git commit -m 'feat: ajout de ma feature'`)
+4. Push (`git push origin feature/ma-feature`)
+5. Ouvrir une Pull Request
 
 ## Licence
 
-MIT
+MIT — Voir [LICENSE](LICENSE) pour plus de détails.
+
+---
+
+<p align="center">
+  Fait avec ❤️ par <a href="https://github.com/Lingelo">Angelo Lima</a>
+</p>
