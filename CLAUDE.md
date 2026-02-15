@@ -30,12 +30,18 @@ npm run build
 npm run package          # Electron Forge package → out/Sourdine-darwin-arm64/
 npm run make             # Create DMG + ZIP distributables
 
-# Nx tasks (prefer these for individual projects)
-NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx serve renderer   # Angular dev server only
-NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx build renderer   # Angular prod build only
+# Testing (Vitest)
+npm test                 # Run all tests once
+npm run test:watch       # Watch mode
+
+# Linting (use NX_IGNORE_UNSUPPORTED_TS_SETUP=true prefix for Nx commands)
 npx nx lint renderer
 npx nx lint backend
 npx nx lint shared-types
+
+# Nx tasks (prefer these for individual projects)
+npx nx serve renderer    # Angular dev server only
+npx nx build renderer    # Angular prod build only
 
 # Electron shell build (4 Vite builds: main, preload, stt-worker, llm-worker)
 node apps/electron-shell/build.mjs
@@ -48,7 +54,7 @@ npm run download-llm-model   # LLM: Mistral 7B Q4_K_M (4.4GB)
 npm run generate-icon
 ```
 
-**Note:** `NX_IGNORE_UNSUPPORTED_TS_SETUP=true` is required for Nx commands with Angular 21 + TypeScript 5.9.
+**Note:** `NX_IGNORE_UNSUPPORTED_TS_SETUP=true` is required as a prefix for all Nx commands with Angular 21 + TypeScript 5.9 (e.g., `NX_IGNORE_UNSUPPORTED_TS_SETUP=true npx nx serve renderer`).
 
 ## Architecture
 
@@ -202,3 +208,11 @@ ScreenCaptureKit (48kHz stereo Float32)
   → AudioService mixer → stt-worker (channel: 'system')
   → Transcription with source='system' tag
 ```
+
+## Debugging
+
+**Electron main process**: Run `npm run dev` and use Chrome DevTools (View → Toggle Developer Tools) or attach VS Code debugger to the Electron process.
+
+**Workers in isolation**: STT and LLM workers can be tested directly by running them as standalone Node scripts with `ELECTRON_RUN_AS_NODE=1`.
+
+**Renderer DevTools**: Available in development mode via Cmd+Option+I or View menu.
