@@ -1,6 +1,10 @@
 <div class="transcript-panel">
   @if (isRecordingElsewhere) {
-    <div class="recording-elsewhere-banner" (click)="goToRecordingSession()">
+    <div class="recording-elsewhere-banner"
+      tabindex="0"
+      role="button"
+      (click)="goToRecordingSession()"
+      (keydown.enter)="goToRecordingSession()">
       <span class="recording-dot"></span>
       <span>{{ 'transcript.recordingElsewhere' | translate }}</span>
     </div>
