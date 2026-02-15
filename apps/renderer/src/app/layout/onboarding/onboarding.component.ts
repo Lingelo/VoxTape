@@ -167,6 +167,8 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   onDeviceChange(deviceId: string): void {
     this.selectedDeviceId = deviceId;
+    // Save immediately so capture uses the correct device
+    this.saveConfig('audio.defaultDeviceId', deviceId);
     // Restart mic test with new device
     this.stopMicTest();
     this.startMicTest();

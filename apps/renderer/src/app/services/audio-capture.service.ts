@@ -101,14 +101,25 @@ export class AudioCaptureService implements OnDestroy {
         }
       }
 
-      // Use 'exact' to ensure we capture the specific selected device
-      const constraints: MediaStreamConstraints = {
+      // Build audio constraints - use 'exact' to ensure correct device selection
+      let constraints: MediaStreamConstraints = {
         audio: deviceId && deviceId !== 'default'
           ? { deviceId: { exact: deviceId } }
           : true,
       };
 
-      this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      try {
+        this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        // If deviceId constraint failed (device no longer exists), retry with default
+        if (err instanceof Error && err.name === 'OverconstrainedError') {
+          console.warn('[AudioCaptureService] Requested device not available, falling back to default');
+          constraints = { audio: true };
+          this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } else {
+          throw err;
+        }
+      }
       this.audioContext = new AudioContext();
 
       // Force resume in case it's suspended
