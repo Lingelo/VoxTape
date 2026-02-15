@@ -99,10 +99,12 @@ export class ControlBarComponent implements OnInit, OnDestroy {
     return 0.3 + this.audioLevel * wave[index] * 0.7;
   }
 
-  toggleRecording(): void {
+  async toggleRecording(): Promise<void> {
     if (this.isRecording) {
       this.session.stopRecording();
     } else {
+      // Reload saved device before each recording to pick up settings changes
+      await this.loadSavedDevice();
       this.session.startRecording(this.selectedDeviceId);
     }
   }

@@ -261,7 +261,6 @@ function setupIpc(): void {
   // Audio chunks from renderer
   ipcMain.on('audio:chunk', (_event, samples: number[]) => {
     audioService.handleAudioChunk(new Int16Array(samples));
-
   });
 
   // Recording control from renderer
