@@ -37,6 +37,7 @@ interface SearchResult {
 })
 export class SidebarComponent implements OnInit, OnDestroy {
   activeSessionId = '';
+  recordingSessionId: string | null = null;
   sessionGroups: SessionGroup[] = [];
   searchQuery = '';
   searchResults: SearchResult[] = [];
@@ -52,6 +53,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.subs.push(
       this.session.id$.subscribe((id) => { this.activeSessionId = id; this.cdr.markForCheck(); }),
+      this.session.recordingSessionId$.subscribe((id) => { this.recordingSessionId = id; this.cdr.markForCheck(); }),
       this.session.sessions$.subscribe((sessions) => {
         this.sessionGroups = this.groupByDate(sessions);
         this.cdr.markForCheck();
@@ -151,7 +153,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     };
 
     for (const s of sessions) {
-      const t = s.updatedAt || s.createdAt || 0;
+      const t = s.createdAt || 0;
       if (t >= todayMs) groups[todayLabel].push(s);
       else if (t >= yesterdayMs) groups[yesterdayLabel].push(s);
       else if (t >= weekMs) groups[thisWeekLabel].push(s);

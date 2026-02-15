@@ -61,11 +61,15 @@
   background: var(--bg-pill, #2a2a2e);
   border: 1px solid var(--border-subtle);
   flex-shrink: 0;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, opacity 0.2s;
   height: 38px;
 
   &.active {
     border-color: var(--accent-recording, #ef4444);
+  }
+
+  &.disabled {
+    opacity: 0.5;
   }
 }
 
@@ -189,8 +193,12 @@
   border-radius: 8px;
   transition: background 0.15s;
 
-  &:hover {
+  &:hover:not(.disabled) {
     background: rgba(255, 255, 255, 0.06);
+  }
+
+  &.disabled {
+    cursor: not-allowed;
   }
 }
 

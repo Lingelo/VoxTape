@@ -28,7 +28,8 @@
     "unavailable": "La transcription n'est pas disponible.",
     "retry": "Reessayer",
     "speaker": "Personne {{num}}",
-    "identifyingSpeakers": "Identification des locuteurs..."
+    "identifyingSpeakers": "Identification des locuteurs...",
+    "recordingElsewhere": "Enregistrement en cours - cliquez pour y retourner"
   },
   "notes": {
     "title": "Notes",

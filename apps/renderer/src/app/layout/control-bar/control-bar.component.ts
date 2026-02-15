@@ -28,13 +28,13 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   @Output() showTranscript = new EventEmitter<void>();
   @Output() closeTranscript = new EventEmitter<void>();
 
-  isRecording = false;
   status: SessionStatus = 'idle';
   llmStatus: LlmStatus = 'idle';
   audioLevel = 0;
   chatInput = '';
   hasAiSummary = false;
   elapsed = 0;
+  isRecordingElsewhere = false;
 
   vuBars = [0, 1, 2, 3, 4];
 
@@ -44,6 +44,11 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private subs: Subscription[] = [];
   private selectedDeviceId = '';
+
+  /** True if currently recording in this session */
+  get isRecording(): boolean {
+    return this.status === 'recording';
+  }
 
   ngOnInit(): void {
     // Load saved device from config
@@ -55,11 +60,11 @@ export class ControlBarComponent implements OnInit, OnDestroy {
           this.selectedDeviceId = d.find((x) => x.isDefault)?.deviceId || d[0].deviceId;
         }
       }),
-      this.audioCapture.isRecording$.subscribe((r) => { this.isRecording = r; this.cdr.markForCheck(); }),
       this.audioCapture.audioLevel$.subscribe((l) => { this.audioLevel = l; this.cdr.markForCheck(); }),
       this.session.status$.subscribe((s) => { this.status = s; this.cdr.markForCheck(); }),
       this.session.aiSummary$.subscribe((s) => { this.hasAiSummary = !!s; this.cdr.markForCheck(); }),
       this.session.elapsed$.subscribe((e) => { this.elapsed = e; this.cdr.markForCheck(); }),
+      this.session.isRecordingElsewhere$.subscribe((e) => { this.isRecordingElsewhere = e; this.cdr.markForCheck(); }),
       this.llm.status$.subscribe((s) => { this.llmStatus = s; this.cdr.markForCheck(); })
     );
   }

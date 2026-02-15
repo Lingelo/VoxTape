@@ -50,15 +50,27 @@ interface SourdineSessionApi {
 @Injectable({ providedIn: 'root' })
 export class SessionService implements OnDestroy {
   private readonly _id$ = new BehaviorSubject<string>(this.generateId());
-  private readonly _status$ = new BehaviorSubject<SessionStatus>('idle');
-  private readonly _segments$ = new BehaviorSubject<TranscriptSegment[]>([]);
+  private readonly _viewStatus$ = new BehaviorSubject<SessionStatus>('idle');
+  private readonly _loadedSegments$ = new BehaviorSubject<TranscriptSegment[]>([]);
   private readonly _userNotes$ = new BehaviorSubject<string>('');
   private readonly _title$ = new BehaviorSubject<string>('Nouvelle session');
-  private readonly _elapsed$ = new BehaviorSubject<number>(0);
+  private readonly _viewElapsed$ = new BehaviorSubject<number>(0);
   private readonly _aiNotes$ = new BehaviorSubject<EnhancedNote[]>([]);
   private readonly _aiSummary$ = new BehaviorSubject<string>('');
   private readonly _chatMessages$ = new BehaviorSubject<ChatMessage[]>([]);
   private readonly _sessions$ = new BehaviorSubject<SessionListItem[]>([]);
+
+  // Recording state (persists across session navigation)
+  private readonly _recordingSessionId$ = new BehaviorSubject<string | null>(null);
+  private readonly _recordingStatus$ = new BehaviorSubject<SessionStatus>('idle');
+  private readonly _liveSegments$ = new BehaviorSubject<TranscriptSegment[]>([]);
+  private readonly _recordingElapsed$ = new BehaviorSubject<number>(0);
+
+  // Computed observables (updated reactively)
+  private readonly _segments$ = new BehaviorSubject<TranscriptSegment[]>([]);
+  private readonly _status$ = new BehaviorSubject<SessionStatus>('idle');
+  private readonly _elapsed$ = new BehaviorSubject<number>(0);
+  private readonly _isRecordingElsewhere$ = new BehaviorSubject<boolean>(false);
 
   private recordingStartTime = 0;
   private timerInterval: ReturnType<typeof setInterval> | null = null;
@@ -76,24 +88,102 @@ export class SessionService implements OnDestroy {
   private readonly llm = inject(LlmService);
 
   readonly id$: Observable<string> = this._id$.asObservable();
-  readonly status$: Observable<SessionStatus> = this._status$.asObservable();
-  readonly segments$: Observable<TranscriptSegment[]> = this._segments$.asObservable();
+  readonly recordingSessionId$: Observable<string | null> = this._recordingSessionId$.asObservable();
   readonly userNotes$: Observable<string> = this._userNotes$.asObservable();
   readonly title$: Observable<string> = this._title$.asObservable();
-  readonly elapsed$: Observable<number> = this._elapsed$.asObservable();
   readonly aiNotes$: Observable<EnhancedNote[]> = this._aiNotes$.asObservable();
   readonly aiSummary$: Observable<string> = this._aiSummary$.asObservable();
   readonly chatMessages$: Observable<ChatMessage[]> = this._chatMessages$.asObservable();
   readonly sessions$: Observable<SessionListItem[]> = this._sessions$.asObservable();
+  readonly segments$: Observable<TranscriptSegment[]> = this._segments$.asObservable();
+  readonly status$: Observable<SessionStatus> = this._status$.asObservable();
+  readonly elapsed$: Observable<number> = this._elapsed$.asObservable();
+  readonly isRecordingElsewhere$: Observable<boolean> = this._isRecordingElsewhere$.asObservable();
+
+  private setupComputedObservables(): void {
+    // Update segments when any source changes
+    const updateSegments = () => {
+      const viewingId = this._id$.value;
+      const recordingId = this._recordingSessionId$.value;
+      const loaded = this._loadedSegments$.value;
+      const live = this._liveSegments$.value;
+      if (viewingId === recordingId) {
+        // Deduplicate by ID (live segments may already be in loaded after save)
+        const loadedIds = new Set(loaded.map(s => s.id));
+        const uniqueLive = live.filter(s => !loadedIds.has(s.id));
+        this._segments$.next([...loaded, ...uniqueLive]);
+      } else {
+        this._segments$.next(loaded);
+      }
+    };
+
+    // Update status when any source changes
+    const updateStatus = () => {
+      const viewingId = this._id$.value;
+      const recordingId = this._recordingSessionId$.value;
+      if (viewingId === recordingId) {
+        this._status$.next(this._recordingStatus$.value);
+      } else {
+        this._status$.next(this._viewStatus$.value);
+      }
+    };
+
+    // Update elapsed when any source changes
+    const updateElapsed = () => {
+      const viewingId = this._id$.value;
+      const recordingId = this._recordingSessionId$.value;
+      if (viewingId === recordingId) {
+        this._elapsed$.next(this._recordingElapsed$.value);
+      } else {
+        this._elapsed$.next(this._viewElapsed$.value);
+      }
+    };
+
+    // Update isRecordingElsewhere when any source changes
+    const updateIsRecordingElsewhere = () => {
+      const recordingId = this._recordingSessionId$.value;
+      const viewingId = this._id$.value;
+      const isRecording = this._recordingStatus$.value === 'recording';
+      this._isRecordingElsewhere$.next(isRecording && recordingId !== null && recordingId !== viewingId);
+    };
+
+    // Subscribe to all source changes
+    this._id$.pipe(takeUntil(this._destroy$)).subscribe(() => {
+      updateSegments();
+      updateStatus();
+      updateElapsed();
+      updateIsRecordingElsewhere();
+    });
+    this._recordingSessionId$.pipe(takeUntil(this._destroy$)).subscribe(() => {
+      updateSegments();
+      updateStatus();
+      updateElapsed();
+      updateIsRecordingElsewhere();
+    });
+    this._loadedSegments$.pipe(takeUntil(this._destroy$)).subscribe(updateSegments);
+    this._liveSegments$.pipe(takeUntil(this._destroy$)).subscribe(updateSegments);
+    this._recordingStatus$.pipe(takeUntil(this._destroy$)).subscribe(() => {
+      updateStatus();
+      updateIsRecordingElsewhere();
+    });
+    this._viewStatus$.pipe(takeUntil(this._destroy$)).subscribe(updateStatus);
+    this._recordingElapsed$.pipe(takeUntil(this._destroy$)).subscribe(updateElapsed);
+    this._viewElapsed$.pipe(takeUntil(this._destroy$)).subscribe(updateElapsed);
+  }
 
   constructor() {
-    // Subscribe to incoming transcript segments with cleanup
+    // Setup computed observables first
+    this.setupComputedObservables();
+
+    // Subscribe to incoming transcript segments - only add to live segments if recording
     this.ipc.segment$
       .pipe(takeUntil(this._destroy$))
       .subscribe((segment: TranscriptSegment) => {
-        const current = this._segments$.value;
-        this._segments$.next([...current, segment]);
-        this.requestSave();
+        if (this._recordingStatus$.value === 'recording') {
+          const current = this._liveSegments$.value;
+          this._liveSegments$.next([...current, segment]);
+          this.requestSave();
+        }
       });
 
     // Subscribe to diarization results (applied after recording stops)
@@ -141,31 +231,67 @@ export class SessionService implements OnDestroy {
   }
 
   async startRecording(deviceId?: string): Promise<void> {
-    if (this._status$.value === 'recording') return;
+    if (this._recordingStatus$.value === 'recording') return;
 
-    const isResume = this._status$.value === 'done';
+    const currentId = this._id$.value;
+    const isResume = this._viewStatus$.value === 'done';
 
     if (!isResume) {
       // Fresh recording: clear everything
-      this._segments$.next([]);
+      this._loadedSegments$.next([]);
       this._aiNotes$.next([]);
     }
 
+    // Set recording session
+    this._recordingSessionId$.next(currentId);
+    this._liveSegments$.next([]);
+
     // Always clear AI summary so "Generate notes" reappears after stop
     this._aiSummary$.next('');
-    this._status$.next('recording');
-    this.recordingStartTime = Date.now() - (isResume ? this._elapsed$.value : 0);
+    this._recordingStatus$.next('recording');
+    this.recordingStartTime = Date.now() - (isResume ? this._viewElapsed$.value : 0);
 
     // Start elapsed timer
     this.timerInterval = setInterval(() => {
-      this._elapsed$.next(Date.now() - this.recordingStartTime);
+      this._recordingElapsed$.next(Date.now() - this.recordingStartTime);
     }, 1000);
+
+    // Save immediately to create the session in the list
+    this.saveSessionImmediate();
 
     await this.audioCapture.startRecording(deviceId);
   }
 
+  /** Save session immediately (bypasses debounce) */
+  private async saveSessionImmediate(): Promise<void> {
+    const api = this.sourdineApi?.session;
+    if (!api) return;
+
+    const segments = this.getCurrentSegments();
+    const viewingId = this._id$.value;
+    const recordingId = this._recordingSessionId$.value;
+    const elapsed = viewingId === recordingId
+      ? this._recordingElapsed$.value
+      : this._viewElapsed$.value;
+
+    await api.save({
+      id: viewingId,
+      title: this._title$.value,
+      userNotes: this._userNotes$.value,
+      segments,
+      aiNotes: this._aiNotes$.value,
+      aiSummary: this._aiSummary$.value,
+      chatMessages: this._chatMessages$.value,
+      durationMs: elapsed,
+      createdAt: this.recordingStartTime || Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await this.loadSessionsList();
+  }
+
   stopRecording(): void {
-    if (this._status$.value !== 'recording') return;
+    if (this._recordingStatus$.value !== 'recording') return;
 
     this.audioCapture.stopRecording();
 
@@ -174,7 +300,21 @@ export class SessionService implements OnDestroy {
       this.timerInterval = null;
     }
 
-    this._status$.next('done');
+    // Merge live segments into loaded segments for the recording session
+    const recordingId = this._recordingSessionId$.value;
+    if (recordingId) {
+      // If we're viewing the recording session, update its segments
+      if (this._id$.value === recordingId) {
+        const merged = [...this._loadedSegments$.value, ...this._liveSegments$.value];
+        this._loadedSegments$.next(merged);
+        this._viewElapsed$.next(this._recordingElapsed$.value);
+      }
+    }
+
+    this._recordingStatus$.next('done');
+    this._viewStatus$.next('done');
+    this._liveSegments$.next([]);
+    this._recordingSessionId$.next(null);
     this.requestSave();
   }
 
@@ -188,13 +328,22 @@ export class SessionService implements OnDestroy {
     this.requestSave();
   }
 
+  /** Get current segments (loaded + live if recording this session) */
+  private getCurrentSegments(): TranscriptSegment[] {
+    const viewingId = this._id$.value;
+    const recordingId = this._recordingSessionId$.value;
+    const loaded = this._loadedSegments$.value;
+    const live = this._liveSegments$.value;
+    return viewingId === recordingId ? [...loaded, ...live] : loaded;
+  }
+
   enhanceNotes(): void {
-    const segments = this._segments$.value;
+    const segments = this.getCurrentSegments();
     const notes = this._userNotes$.value;
 
     if (segments.length === 0) return;
 
-    this._status$.next('processing');
+    this._viewStatus$.next('processing');
 
     // Build transcript text with segment IDs
     const transcript = segments
@@ -224,14 +373,14 @@ export class SessionService implements OnDestroy {
           console.error('[SessionService] Error parsing enhance result:', err);
           this._aiSummary$.next(payload.fullText || '');
         }
-        this._status$.next('done');
+        this._viewStatus$.next('done');
         this.requestSave();
         cleanupSubs();
       }),
       this.llm.error$.subscribe((payload) => {
         if (payload.requestId !== requestId) return;
         console.error('[SessionService] Enhance error:', payload.error);
-        this._status$.next('done');
+        this._viewStatus$.next('done');
         cleanupSubs();
       })
     );
@@ -250,11 +399,11 @@ export class SessionService implements OnDestroy {
 
   resetSession(): void {
     this._id$.next(this.generateId());
-    this._status$.next('idle');
-    this._segments$.next([]);
+    this._viewStatus$.next('idle');
+    this._loadedSegments$.next([]);
     this._userNotes$.next('');
     this._title$.next('Nouvelle session');
-    this._elapsed$.next(0);
+    this._viewElapsed$.next(0);
     this._aiNotes$.next([]);
     this._aiSummary$.next('');
     this._chatMessages$.next([]);
@@ -275,12 +424,15 @@ export class SessionService implements OnDestroy {
     this._id$.next(data.id);
     this._title$.next(data.title || 'Sans titre');
     this._userNotes$.next(data.userNotes || '');
-    this._segments$.next(data.segments || []);
+    this._loadedSegments$.next(data.segments || []);
     this._aiNotes$.next(data.aiNotes || []);
     this._aiSummary$.next(data.aiSummary || '');
     this._chatMessages$.next(data.chatMessages || []);
-    this._elapsed$.next(data.durationMs || 0);
-    this._status$.next('done');
+    this._viewElapsed$.next(data.durationMs || 0);
+    // Only set status to 'done' if not viewing the recording session
+    if (id !== this._recordingSessionId$.value) {
+      this._viewStatus$.next('done');
+    }
   }
 
   /** Delete a session */
@@ -355,18 +507,27 @@ export class SessionService implements OnDestroy {
     const api = this.sourdineApi?.session;
     if (!api) return;
 
+    const segments = this.getCurrentSegments();
+
     // Don't persist empty sessions (need at least segments OR notes)
-    if (this._segments$.value.length === 0 && !this._userNotes$.value.trim()) return;
+    if (segments.length === 0 && !this._userNotes$.value.trim()) return;
+
+    // Determine elapsed time
+    const viewingId = this._id$.value;
+    const recordingId = this._recordingSessionId$.value;
+    const elapsed = viewingId === recordingId
+      ? this._recordingElapsed$.value
+      : this._viewElapsed$.value;
 
     await api.save({
-      id: this._id$.value,
+      id: viewingId,
       title: this._title$.value,
       userNotes: this._userNotes$.value,
-      segments: this._segments$.value,
+      segments,
       aiNotes: this._aiNotes$.value,
       aiSummary: this._aiSummary$.value,
       chatMessages: this._chatMessages$.value,
-      durationMs: this._elapsed$.value,
+      durationMs: elapsed,
       createdAt: this.recordingStartTime || Date.now(),
       updatedAt: Date.now(),
     });
@@ -420,7 +581,7 @@ export class SessionService implements OnDestroy {
   private applyDiarizationResults(diarizationSegments: DiarizationSegment[]): void {
     if (diarizationSegments.length === 0) return;
 
-    const transcriptSegments = this._segments$.value;
+    const transcriptSegments = this.getCurrentSegments();
     if (transcriptSegments.length === 0) return;
 
     let updated = false;
@@ -447,9 +608,24 @@ export class SessionService implements OnDestroy {
     });
 
     if (updated) {
-      this._segments$.next(updatedSegments);
+      this._loadedSegments$.next(updatedSegments);
       this.requestSave();
       console.log('[SessionService] Applied diarization results to', updatedSegments.length, 'segments');
+    }
+  }
+
+  /** Navigate back to the recording session */
+  goToRecordingSession(): void {
+    const recordingId = this._recordingSessionId$.value;
+    if (recordingId && recordingId !== this._id$.value) {
+      this._id$.next(recordingId);
+      // Clear loaded segments since we're returning to live recording
+      this._loadedSegments$.next([]);
+      this._title$.next('Nouvelle session');
+      this._userNotes$.next('');
+      this._aiNotes$.next([]);
+      this._aiSummary$.next('');
+      this._chatMessages$.next([]);
     }
   }
 }

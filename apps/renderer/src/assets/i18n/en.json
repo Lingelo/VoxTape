@@ -28,7 +28,8 @@
     "unavailable": "Transcription is not available.",
     "retry": "Retry",
     "speaker": "Person {{num}}",
-    "identifyingSpeakers": "Identifying speakers..."
+    "identifyingSpeakers": "Identifying speakers...",
+    "recordingElsewhere": "Recording in progress - click to go back"
   },
   "notes": {
     "title": "Notes",
