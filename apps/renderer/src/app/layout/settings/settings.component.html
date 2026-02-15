@@ -1,0 +1,185 @@
+<div class="drag-region"></div>
+<div class="settings-page">
+  <div class="settings-header">
+    <button class="back-btn" (click)="goBack()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M10 12L6 8l4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <h1>{{ 'settings.title' | translate }}</h1>
+  </div>
+
+  @if (config) {
+    <div class="settings-body">
+      <!-- General -->
+      <section class="settings-section">
+        <h2>{{ 'settings.general' | translate }}</h2>
+
+        <div class="setting-row">
+          <span class="label-text">{{ 'settings.theme' | translate }}</span>
+          <div class="theme-toggle" role="group" [attr.aria-label]="'settings.theme' | translate">
+            @for (t of themes; track t.value) {
+              <button
+                [class.active]="config.theme === t.value"
+                (click)="setTheme(t.value)"
+              >
+                {{ t.labelKey | translate }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="label-text">{{ 'settings.language' | translate }}</span>
+          <div class="theme-toggle" role="group" [attr.aria-label]="'settings.language' | translate">
+            @for (lang of languages; track lang.value) {
+              <button
+                [class.active]="currentLang === lang.value"
+                (click)="setLanguage(lang.value)"
+              >
+                {{ lang.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Audio -->
+      <section class="settings-section">
+        <h2>{{ 'settings.audio' | translate }}</h2>
+        <div class="setting-row">
+          <label for="default-mic">{{ 'settings.defaultMic' | translate }}</label>
+          <div class="mic-controls">
+            <select id="default-mic" [(ngModel)]="config.audio.defaultDeviceId" (change)="onMicChange()">
+              <option [ngValue]="null">{{ 'settings.systemDefault' | translate }}</option>
+              @for (mic of microphones; track mic.deviceId) {
+                <option [ngValue]="mic.deviceId">{{ mic.label }}</option>
+              }
+            </select>
+            <button class="test-mic-btn" [class.active]="isTestingMic" (click)="toggleMicTest()">
+              {{ isTestingMic ? ('settings.stopTest' | translate) : ('settings.testMic' | translate) }}
+            </button>
+          </div>
+        </div>
+        @if (isTestingMic) {
+          <div class="mic-test-box">
+            <div class="vu-meter">
+              <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
+            </div>
+            <p class="mic-status" [class.active]="audioLevel > 0.02">
+              {{ audioLevel > 0.02 ? ('settings.signalDetected' | translate) : ('settings.speakToTest' | translate) }}
+            </p>
+          </div>
+        }
+        @if (systemAudioSupported) {
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <span class="label-text">{{ 'settings.systemAudio' | translate }}</span>
+              <span class="setting-hint">{{ 'settings.systemAudioHint' | translate }}</span>
+            </div>
+            <div class="mic-controls">
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" [attr.aria-label]="'settings.systemAudio' | translate" />
+                <span class="toggle-slider"></span>
+              </label>
+              <button
+                class="test-mic-btn"
+                [class.active]="isTestingSystemAudio"
+                [disabled]="!systemAudioEnabled"
+                (click)="toggleSystemAudioTest()"
+              >
+                {{ isTestingSystemAudio ? ('settings.stopTest' | translate) : ('settings.testMic' | translate) }}
+              </button>
+            </div>
+          </div>
+        }
+        @if (isTestingSystemAudio) {
+          <div class="mic-test-box">
+            <div class="vu-meter">
+              <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+            </div>
+            <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
+              {{ systemAudioLevel > 0.02 ? ('settings.systemAudioDetected' | translate) : ('settings.playMediaToTest' | translate) }}
+            </p>
+          </div>
+        }
+        @if (!systemAudioSupported) {
+          <div class="setting-row unsupported-hint">
+            <span class="setting-hint">{{ 'settings.systemAudioUnsupported' | translate }}</span>
+          </div>
+        }
+      </section>
+
+      <!-- Models -->
+      <section class="settings-section">
+        <h2>{{ 'settings.models' | translate }}</h2>
+
+        <div class="model-list">
+          @for (m of knownModels; track m.id) {
+            <div>
+              <div class="model-row">
+                <div class="model-info">
+                  <span class="model-name">{{ m.name }}</span>
+                  <span class="model-meta">{{ m.size }} · {{ m.description }}</span>
+                </div>
+                <div class="model-status">
+                  @if (isModelDownloaded(m.id)) {
+                    <span class="status-badge installed">{{ 'settings.modelInstalled' | translate }}</span>
+                  }
+                  @if (!isModelDownloaded(m.id) && !isModelDownloading(m.id)) {
+                    <span class="status-badge missing">{{ 'settings.modelMissing' | translate }}</span>
+                  }
+                  @if (isModelDownloading(m.id)) {
+                    <span class="status-badge downloading">{{ getDownloadPercent(m.id) }}%</span>
+                  }
+                  @if (!isModelDownloaded(m.id) && !isModelDownloading(m.id)) {
+                    <button
+                      class="model-action-btn"
+                      (click)="downloadModel(m.id)"
+                    >{{ 'settings.modelDownload' | translate }}</button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Keyboard Shortcuts -->
+      <section class="settings-section">
+        <h2>{{ 'settings.shortcuts' | translate }}</h2>
+        <div class="shortcuts-list">
+          <div class="shortcut-row">
+            <span class="shortcut-desc">{{ 'settings.shortcutRecord' | translate }}</span>
+            <kbd>⌘R</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span class="shortcut-desc">{{ 'settings.shortcutClosePanel' | translate }}</span>
+            <kbd>Esc</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span class="shortcut-desc">{{ 'settings.shortcutSendChat' | translate }}</span>
+            <kbd>Enter</kbd>
+          </div>
+          <div class="shortcut-row">
+            <span class="shortcut-desc">{{ 'settings.shortcutCommands' | translate }}</span>
+            <kbd>/</kbd>
+          </div>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section class="settings-section">
+        <h2>{{ 'settings.about' | translate }}</h2>
+        <p class="about-text">{{ 'app.name' | translate }} — {{ 'app.tagline' | translate }}</p>
+        <p class="about-text">{{ 'settings.aboutText' | translate }}</p>
+      </section>
+
+      <!-- Reset -->
+      <section class="settings-section">
+        <button class="reset-btn" (click)="resetApp()">{{ 'settings.reset' | translate }}</button>
+        <p class="reset-warning">{{ 'settings.resetWarning' | translate }}</p>
+      </section>
+    </div>
+  }
+</div>

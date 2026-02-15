@@ -1,0 +1,55 @@
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.layout {
+  display: flex;
+  height: 100%;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-top: 38px;
+}
+
+.editor-area {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.titlebar-drag {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  -webkit-app-region: drag;
+  z-index: 50;
+}
+
+.panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+sdn-control-bar {
+  position: relative;
+  z-index: 11;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

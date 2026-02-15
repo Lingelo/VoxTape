@@ -1,0 +1,275 @@
+<div class="drag-region"></div>
+<div class="onboarding">
+  <div class="onboarding-card">
+    <!-- Step indicators -->
+    <div class="steps">
+      @for (s of steps; track s; let i = $index) {
+        <div
+          class="step-dot"
+          [class.active]="step === i"
+          [class.completed]="step > i"
+        ></div>
+      }
+    </div>
+
+    <!-- Step 0: Welcome -->
+    @if (step === 0) {
+    <div class="step-content">
+      <img src="assets/logo.svg" alt="Sourdine" class="welcome-logo" />
+      <h1>{{ 'app.name' | translate }}</h1>
+      <p class="subtitle">{{ 'onboarding.subtitle' | translate }}</p>
+
+      <div class="welcome-features">
+        <div class="welcome-feature">
+          <div class="feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+          </div>
+          <div class="feature-text">
+            <span class="feature-title">{{ 'onboarding.feature1Title' | translate }}</span>
+            <span class="feature-desc">{{ 'onboarding.feature1Desc' | translate }}</span>
+          </div>
+        </div>
+        <div class="welcome-feature">
+          <div class="feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <div class="feature-text">
+            <span class="feature-title">{{ 'onboarding.feature2Title' | translate }}</span>
+            <span class="feature-desc">{{ 'onboarding.feature2Desc' | translate }}</span>
+          </div>
+        </div>
+        <div class="welcome-feature">
+          <div class="feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="feature-text">
+            <span class="feature-title">{{ 'onboarding.feature3Title' | translate }}</span>
+            <span class="feature-desc">{{ 'onboarding.feature3Desc' | translate }}</span>
+          </div>
+        </div>
+        <div class="welcome-feature">
+          <div class="feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-4.5 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+          </div>
+          <div class="feature-text">
+            <span class="feature-title">{{ 'onboarding.feature4Title' | translate }}</span>
+            <span class="feature-desc">{{ 'onboarding.feature4Desc' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="primary-btn" (click)="nextStep()">{{ 'onboarding.start' | translate }}</button>
+    </div>
+    }
+
+    <!-- Step 1: Microphone -->
+    @if (step === 1) {
+    <div class="step-content">
+      <h1>{{ 'onboarding.micTitle' | translate }}</h1>
+      <p class="subtitle">{{ 'onboarding.micSubtitle' | translate }}</p>
+
+      @if (audioDevices.length > 0) {
+        <div class="field">
+          <label for="mic-select">{{ 'onboarding.micSelect' | translate }}</label>
+          <select
+            id="mic-select"
+            class="mic-select"
+            [(ngModel)]="selectedDeviceId"
+            (ngModelChange)="onDeviceChange($event)"
+          >
+            @for (d of audioDevices; track d.deviceId) {
+              <option [value]="d.deviceId">
+                {{ d.label }}
+              </option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="mic-test">
+        @if (micState !== 'error') {
+          <div class="vu-meter">
+            <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
+          </div>
+        }
+        @if (micState === 'idle') {
+          <p class="mic-status">
+            {{ 'onboarding.micLoading' | translate }}
+          </p>
+        }
+        @if (micState === 'requesting') {
+          <p class="mic-status">
+            {{ 'onboarding.micRequesting' | translate }}
+          </p>
+        }
+        @if (micState === 'active') {
+          <p class="mic-status" [class.active]="audioLevel > 0.02">
+            {{ audioLevel > 0.02 ? ('onboarding.micSignalDetected' | translate) : ('onboarding.micSpeakToTest' | translate) }}
+          </p>
+        }
+        @if (micState === 'error') {
+          <p class="mic-status mic-error">
+            {{ 'onboarding.micDenied' | translate }}
+          </p>
+        }
+      </div>
+
+      @if (micState === 'active' && !micSignalDetected) {
+        <p class="mic-warning">
+          {{ 'onboarding.micNoSignal' | translate }}
+        </p>
+      }
+
+      <div class="btn-group">
+        <button class="secondary-btn" (click)="prevStep()">{{ 'onboarding.back' | translate }}</button>
+        <button
+          class="primary-btn"
+          [disabled]="!micSignalDetected"
+          [class.disabled]="!micSignalDetected"
+          (click)="stopMicTest(); nextStep()"
+        >{{ 'onboarding.continue' | translate }}</button>
+      </div>
+    </div>
+    }
+
+    <!-- Step 2: System Audio -->
+    @if (step === 2) {
+    <div class="step-content">
+      <h1>{{ 'onboarding.sysAudioTitle' | translate }}</h1>
+      <p class="subtitle">{{ 'onboarding.sysAudioSubtitle' | translate }}</p>
+
+      @if (!systemAudioSupported) {
+        <div class="system-audio-unsupported">
+          <p class="mic-warning">{{ 'onboarding.sysAudioUnsupported' | translate }}</p>
+          <p class="setting-hint">{{ 'onboarding.sysAudioUnsupportedHint' | translate }}</p>
+        </div>
+      }
+
+      @if (systemAudioSupported) {
+        <div class="system-audio-setup">
+          <div class="setting-row">
+            <div class="setting-label-group">
+              <span class="label-text">{{ 'onboarding.sysAudioEnable' | translate }}</span>
+              <span class="setting-hint">{{ 'onboarding.sysAudioHint' | translate }}</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" [attr.aria-label]="'onboarding.sysAudioEnable' | translate" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          @if (systemAudioEnabled) {
+            <div class="mic-test">
+              <div class="vu-meter">
+                <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+              </div>
+              <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
+                {{ systemAudioLevel > 0.02 ? ('onboarding.sysAudioDetected' | translate) : ('onboarding.sysAudioPlayMedia' | translate) }}
+              </p>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="btn-group">
+        <button class="secondary-btn" (click)="stopSystemAudioTest(); prevStep()">{{ 'onboarding.back' | translate }}</button>
+        <button class="primary-btn" (click)="stopSystemAudioTest(); nextStep()">{{ 'onboarding.continue' | translate }}</button>
+      </div>
+    </div>
+    }
+
+    <!-- Step 3: Install -->
+    @if (step === 3) {
+    <div class="step-content">
+      <h1>{{ 'onboarding.installTitle' | translate }}</h1>
+      <p class="subtitle">{{ 'onboarding.installSubtitle' | translate }}</p>
+
+      <!-- Before install -->
+      @if (installState === 'idle') {
+        <div class="install-info">
+          <div class="install-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+            <span>{{ 'onboarding.installVoice' | translate }}</span>
+          </div>
+          <div class="install-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>{{ 'onboarding.installTranscription' | translate }}</span>
+          </div>
+          <div class="install-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>{{ 'onboarding.installAI' | translate }}</span>
+          </div>
+          <p class="install-size">{{ 'onboarding.installSize' | translate }}</p>
+        </div>
+      }
+
+      <!-- During install -->
+      @if (installState === 'downloading') {
+        <div class="install-progress">
+          <p class="install-step-label">{{ currentInstallLabel }}</p>
+          <div class="progress-bar large">
+            <div class="progress-fill" [style.width.%]="overallProgress"></div>
+          </div>
+          <p class="install-percent">{{ overallProgress | number:'1.0-0' }}%</p>
+        </div>
+      }
+
+      <!-- Done -->
+      @if (installState === 'done') {
+        <div class="install-done">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <p class="install-done-text">{{ 'onboarding.installDone' | translate }}</p>
+        </div>
+      }
+
+      <!-- Error -->
+      @if (installState === 'error') {
+        <div class="install-error">
+          <p class="mic-error">{{ 'onboarding.installError' | translate }}</p>
+        </div>
+      }
+
+      <div class="btn-group">
+        <button class="secondary-btn" (click)="prevStep()">{{ 'onboarding.back' | translate }}</button>
+        @if (installState === 'idle' || installState === 'error') {
+          <button
+            class="primary-btn"
+            (click)="startInstall()"
+          >{{ 'onboarding.install' | translate }}</button>
+        }
+        @if (installState === 'done') {
+          <button
+            class="primary-btn"
+            (click)="nextStep()"
+          >{{ 'onboarding.continue' | translate }}</button>
+        }
+        @if (installState === 'downloading') {
+          <div class="primary-btn disabled" style="text-align:center">
+            {{ 'onboarding.installing' | translate }}
+          </div>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- Step 4: Ready -->
+    @if (step === 4) {
+    <div class="step-content">
+      <h1>{{ 'onboarding.readyTitle' | translate }}</h1>
+      <p class="subtitle">{{ 'onboarding.readySubtitle' | translate }}</p>
+
+      <div class="ready-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+
+      <button class="primary-btn" (click)="finish()">{{ 'onboarding.start' | translate }}</button>
+    </div>
+    }
+  </div>
+</div>

@@ -2,7 +2,9 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrateg
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { SessionService } from '../../services/session.service';
+import { LanguageService, SupportedLanguage } from '../../services/language.service';
 
 interface DownloadedModel {
   id: string;
@@ -48,528 +50,9 @@ interface Config {
   selector: 'sdn-settings',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="drag-region"></div>
-    <div class="settings-page">
-      <div class="settings-header">
-        <button class="back-btn" (click)="goBack()">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M10 12L6 8l4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <h1>Paramètres</h1>
-      </div>
-
-      @if (config) {
-        <div class="settings-body">
-          <!-- General -->
-          <section class="settings-section">
-            <h2>Général</h2>
-
-            <div class="setting-row">
-              <span class="label-text">Thème</span>
-              <div class="theme-toggle" role="group" aria-label="Thème">
-                @for (t of themes; track t.value) {
-                  <button
-                    [class.active]="config.theme === t.value"
-                    (click)="setTheme(t.value)"
-                  >
-                    {{ t.label }}
-                  </button>
-                }
-              </div>
-            </div>
-          </section>
-
-          <!-- Audio -->
-          <section class="settings-section">
-            <h2>Audio</h2>
-            <div class="setting-row">
-              <label for="default-mic">Microphone par défaut</label>
-              <div class="mic-controls">
-                <select id="default-mic" [(ngModel)]="config.audio.defaultDeviceId" (change)="onMicChange()">
-                  <option [ngValue]="null">Défaut du système</option>
-                  @for (mic of microphones; track mic.deviceId) {
-                    <option [ngValue]="mic.deviceId">{{ mic.label }}</option>
-                  }
-                </select>
-                <button class="test-mic-btn" [class.active]="isTestingMic" (click)="toggleMicTest()">
-                  {{ isTestingMic ? 'Stop' : 'Test' }}
-                </button>
-              </div>
-            </div>
-            @if (isTestingMic) {
-              <div class="mic-test-box">
-                <div class="vu-meter">
-                  <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
-                </div>
-                <p class="mic-status" [class.active]="audioLevel > 0.02">
-                  {{ audioLevel > 0.02 ? 'Signal détecté !' : 'Parlez pour tester...' }}
-                </p>
-              </div>
-            }
-            @if (systemAudioSupported) {
-              <div class="setting-row">
-                <div class="setting-label-group">
-                  <span class="label-text">Capturer l'audio systeme</span>
-                  <span class="setting-hint">Transcrit l'audio des applications (réunions, vidéos...)</span>
-                </div>
-                <div class="mic-controls">
-                  <label class="toggle-switch">
-                    <input type="checkbox" [(ngModel)]="systemAudioEnabled" (change)="onSystemAudioToggle()" aria-label="Capturer l'audio systeme" />
-                    <span class="toggle-slider"></span>
-                  </label>
-                  <button
-                    class="test-mic-btn"
-                    [class.active]="isTestingSystemAudio"
-                    [disabled]="!systemAudioEnabled"
-                    (click)="toggleSystemAudioTest()"
-                  >
-                    {{ isTestingSystemAudio ? 'Stop' : 'Test' }}
-                  </button>
-                </div>
-              </div>
-            }
-            @if (isTestingSystemAudio) {
-              <div class="mic-test-box">
-                <div class="vu-meter">
-                  <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
-                </div>
-                <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
-                  {{ systemAudioLevel > 0.02 ? 'Audio système détecté !' : 'Lancez une vidéo ou de la musique...' }}
-                </p>
-              </div>
-            }
-            @if (!systemAudioSupported) {
-              <div class="setting-row unsupported-hint">
-                <span class="setting-hint">Capture audio système : nécessite macOS 14.2+</span>
-              </div>
-            }
-          </section>
-
-          <!-- Models -->
-          <section class="settings-section">
-            <h2>Modèles</h2>
-
-            <div class="model-list">
-              @for (m of knownModels; track m.id) {
-                <div>
-                  <div class="model-row">
-                    <div class="model-info">
-                      <span class="model-name">{{ m.name }}</span>
-                      <span class="model-meta">{{ m.size }} · {{ m.description }}</span>
-                    </div>
-                    <div class="model-status">
-                      @if (isModelDownloaded(m.id)) {
-                        <span class="status-badge installed">Installé</span>
-                      }
-                      @if (!isModelDownloaded(m.id) && !isModelDownloading(m.id)) {
-                        <span class="status-badge missing">Manquant</span>
-                      }
-                      @if (isModelDownloading(m.id)) {
-                        <span class="status-badge downloading">{{ getDownloadPercent(m.id) }}%</span>
-                      }
-                      @if (!isModelDownloaded(m.id) && !isModelDownloading(m.id)) {
-                        <button
-                          class="model-action-btn"
-                          (click)="downloadModel(m.id)"
-                        >Télécharger</button>
-                      }
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          </section>
-
-        <!-- Keyboard Shortcuts -->
-        <section class="settings-section">
-          <h2>Raccourcis clavier</h2>
-          <div class="shortcuts-list">
-            <div class="shortcut-row">
-              <span class="shortcut-desc">Démarrer / arrêter l'enregistrement</span>
-              <kbd>⌘R</kbd>
-            </div>
-            <div class="shortcut-row">
-              <span class="shortcut-desc">Fermer les panneaux</span>
-              <kbd>Esc</kbd>
-            </div>
-            <div class="shortcut-row">
-              <span class="shortcut-desc">Envoyer un message (chat)</span>
-              <kbd>Entrée</kbd>
-            </div>
-            <div class="shortcut-row">
-              <span class="shortcut-desc">Commandes rapides (chat)</span>
-              <kbd>/</kbd>
-            </div>
-          </div>
-        </section>
-
-        <!-- About -->
-        <section class="settings-section">
-          <h2>À propos</h2>
-          <p class="about-text">Sourdine — Notes de réunion intelligentes</p>
-          <p class="about-text">100% local, zero cloud</p>
-        </section>
-
-          <!-- Reset -->
-          <section class="settings-section">
-            <button class="reset-btn" (click)="resetApp()">Réinitialiser l'application</button>
-            <p class="reset-warning">Supprime toutes vos sessions, transcriptions et modèles téléchargés.</p>
-          </section>
-        </div>
-      }
-    </div>
-  `,
-  styles: [`
-    :host { display: block; height: 100vh; overflow-y: auto; }
-
-    .drag-region {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 42px;
-      -webkit-app-region: drag;
-      z-index: 10;
-    }
-
-    .settings-page {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 24px 32px;
-    }
-
-    .settings-header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0 -32px 32px;
-      padding: 32px 32px 16px;
-      background: var(--bg-main);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .settings-header h1 {
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .back-btn {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-    }
-    .back-btn:hover {
-      background: var(--accent-hover);
-      color: var(--text-primary);
-    }
-
-    .settings-section {
-      margin-bottom: 32px;
-      padding-bottom: 24px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    .settings-section:last-child { border-bottom: none; }
-
-    .settings-section h2 {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 16px;
-    }
-
-    .setting-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 0;
-      gap: 16px;
-    }
-
-    .setting-row label {
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-
-    .setting-row select {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      color: var(--text-primary);
-      padding: 10px 12px;
-      font-size: 13px;
-      outline: none;
-    }
-
-    .theme-toggle {
-      display: flex;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .theme-toggle button {
-      padding: 10px 16px;
-      border: none;
-      background: none;
-      color: var(--text-secondary);
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .theme-toggle button:hover {
-      background: var(--accent-hover);
-    }
-    .theme-toggle button.active {
-      background: var(--accent-primary);
-      color: #1a1a1a;
-    }
-
-    .about-text {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-
-    .subsection-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin: 16px 0 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .model-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-    .model-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-    }
-    .model-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .model-name {
-      font-size: 13px;
-      color: var(--text-primary);
-      font-weight: 500;
-    }
-    .model-meta {
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-    .model-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .status-badge {
-      font-size: 12px;
-      font-weight: 500;
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
-    .status-badge.installed {
-      color: var(--accent-primary);
-      background: var(--accent-primary-tint);
-    }
-    .status-badge.missing {
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 0.1);
-    }
-    .status-badge.downloading {
-      color: var(--text-secondary);
-    }
-    .model-action-btn {
-      padding: 4px 12px;
-      border: 1px solid var(--accent-primary);
-      border-radius: 8px;
-      background: none;
-      color: var(--accent-primary);
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .model-action-btn:hover {
-      background: var(--accent-primary-tint);
-    }
-    .setting-label-group {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .setting-hint {
-      font-size: 11px;
-      color: var(--text-secondary);
-      opacity: 0.7;
-    }
-    .unsupported-hint {
-      justify-content: flex-start;
-    }
-
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 40px;
-      height: 22px;
-      flex-shrink: 0;
-    }
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .toggle-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--border-subtle);
-      border-radius: 22px;
-      transition: background 0.2s;
-    }
-    .toggle-slider::before {
-      content: '';
-      position: absolute;
-      height: 16px;
-      width: 16px;
-      left: 3px;
-      bottom: 3px;
-      background: white;
-      border-radius: 50%;
-      transition: transform 0.2s;
-    }
-    .toggle-switch input:checked + .toggle-slider {
-      background: var(--accent-primary);
-    }
-    .toggle-switch input:checked + .toggle-slider::before {
-      transform: translateX(18px);
-    }
-
-    .reset-btn {
-      padding: 12px 24px;
-      border: 1px solid #ef4444;
-      border-radius: 8px;
-      background: none;
-      color: #ef4444;
-      font-size: 13px;
-      cursor: pointer;
-      margin-bottom: 8px;
-    }
-    .reset-btn:hover {
-      background: rgba(239, 68, 68, 0.1);
-    }
-    .reset-warning {
-      font-size: 12px;
-      color: #ef4444;
-      margin-top: 8px;
-    }
-
-    .mic-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .test-mic-btn {
-      padding: 10px 16px;
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      background: var(--bg-surface);
-      color: var(--text-secondary);
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.15s;
-      flex-shrink: 0;
-    }
-    .test-mic-btn:hover {
-      background: var(--accent-hover);
-      color: var(--text-primary);
-    }
-    .test-mic-btn.active {
-      background: var(--accent-primary);
-      color: #1a1a1a;
-      border-color: var(--accent-primary);
-    }
-    .test-mic-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .mic-test-box {
-      margin-top: 12px;
-      padding: 16px;
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-    }
-
-    .vu-meter {
-      height: 8px;
-      background: var(--bg-main);
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 12px;
-    }
-    .vu-bar {
-      height: 100%;
-      background: var(--accent-primary);
-      border-radius: 4px;
-      transition: width 0.1s;
-    }
-    .mic-status {
-      font-size: 13px;
-      color: var(--text-secondary);
-      transition: color 0.2s;
-      margin: 0;
-    }
-    .mic-status.active {
-      color: var(--accent-primary);
-    }
-
-    .shortcuts-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .shortcut-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 0;
-    }
-    .shortcut-desc {
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-    kbd {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 12px;
-      font-family: inherit;
-      color: var(--text-primary);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    }
-  `],
+  imports: [CommonModule, FormsModule, TranslateModule],
+  templateUrl: './settings.component.html',
+  styleUrl: './settings.component.scss',
 })
 export class SettingsComponent implements OnInit, OnDestroy {
   config: Config | null = null;
@@ -593,15 +76,23 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private levelAnimationId: number | null = null;
 
   themes = [
-    { value: 'dark' as const, label: 'Sombre' },
-    { value: 'light' as const, label: 'Clair' },
-    { value: 'system' as const, label: 'Système' },
+    { value: 'dark' as const, labelKey: 'settings.themeDark' },
+    { value: 'light' as const, labelKey: 'settings.themeLight' },
+    { value: 'system' as const, labelKey: 'settings.themeSystem' },
   ];
+
+  languages = [
+    { value: 'fr' as SupportedLanguage, label: 'Francais' },
+    { value: 'en' as SupportedLanguage, label: 'English' },
+  ];
+
+  currentLang: SupportedLanguage = 'fr';
 
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngZone = inject(NgZone);
   private readonly sessionService = inject(SessionService);
+  private readonly languageService = inject(LanguageService);
 
   private get sourdineApi(): SourdineSettingsApi | undefined {
     return (window as Window & { sourdine?: SourdineSettingsApi }).sourdine;
@@ -617,10 +108,16 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
     }
+    this.currentLang = this.languageService.currentLang;
     this.loadMicrophones();
     this.loadModels();
     this.setupProgressListener();
     this.checkSystemAudio();
+  }
+
+  setLanguage(lang: SupportedLanguage): void {
+    this.currentLang = lang;
+    this.languageService.setLanguage(lang);
   }
 
   private async checkSystemAudio(): Promise<void> {
@@ -738,6 +235,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   private async loadMicrophones(): Promise<void> {
     try {
+      // Request permission first to get device labels
+      const mediaApi = (window as Window & { sourdine?: { media?: { requestMicAccess: () => Promise<boolean> } } }).sourdine?.media;
+      if (mediaApi) {
+        await mediaApi.requestMicAccess();
+      }
+
       const devices = await navigator.mediaDevices.enumerateDevices();
       const mics = devices.filter((d) => d.kind === 'audioinput' && d.deviceId);
       this.ngZone.run(() => {
@@ -815,15 +318,27 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   private async startMicTest(): Promise<void> {
     try {
+      // Request microphone permission on macOS first
+      const mediaApi = (window as Window & { sourdine?: { media?: { requestMicAccess: () => Promise<boolean> } } }).sourdine?.media;
+      if (mediaApi) {
+        const granted = await mediaApi.requestMicAccess();
+        if (!granted) {
+          console.error('[Settings] Microphone access denied');
+          return;
+        }
+      }
+
       const deviceId = this.config?.audio?.defaultDeviceId;
-      // Use 'ideal' instead of 'exact' for graceful fallback when deviceId is invalid
+
+      // Use 'exact' to ensure we get the specific device
       const constraints: MediaStreamConstraints = {
         audio: deviceId && deviceId !== 'default'
-          ? { deviceId: { ideal: deviceId } }
+          ? { deviceId: { exact: deviceId } }
           : true,
       };
 
       this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+
       this.audioContext = new AudioContext();
 
       if (this.audioContext.state !== 'running') {
@@ -835,6 +350,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.analyser.fftSize = 256;
       this.analyser.smoothingTimeConstant = 0.5;
       source.connect(this.analyser);
+
+      // Connect to destination via silent gain - required for audio processing in Chromium
+      const silentGain = this.audioContext.createGain();
+      silentGain.gain.value = 0;
+      this.analyser.connect(silentGain);
+      silentGain.connect(this.audioContext.destination);
 
       this.isTestingMic = true;
       this.startLevelMonitoring();

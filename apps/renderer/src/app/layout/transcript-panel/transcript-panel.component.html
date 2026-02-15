@@ -1,0 +1,40 @@
+<div class="transcript-panel">
+  <div class="segments-container" #scrollContainer>
+    @for (segment of segments; track segment.id) {
+      <div
+        class="segment-block"
+        [attr.data-segment-id]="segment.id"
+        [class.highlighted]="isHighlighted(segment.id)"
+      >
+        <span class="segment-text">{{ segment.text }}</span>
+      </div>
+    }
+
+    @if (isSpeechActive) {
+      <div class="listening-indicator">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    }
+
+    @if (segments.length === 0 && !isSpeechActive) {
+      <div class="empty-state">
+        @switch (sttStatus) {
+          @case ('loading') {
+            <span>{{ 'transcript.loading' | translate }}<span class="loading-dots"></span></span>
+          }
+          @case ('error') {
+            <span>
+              {{ 'transcript.unavailable' | translate }}
+              <button class="retry-btn" (click)="restartStt()">{{ 'transcript.retry' | translate }}</button>
+            </span>
+          }
+          @default {
+            <span>{{ 'transcript.empty' | translate }}</span>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>

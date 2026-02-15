@@ -14,6 +14,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LlmService } from '../../services/llm.service';
 import { SessionService } from '../../services/session.service';
 import { RECIPES, Recipe } from '../../services/recipes';
@@ -27,238 +28,9 @@ interface ChatMessageWithHtml extends ChatMessage {
   selector: 'sdn-chat-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
-  template: `
-    <div class="chat-expand">
-      <!-- Messages area -->
-      <div class="chat-messages" #messagesContainer>
-        @if (messages.length === 0 && !isGenerating) {
-          <div class="chat-empty">
-            <p>Posez une question sur cette reunion.</p>
-          </div>
-        }
-
-        @for (msg of messages; track $index) {
-          <div class="chat-msg" [class]="msg.role">
-            <div class="msg-bubble" [innerHTML]="msg.html || msg.content"></div>
-          </div>
-        }
-
-        @if (isGenerating) {
-          <div class="chat-msg assistant">
-            <div class="msg-bubble typing">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-          </div>
-        }
-      </div>
-
-      <!-- Recipes dropdown -->
-      @if (showRecipes) {
-        <div class="recipes-dropdown">
-          @for (r of filteredRecipes; track r.command; let i = $index) {
-            <div
-              class="recipe-item"
-              tabindex="0"
-              role="option"
-              [attr.aria-selected]="i === recipeIndex"
-              [class.active]="i === recipeIndex"
-              (click)="selectRecipe(r)"
-              (keydown.enter)="selectRecipe(r)"
-              (mouseenter)="recipeIndex = i"
-            >
-              <span class="recipe-cmd">{{ r.command }}</span>
-              <span class="recipe-label">{{ r.label }}</span>
-            </div>
-          }
-        </div>
-      }
-
-      <!-- Input bar (continuation of the main-pill) -->
-      <div class="chat-input-bar">
-        <input
-          class="chat-input"
-          type="text"
-          [(ngModel)]="input"
-          (input)="onInputChange()"
-          (keydown.enter)="onEnter($event)"
-          (keydown.escape)="onEscape()"
-          (keydown.arrowDown)="onArrowDown($event)"
-          (keydown.arrowUp)="onArrowUp($event)"
-          placeholder="Posez une question... (/ pour les commandes)"
-          [disabled]="isGenerating"
-          #chatInputEl
-        />
-        <button
-          class="send-btn"
-          (click)="onSend()"
-          [disabled]="!input.trim() || isGenerating"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14M13 6l6 6-6 6"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-  `,
-  styles: [`
-    :host { display: block; }
-
-    .chat-expand {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: expandUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      transform-origin: bottom center;
-    }
-
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-height: 80px;
-      max-height: 50vh;
-    }
-
-    .chat-msg {
-      width: 100%;
-    }
-    .chat-msg.user { display: flex; justify-content: flex-end; }
-    .chat-msg.assistant { display: flex; justify-content: flex-start; }
-
-    .msg-bubble {
-      max-width: 90%;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    .chat-msg.user .msg-bubble {
-      background: var(--bg-surface);
-      color: var(--text-primary);
-      border-bottom-right-radius: 4px;
-    }
-    .chat-msg.assistant .msg-bubble {
-      background: transparent;
-      color: var(--text-primary);
-      padding-left: 4px;
-    }
-
-    .msg-bubble.typing {
-      display: flex;
-      gap: 4px;
-      padding: 12px 16px;
-    }
-    .msg-bubble.typing .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent-primary);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    .msg-bubble.typing .dot:nth-child(2) { animation-delay: 0.2s; }
-    .msg-bubble.typing .dot:nth-child(3) { animation-delay: 0.4s; }
-
-    .chat-empty {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      color: var(--text-secondary);
-      font-size: 13px;
-    }
-
-    :host ::ng-deep .msg-bubble p { margin: 0 0 4px 0; }
-    :host ::ng-deep .msg-bubble h3 {
-      font-size: 14px;
-      font-weight: 600;
-      margin: 8px 0 4px 0;
-    }
-    :host ::ng-deep .msg-bubble ul { padding-left: 20px; margin: 4px 0; }
-    :host ::ng-deep .msg-bubble li { margin-bottom: 2px; }
-
-    /* ── Recipes dropdown ── */
-    .recipes-dropdown {
-      border-top: 1px solid var(--border-subtle);
-      padding: 6px 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .recipe-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.1s;
-    }
-    .recipe-item:hover, .recipe-item.active {
-      background: var(--accent-hover);
-    }
-    .recipe-cmd {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent-primary);
-      min-width: 80px;
-    }
-    .recipe-label {
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
-    /* ── Input bar ── */
-    .chat-input-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-top: 1px solid var(--border-subtle);
-    }
-    .chat-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      padding: 6px 8px;
-      font-size: 13px;
-      color: var(--text-primary);
-      outline: none;
-    }
-    .chat-input::placeholder { color: var(--text-secondary); opacity: 0.5; }
-    .chat-input:disabled { opacity: 0.5; }
-
-    .send-btn {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      border: none;
-      background: var(--accent-primary);
-      color: white;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: opacity 0.15s;
-    }
-    .send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
-    .send-btn:hover:not(:disabled) { opacity: 0.85; }
-
-    @keyframes expandUp {
-      from { max-height: 0; opacity: 0; }
-      to { max-height: 70vh; opacity: 1; }
-    }
-    @keyframes pulse {
-      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-      40% { transform: scale(1); opacity: 1; }
-    }
-  `],
+  imports: [CommonModule, FormsModule, TranslateModule],
+  templateUrl: './chat-panel.component.html',
+  styleUrl: './chat-panel.component.scss',
 })
 export class ChatPanelComponent implements OnInit, OnDestroy {
   @ViewChild('messagesContainer') messagesEl!: ElementRef<HTMLDivElement>;
@@ -277,6 +49,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   private readonly llm = inject(LlmService);
   private readonly session = inject(SessionService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
   private subs: Subscription[] = [];
   private chatSubs: Subscription[] = [];
 
@@ -398,7 +171,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       this.llm.error$.subscribe((payload) => {
         if (payload.requestId !== requestId) return;
         setTimeout(() => {
-          this.session.addChatMessage({ role: 'assistant', content: `Erreur : ${payload.error}` });
+          const errorLabel = this.translate.instant('chat.error');
+          this.session.addChatMessage({ role: 'assistant', content: `${errorLabel}: ${payload.error}` });
           this.isGenerating = false;
           this.cdr.markForCheck();
           this.scrollToBottom();
