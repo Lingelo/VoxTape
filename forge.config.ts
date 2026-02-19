@@ -1,14 +1,17 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDMG } from '@electron-forge/maker-dmg';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const config: ForgeConfig = {
   packagerConfig: {
-    name: 'Sourdine',
-    executableName: 'sourdine',
-    appBundleId: 'com.sourdine.app',
-    icon: resolve(process.cwd(), 'assets', 'icon'),
+    name: 'VoxTape',
+    executableName: 'voxtape',
+    appBundleId: 'com.voxtape.app',
+    icon: resolve(__dirname, 'assets', 'icon'),
     asar: {
       unpack: '{**/node_modules/sherpa-onnx-node/**,**/node_modules/sherpa-onnx-darwin-*/**,**/node_modules/better-sqlite3/**,**/node_modules/node-llama-cpp/**,**/node_modules/@node-llama-cpp/**,**/*.node,**/*.dylib}',
     },
@@ -35,9 +38,9 @@ const config: ForgeConfig = {
       return true;
     },
     extendInfo: {
-      NSMicrophoneUsageDescription: 'Sourdine needs microphone access to transcribe your voice.',
-      NSAudioCaptureUsageDescription: 'Sourdine needs system audio access to transcribe meeting participants.',
-      NSScreenCaptureUsageDescription: 'Sourdine needs screen capture access to record system audio from meetings.',
+      NSMicrophoneUsageDescription: 'VoxTape needs microphone access to transcribe your voice.',
+      NSAudioCaptureUsageDescription: 'VoxTape needs system audio access to transcribe meeting participants.',
+      NSScreenCaptureUsageDescription: 'VoxTape needs screen capture access to record system audio from meetings.',
     },
     // macOS code signing (disabled for now — enable with Apple Developer cert)
     osxSign: undefined,
@@ -46,15 +49,15 @@ const config: ForgeConfig = {
   makers: [
     new MakerDMG({
       format: 'ULFO',
-      name: 'Sourdine',
+      name: 'VoxTape',
       contents: [
-        { x: 130, y: 150, type: 'file', path: resolve(process.cwd(), 'out', 'Sourdine-darwin-arm64', 'Sourdine.app') },
+        { x: 130, y: 150, type: 'file', path: resolve(__dirname, 'out', 'VoxTape-darwin-arm64', 'VoxTape.app') },
         { x: 410, y: 150, type: 'link', path: '/Applications' },
       ],
       window: {
         size: { width: 540, height: 380 },
       },
-      icon: resolve(process.cwd(), 'assets', 'icon.icns'),
+      icon: resolve(__dirname, 'assets', 'icon.icns'),
     }),
     new MakerZIP({}, ['darwin', 'linux', 'win32']),
   ],

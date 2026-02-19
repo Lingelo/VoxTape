@@ -20,7 +20,7 @@ export default defineConfig({
         '@nestjs/common',
         'reflect-metadata',
         'rxjs',
-        '@sourdine/native-audio-capture',
+        '@voxtape/native-audio-capture',
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`),
       ],
@@ -30,6 +30,6 @@ export default defineConfig({
     target: 'node20',
   },
   resolve: {
-    conditions: ['@sourdine/source', 'import', 'require', 'default'],
+    conditions: ['@voxtape/source', 'import', 'require', 'default'],
   },
 });

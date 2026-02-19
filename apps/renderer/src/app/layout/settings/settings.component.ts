@@ -10,7 +10,7 @@ interface DownloadedModel {
   id: string;
 }
 
-interface SourdineSettingsApi {
+interface VoxTapeSettingsApi {
   config?: {
     get: () => Promise<Config>;
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
@@ -109,12 +109,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly sessionService = inject(SessionService);
   private readonly languageService = inject(LanguageService);
 
-  private get sourdineApi(): SourdineSettingsApi | undefined {
-    return (window as Window & { sourdine?: SourdineSettingsApi }).sourdine;
+  private get voxtapeApi(): VoxTapeSettingsApi | undefined {
+    return (window as Window & { voxtape?: VoxTapeSettingsApi }).voxtape;
   }
 
   async ngOnInit(): Promise<void> {
-    const api = this.sourdineApi?.config;
+    const api = this.voxtapeApi?.config;
     if (api) {
       const cfg = await api.get();
       this.ngZone.run(() => {
@@ -138,7 +138,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private async checkSystemAudio(): Promise<void> {
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (!api) return;
     try {
       this.systemAudioSupported = await api.isSupported();
@@ -155,7 +155,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private setupSystemAudioLevelListener(): void {
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (!api?.onLevel) return;
 
     this.systemAudioLevelCleanup = api.onLevel((level: number) => {
@@ -205,7 +205,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private startSystemAudioTest(): void {
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (!api) return;
     api.start();
     this.isTestingSystemAudio = true;
@@ -213,7 +213,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private stopSystemAudioTest(): void {
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (api) {
       api.stop();
     }
@@ -223,7 +223,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private async loadModels(): Promise<void> {
-    const api = this.sourdineApi?.model;
+    const api = this.voxtapeApi?.model;
     if (!api) return;
     const result = await api.list();
     this.ngZone.run(() => {
@@ -234,7 +234,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   private setupProgressListener(): void {
-    const api = this.sourdineApi?.model;
+    const api = this.voxtapeApi?.model;
     if (!api) return;
     this.progressCleanup = api.onDownloadProgress(
       (payload: { modelId: string; progress: number; total: number }) => {
@@ -266,7 +266,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   downloadModel(modelId: string): void {
-    const api = this.sourdineApi?.model;
+    const api = this.voxtapeApi?.model;
     if (!api) return;
     this.downloadProgress[modelId] = 0;
     api.download(modelId);
@@ -275,7 +275,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private async loadMicrophones(): Promise<void> {
     try {
       // Request permission first to get device labels
-      const mediaApi = (window as Window & { sourdine?: { media?: { requestMicAccess: () => Promise<boolean> } } }).sourdine?.media;
+      const mediaApi = (window as Window & { voxtape?: { media?: { requestMicAccess: () => Promise<boolean> } } }).voxtape?.media;
       if (mediaApi) {
         await mediaApi.requestMicAccess();
       }
@@ -296,7 +296,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   async resetApp(): Promise<void> {
-    const api = this.sourdineApi?.config;
+    const api = this.voxtapeApi?.config;
     if (api) {
       await api.reset();
       // Clear frontend session state after backend reset
@@ -306,7 +306,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   async save(key: string, value: string | boolean | number | null): Promise<void> {
-    const api = this.sourdineApi?.config;
+    const api = this.voxtapeApi?.config;
     if (api) {
       await api.set(key, value);
     }
@@ -358,7 +358,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private async startMicTest(): Promise<void> {
     try {
       // Request microphone permission on macOS first
-      const mediaApi = (window as Window & { sourdine?: { media?: { requestMicAccess: () => Promise<boolean> } } }).sourdine?.media;
+      const mediaApi = (window as Window & { voxtape?: { media?: { requestMicAccess: () => Promise<boolean> } } }).voxtape?.media;
       if (mediaApi) {
         const granted = await mediaApi.requestMicAccess();
         if (!granted) {

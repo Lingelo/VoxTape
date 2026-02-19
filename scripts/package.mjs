@@ -1,5 +1,5 @@
 /**
- * Packaging script for Sourdine.
+ * Packaging script for VoxTape.
  *
  * 1. Builds native audio capture module (Rust napi-rs) if needed
  * 2. Builds the Angular renderer
@@ -82,7 +82,7 @@ console.log('✓ Renderer copied');
 
 // 6. Replace workspace symlink with real files for native-audio-capture
 //    ASAR doesn't preserve symlinks, so we must copy the actual files into node_modules.
-const nativeSymlink = resolve(root, 'node_modules/@sourdine/native-audio-capture');
+const nativeSymlink = resolve(root, 'node_modules/@voxtape/native-audio-capture');
 const nativeSource = resolve(root, 'libs/native-audio-capture');
 let needsSymlinkRestore = false;
 
@@ -137,5 +137,5 @@ console.log('\n✓ Packaging complete!');
 if (shouldMake) {
   console.log('  Distributables: out/make/');
 } else {
-  console.log('  App: out/Sourdine-darwin-*/Sourdine.app');
+  console.log('  App: out/VoxTape-darwin-*/VoxTape.app');
 }

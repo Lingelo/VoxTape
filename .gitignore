@@ -47,7 +47,7 @@ Thumbs.db
 
 __screenshots__/
 
-# Sourdine — AI models (~640MB+)
+# VoxTape — AI models (~640MB+)
 models/**
 !models/.gitkeep
 

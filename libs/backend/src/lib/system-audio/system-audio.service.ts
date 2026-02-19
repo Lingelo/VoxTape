@@ -16,7 +16,7 @@ export class SystemAudioService extends EventEmitter implements OnModuleDestroy 
 
   isSupported(): boolean {
     try {
-      const nativeAudio = require('@sourdine/native-audio-capture');
+      const nativeAudio = require('@voxtape/native-audio-capture');
       return nativeAudio.isSupported();
     } catch {
       return false;
@@ -26,9 +26,9 @@ export class SystemAudioService extends EventEmitter implements OnModuleDestroy 
   start(): void {
     if (this.capturing) return;
 
-    let nativeAudio: typeof import('@sourdine/native-audio-capture');
+    let nativeAudio: typeof import('@voxtape/native-audio-capture');
     try {
-      nativeAudio = require('@sourdine/native-audio-capture');
+      nativeAudio = require('@voxtape/native-audio-capture');
     } catch (err) {
       console.error('[SystemAudio] Failed to load native module:', err);
       return;
@@ -81,7 +81,7 @@ export class SystemAudioService extends EventEmitter implements OnModuleDestroy 
     if (!this.capturing) return;
 
     try {
-      const nativeAudio = require('@sourdine/native-audio-capture');
+      const nativeAudio = require('@voxtape/native-audio-capture');
       nativeAudio.stopCapture();
     } catch (err) {
       console.error('[SystemAudio] Failed to stop capture:', err);

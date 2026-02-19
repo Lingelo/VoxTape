@@ -51,7 +51,7 @@ let lastAddedEndMs = 0;
 /** Search for a model file. */
 function findModel(relativePath: string): string | null {
   const dirs = [
-    process.env.SOURDINE_MODELS_DIR,
+    process.env.VOXTAPE_MODELS_DIR,
     join(__dirname, '..', '..', '..', 'models'),
   ];
   for (const dir of dirs) {

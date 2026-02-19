@@ -1,5 +1,5 @@
 /**
- * Meeting detection types for Sourdine
+ * Meeting detection types for VoxTape
  */
 
 /**

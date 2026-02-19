@@ -8,7 +8,7 @@
 
 // ── CATapDescription (CoreAudio tap, kept for reference/fallback) ──────────
 
-void *sourdine_create_global_tap_description(void) {
+void *voxtape_create_global_tap_description(void) {
     @try {
         Class cls = NSClassFromString(@"CATapDescription");
         if (!cls) {
@@ -30,7 +30,7 @@ void *sourdine_create_global_tap_description(void) {
     }
 }
 
-void sourdine_release_tap_description(void *desc) {
+void voxtape_release_tap_description(void *desc) {
     if (desc) {
         (void)(__bridge_transfer id)desc; // Transfer ownership to ARC for release
     }
@@ -38,16 +38,16 @@ void sourdine_release_tap_description(void *desc) {
 
 // ── Permission helpers ─────────────────────────────────────────────────────
 
-int sourdine_has_screen_capture_access(void) {
+int voxtape_has_screen_capture_access(void) {
     return CGPreflightScreenCaptureAccess() ? 1 : 0;
 }
 
-int sourdine_request_screen_capture_access(void) {
+int voxtape_request_screen_capture_access(void) {
     bool result = CGRequestScreenCaptureAccess();
     return result ? 1 : 0;
 }
 
-int sourdine_request_sck_permission(void) {
+int voxtape_request_sck_permission(void) {
     __block int result = 0;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
     [SCShareableContent getShareableContentExcludingDesktopWindows:NO
@@ -70,7 +70,7 @@ int sourdine_request_sck_permission(void) {
 // ── ScreenCaptureKit SCStream audio capture ────────────────────────────────
 
 /// C callback type: receives float32 PCM audio data
-typedef void (*sourdine_audio_callback_t)(
+typedef void (*voxtape_audio_callback_t)(
     const float *data,
     uint32_t frame_count,
     uint32_t channels,
@@ -79,13 +79,13 @@ typedef void (*sourdine_audio_callback_t)(
 );
 
 /// SCStreamOutput delegate that forwards audio to a C callback
-@interface SourdineAudioDelegate : NSObject <SCStreamOutput>
-@property (nonatomic, assign) sourdine_audio_callback_t callback;
+@interface VoxTapeAudioDelegate : NSObject <SCStreamOutput>
+@property (nonatomic, assign) voxtape_audio_callback_t callback;
 @property (nonatomic, assign) void *userData;
 @property (nonatomic, assign) uint64_t chunkCount;
 @end
 
-@implementation SourdineAudioDelegate
+@implementation VoxTapeAudioDelegate
 
 - (void)stream:(SCStream *)stream didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer ofType:(SCStreamOutputType)type {
     if (type != SCStreamOutputTypeAudio) return;
@@ -164,12 +164,12 @@ typedef void (*sourdine_audio_callback_t)(
 
 // Global SCStream state
 static SCStream *g_sck_stream = nil;
-static SourdineAudioDelegate *g_sck_delegate = nil;
+static VoxTapeAudioDelegate *g_sck_delegate = nil;
 
 /// Start capturing system audio via ScreenCaptureKit SCStream.
 /// Returns 0 on success, negative on error.
 /// The callback receives float32 interleaved PCM audio data.
-int sourdine_sck_start_capture(sourdine_audio_callback_t callback, void *user_data) {
+int voxtape_sck_start_capture(voxtape_audio_callback_t callback, void *user_data) {
     if (g_sck_stream) {
         NSLog(@"[native-audio] SCK capture already active");
         return -1;
@@ -177,7 +177,7 @@ int sourdine_sck_start_capture(sourdine_audio_callback_t callback, void *user_da
 
     __block int result = 0;
     __block SCStream *capturedStream = nil;
-    __block SourdineAudioDelegate *capturedDelegate = nil;
+    __block VoxTapeAudioDelegate *capturedDelegate = nil;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
     NSLog(@"[native-audio] SCK: Getting shareable content...");
@@ -225,7 +225,7 @@ int sourdine_sck_start_capture(sourdine_audio_callback_t callback, void *user_da
         SCStream *stream = [[SCStream alloc] initWithFilter:filter configuration:config delegate:nil];
 
         // Create and configure delegate
-        SourdineAudioDelegate *delegate = [[SourdineAudioDelegate alloc] init];
+        VoxTapeAudioDelegate *delegate = [[VoxTapeAudioDelegate alloc] init];
         delegate.callback = callback;
         delegate.userData = user_data;
         delegate.chunkCount = 0;
@@ -274,7 +274,7 @@ int sourdine_sck_start_capture(sourdine_audio_callback_t callback, void *user_da
 }
 
 /// Stop SCStream capture and clean up.
-void sourdine_sck_stop_capture(void) {
+void voxtape_sck_stop_capture(void) {
     if (!g_sck_stream) return;
 
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
@@ -318,7 +318,7 @@ static NSArray<NSString *> *getMeetingBundleIds(void) {
 }
 
 /// Get the number of running meeting apps
-int sourdine_get_running_meeting_apps_count(void) {
+int voxtape_get_running_meeting_apps_count(void) {
     @autoreleasepool {
         NSArray<NSString *> *meetingBundleIds = getMeetingBundleIds();
         NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
@@ -336,7 +336,7 @@ int sourdine_get_running_meeting_apps_count(void) {
 
 /// Get running meeting apps. Caller must free the returned array and strings.
 /// Returns NULL if no meeting apps found.
-MeetingAppInfo *sourdine_get_running_meeting_apps(int *outCount) {
+MeetingAppInfo *voxtape_get_running_meeting_apps(int *outCount) {
     @autoreleasepool {
         NSArray<NSString *> *meetingBundleIds = getMeetingBundleIds();
         NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
@@ -378,8 +378,8 @@ MeetingAppInfo *sourdine_get_running_meeting_apps(int *outCount) {
     }
 }
 
-/// Free the memory allocated by sourdine_get_running_meeting_apps
-void sourdine_free_meeting_apps(MeetingAppInfo *apps, int count) {
+/// Free the memory allocated by voxtape_get_running_meeting_apps
+void voxtape_free_meeting_apps(MeetingAppInfo *apps, int count) {
     if (!apps) return;
     for (int i = 0; i < count; i++) {
         free((void *)apps[i].bundleId);

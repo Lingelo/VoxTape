@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { MeetingDetectionConfig } from '@sourdine/shared-types';
-import { DEFAULT_MEETING_DETECTION_CONFIG } from '@sourdine/shared-types';
+import type { MeetingDetectionConfig } from '@voxtape/shared-types';
+import { DEFAULT_MEETING_DETECTION_CONFIG } from '@voxtape/shared-types';
 
-export interface SourdineConfig {
+export interface VoxTapeConfig {
   language: string;
   theme: 'dark' | 'light' | 'system';
   audio: {
@@ -24,7 +24,7 @@ export interface SourdineConfig {
   firstLaunchComplete: boolean;
 }
 
-const DEFAULT_CONFIG: SourdineConfig = {
+const DEFAULT_CONFIG: VoxTapeConfig = {
   language: 'fr',
   theme: 'dark',
   audio: { defaultDeviceId: null },
@@ -38,10 +38,10 @@ const DEFAULT_CONFIG: SourdineConfig = {
 @Injectable()
 export class ConfigService {
   private configPath = '';
-  private config: SourdineConfig = { ...DEFAULT_CONFIG };
+  private config: VoxTapeConfig = { ...DEFAULT_CONFIG };
 
   open(userDataPath: string): void {
-    this.configPath = join(userDataPath, 'sourdine-config.json');
+    this.configPath = join(userDataPath, 'voxtape-config.json');
     this.load();
   }
 
@@ -63,11 +63,11 @@ export class ConfigService {
     writeFileSync(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
   }
 
-  getAll(): SourdineConfig {
+  getAll(): VoxTapeConfig {
     return { ...this.config };
   }
 
-  get<K extends keyof SourdineConfig>(key: K): SourdineConfig[K] {
+  get<K extends keyof VoxTapeConfig>(key: K): VoxTapeConfig[K] {
     return this.config[key];
   }
 

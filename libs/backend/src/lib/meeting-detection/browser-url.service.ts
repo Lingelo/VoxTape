@@ -2,8 +2,8 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { MeetingApp } from '@sourdine/shared-types';
-import { MEETING_URL_PATTERNS } from '@sourdine/shared-types';
+import type { MeetingApp } from '@voxtape/shared-types';
+import { MEETING_URL_PATTERNS } from '@voxtape/shared-types';
 
 const execAsync = promisify(exec);
 

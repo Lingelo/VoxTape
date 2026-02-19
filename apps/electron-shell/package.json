@@ -1,5 +1,5 @@
 {
-  "name": "@sourdine/electron-shell",
+  "name": "@voxtape/electron-shell",
   "version": "0.0.1",
   "private": true,
   "nx": {
