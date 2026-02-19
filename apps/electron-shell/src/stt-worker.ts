@@ -40,15 +40,19 @@ function findModel(relativePath: string): string | null {
 }
 
 function createVad(sherpaOnnx: any, vadModelPath: string): any {
+  // Optimized VAD settings for French speech detection
+  // - Lower threshold (0.35) for better sensitivity to soft speech
+  // - Longer minSilenceDuration (0.4s) to avoid cutting mid-sentence
+  // - Short minSpeechDuration (0.2s) to capture quick responses
   return new sherpaOnnx.Vad(
     {
       sileroVad: {
         model: vadModelPath,
-        threshold: 0.5,
-        minSilenceDuration: 0.3,
-        minSpeechDuration: 0.25,
+        threshold: 0.35,           // Lower = more sensitive (default 0.5)
+        minSilenceDuration: 0.4,   // Wait longer before ending segment
+        minSpeechDuration: 0.2,    // Capture shorter utterances
         windowSize: 512,
-        maxSpeechDuration: 15,
+        maxSpeechDuration: 20,     // Allow longer segments (meetings)
       },
       sampleRate: 16000,
       numThreads: 1,
@@ -74,9 +78,9 @@ async function initialize(): Promise<void> {
     console.log('[stt-worker] VAD model:', vadModelPath);
 
     // Whisper small int8 model files
-    const whisperEncoder = findModel(join('stt', 'whisper-small-encoder.int8.onnx'));
-    const whisperDecoder = findModel(join('stt', 'whisper-small-decoder.int8.onnx'));
-    const whisperTokens = findModel(join('stt', 'whisper-small-tokens.txt'));
+    const whisperEncoder = findModel(join('stt', 'small-encoder.int8.onnx'));
+    const whisperDecoder = findModel(join('stt', 'small-decoder.int8.onnx'));
+    const whisperTokens = findModel(join('stt', 'small-tokens.txt'));
 
     if (!whisperEncoder || !whisperDecoder || !whisperTokens) {
       throw new Error(
@@ -110,6 +114,7 @@ async function initialize(): Promise<void> {
     };
 
     // Single shared recognizer (Whisper small ~245MB)
+    // Optimized for French transcription
     console.log('[stt-worker] Creating offline recognizer (Whisper)...');
     recognizer = new sherpaOnnx.OfflineRecognizer({
       featConfig: {
@@ -120,6 +125,8 @@ async function initialize(): Promise<void> {
         whisper: {
           encoder: whisperEncoder,
           decoder: whisperDecoder,
+          language: 'fr',          // Force French for better accuracy
+          task: 'transcribe',      // Transcription (not translation)
         },
         tokens: whisperTokens,
         numThreads: 2,
@@ -127,7 +134,7 @@ async function initialize(): Promise<void> {
         provider: 'cpu',
       },
     });
-    console.log('[stt-worker] Offline recognizer created');
+    console.log('[stt-worker] Offline recognizer created (language: fr)');
 
     process.send?.({ type: 'ready' });
   } catch (err: any) {
@@ -170,6 +177,36 @@ function processAudioChunk(samples: number[], channel: string): void {
   }
 }
 
+/**
+ * Filter out common Whisper hallucinations
+ * - Repeated words/phrases
+ * - Sound descriptions [Musique], (applaudissements), etc.
+ * - Very short meaningless text
+ */
+function isHallucination(text: string): boolean {
+  const normalized = text.toLowerCase().trim();
+
+  // Too short to be meaningful (less than 3 chars)
+  if (normalized.length < 3) return true;
+
+  // Sound/music descriptions (common Whisper hallucinations)
+  const soundPatterns = /^\[.*\]$|^\(.*\)$|^♪|musique|applaudissements|rires|silence|bruit/i;
+  if (soundPatterns.test(normalized)) return true;
+
+  // Repeated single word/phrase patterns (e.g., "merci merci merci")
+  const words = normalized.split(/\s+/);
+  if (words.length >= 3) {
+    const uniqueWords = new Set(words);
+    if (uniqueWords.size === 1) return true; // All same word
+    if (uniqueWords.size <= 2 && words.length >= 5) return true; // 1-2 words repeated 5+ times
+  }
+
+  // Single repeated character patterns
+  if (/^(.)\1{3,}$/.test(normalized)) return true;
+
+  return false;
+}
+
 function transcribeSegment(samples: Float32Array, startSample: number, ch: ChannelState): void {
   if (!recognizer || samples.length === 0) return;
 
@@ -181,7 +218,7 @@ function transcribeSegment(samples: Float32Array, startSample: number, ch: Chann
     const result = recognizer.getResult(stream);
     const text = result.text?.trim();
 
-    if (text) {
+    if (text && !isHallucination(text)) {
       const durationMs = (samples.length / 16000) * 1000;
       const startTimeMs = (startSample / 16000) * 1000;
       const endTimeMs = startTimeMs + durationMs;
