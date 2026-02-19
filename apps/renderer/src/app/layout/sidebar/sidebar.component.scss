@@ -52,10 +52,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  margin: 0 8px 8px;
-  border-radius: 8px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin: 0 var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
   border: 1px dashed var(--border-subtle);
   background: none;
   color: var(--text-secondary);
@@ -64,7 +64,7 @@
   transition: all 0.15s;
 
   &:hover {
-    background: var(--accent-hover);
+    background: var(--accent-primary-tint);
     color: var(--accent-primary);
     border-color: var(--accent-primary);
   }
@@ -73,12 +73,17 @@
 .search-box {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 6px 10px;
-  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  transition: border-color 0.15s;
+
+  &:focus-within {
+    border-color: var(--accent-primary);
+  }
 }
 
 .search-icon {
@@ -123,10 +128,11 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.15s;
+  border-left: 2px solid transparent;
 
   &:hover {
     background: var(--accent-hover);
@@ -136,9 +142,14 @@
     }
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+  }
+
   &.active {
-    background: var(--accent-hover);
-    border-left: 2px solid var(--accent-primary);
+    background: var(--accent-primary-tint);
+    border-left-color: var(--accent-primary);
   }
 }
 
@@ -178,17 +189,27 @@
 }
 
 .action-btn {
-  opacity: 0;
+  opacity: 0.4;
   background: none;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: var(--space-1) var(--space-1);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  transition: opacity 0.15s, color 0.15s;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
 }
 
 .export-btn:hover {
