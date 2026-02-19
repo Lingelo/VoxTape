@@ -21,6 +21,7 @@ export interface SourdineConfig {
   };
   meetingDetection: MeetingDetectionConfig;
   onboardingComplete: boolean;
+  firstLaunchComplete: boolean;
 }
 
 const DEFAULT_CONFIG: SourdineConfig = {
@@ -31,6 +32,7 @@ const DEFAULT_CONFIG: SourdineConfig = {
   stt: { modelPath: null },
   meetingDetection: { ...DEFAULT_MEETING_DETECTION_CONFIG },
   onboardingComplete: false,
+  firstLaunchComplete: false,
 };
 
 @Injectable()

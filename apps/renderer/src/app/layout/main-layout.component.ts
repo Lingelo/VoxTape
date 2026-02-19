@@ -7,6 +7,7 @@ import { ControlBarComponent } from './control-bar/control-bar.component';
 import { AudioCaptureService } from '../services/audio-capture.service';
 import { MeetingService } from '../services/meeting.service';
 import { SessionService } from '../services/session.service';
+import { FirstLaunchService } from '../services/first-launch.service';
 
 @Component({
   selector: 'sdn-main-layout',
@@ -29,10 +30,14 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   private readonly audioCapture = inject(AudioCaptureService);
   private readonly meetingService = inject(MeetingService);
   private readonly sessionService = inject(SessionService);
+  private readonly firstLaunch = inject(FirstLaunchService);
   private readonly cdr = inject(ChangeDetectorRef);
   private subs: Subscription[] = [];
 
   ngOnInit(): void {
+    // Check if this is first launch to show guided tooltips
+    this.firstLaunch.checkFirstLaunch();
+
     this.subs.push(
       this.audioCapture.isRecording$.subscribe((recording) => {
         if (recording) {
