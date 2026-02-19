@@ -2,9 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { existsSync, readdirSync, rmSync, mkdirSync, statSync, renameSync } from 'fs';
 import { join } from 'path';
-import { execFileSync } from 'child_process';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import https from 'https';
 import { createWriteStream } from 'fs';
+
+const execFileAsync = promisify(execFile);
 
 export interface ModelInfo {
   id: string;
@@ -222,8 +225,8 @@ export class ModelManagerService extends EventEmitter {
 
     try {
       mkdirSync(tmpDir, { recursive: true });
-      // Use execFileSync to prevent command injection via archivePath
-      execFileSync('tar', ['-xjf', archivePath, '-C', tmpDir], { timeout: 120000 });
+      // Use async execFile to prevent blocking the main thread during extraction
+      await execFileAsync('tar', ['-xjf', archivePath, '-C', tmpDir], { timeout: 120000 });
 
       // Find extracted directory and move relevant files
       const entries = readdirSync(tmpDir);
