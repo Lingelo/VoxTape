@@ -8,63 +8,76 @@ export const RECIPES: Recipe[] = [
   {
     command: '/resume',
     label: 'Résumé',
-    prompt: `Résume cette conversation en bullet points concis.
+    prompt: `Résume cette conversation en points clés.
 
-FORMAT:
-- Point 1
-- Point 2
-- etc.
+Instructions:
+- Liste les points essentiels (3-8 selon la longueur)
+- Sois factuel, n'invente rien
+- Utilise des bullet points concis
 
-Adapte le nombre de points à la longueur du contenu (3-5 pour court, jusqu'à 10 pour long). N'invente rien.`,
+Format:
+- [Point 1]
+- [Point 2]`,
   },
   {
     command: '/actions',
     label: 'Points d\'action',
-    prompt: `Liste les actions à faire mentionnées dans cette conversation.
+    prompt: `Extrais les actions à faire de cette conversation.
 
-FORMAT (si des actions existent):
-- [ ] Action 1 (Responsable: Nom si mentionné)
-- [ ] Action 2
+Instructions:
+- Liste uniquement les actions explicitement mentionnées
+- Indique le responsable si mentionné
+- Si aucune action: réponds "Aucune action identifiée."
 
-Si aucune action n'a été mentionnée, réponds simplement: "Aucune action à faire n'a été mentionnée dans cette conversation."`,
+Format:
+- [ ] [Action] (Responsable: [Nom] si connu)`,
   },
   {
     command: '/decisions',
     label: 'Décisions prises',
-    prompt: `Liste les décisions prises dans cette conversation.
+    prompt: `Extrais les décisions prises dans cette conversation.
 
-FORMAT (si des décisions existent):
-- Décision 1
-- Décision 2
+Instructions:
+- Liste uniquement les décisions explicites
+- Si aucune décision: réponds "Aucune décision identifiée."
 
-Si aucune décision n'a été prise, réponds simplement: "Aucune décision n'a été mentionnée dans cette conversation."`,
+Format:
+- [Décision 1]
+- [Décision 2]`,
   },
   {
     command: '/email',
     label: 'E-mail de suivi',
     prompt: `Rédige un e-mail de suivi professionnel basé sur cette conversation.
 
-FORMAT:
-Objet: [sujet concis]
+Instructions:
+- Objet clair et concis
+- Corps structuré: contexte, points clés, prochaines étapes
+- Ton professionnel
+- N'invente aucun détail absent de la conversation
+
+Format:
+Objet: [sujet]
 
 Bonjour,
 
-[Corps de l'email avec les points clés, décisions et prochaines étapes]
+[Corps de l'email]
 
 Cordialement,
-[À compléter]
-
-Base-toi uniquement sur le contenu réel. N'invente aucun détail, nom ou date.`,
+[Signature]`,
   },
   {
     command: '/questions',
     label: 'Questions ouvertes',
-    prompt: `Identifie les questions ou points non résolus dans cette conversation.
+    prompt: `Identifie les questions ou points non résolus.
 
-FORMAT (si des questions existent):
-- Question/point 1
-- Question/point 2
+Instructions:
+- Liste les questions restées sans réponse
+- Liste les points nécessitant clarification
+- Si tout est résolu: réponds "Aucune question ouverte."
 
-Si tout a été résolu ou qu'il n'y a pas de questions ouvertes, réponds: "Pas de questions ouvertes identifiées."`,
+Format:
+- [Question/point 1]
+- [Question/point 2]`,
   },
 ];
