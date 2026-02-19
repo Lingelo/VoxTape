@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Sourdine** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper small + Silero VAD) and node-llama-cpp for LLM features (Mistral 7B).
+**VoxTape** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper small + Silero VAD) and node-llama-cpp for LLM features (Mistral 7B).
 
 ## Commands
 
@@ -27,7 +27,7 @@ npm run dev
 npm run build
 
 # Packaging
-npm run package          # Electron Forge package → out/Sourdine-darwin-arm64/
+npm run package          # Electron Forge package → out/VoxTape-darwin-arm64/
 npm run make             # Create DMG + ZIP distributables
 
 # Testing (Vitest)
@@ -47,7 +47,7 @@ npx nx build renderer    # Angular prod build only
 node apps/electron-shell/build.mjs
 
 # Model downloads (required for first run)
-npm run download-model       # STT: Silero VAD (2MB) + Whisper small int8 (245MB)
+npm run download-model       # STT: Silero VAD (2MB) + Whisper small int8 (460MB)
 npm run download-llm-model   # LLM: Mistral 7B Q4_K_M (4.4GB)
 
 # Icon generation
@@ -132,11 +132,11 @@ Tables: `sessions`, `segments`, `ai_notes`, `folders` + FTS5 virtual tables (`se
 ### Models
 
 Workers search 3 locations in order:
-1. `process.env.SOURDINE_MODELS_DIR` (set by main.ts → userData)
+1. `process.env.VOXTAPE_MODELS_DIR` (set by main.ts → userData)
 2. `__dirname/../../../models` (dev mode, project root)
 3. `__dirname/../../resources/models` (prod, app.asar.unpacked)
 
-On startup, main.ts migrates models from legacy paths to `~/Library/Application Support/Sourdine/models/`.
+On startup, main.ts migrates models from legacy paths to `~/Library/Application Support/VoxTape/models/`.
 
 ## Build System
 
@@ -167,7 +167,7 @@ On startup, main.ts migrates models from legacy paths to `~/Library/Application 
 - `sherpa-onnx-node` — Prebuilt binaries, no rebuild needed
 - `node-llama-cpp` — llama.cpp Node bindings
 - `better-sqlite3` — SQLite C++ bindings
-- `@sourdine/native-audio-capture` — Rust/napi-rs for system audio (requires compilation)
+- `@voxtape/native-audio-capture` — Rust/napi-rs for system audio (requires compilation)
 
 ## System Audio Capture
 
