@@ -5,36 +5,41 @@
 .control-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 10px 16px 14px;
   flex-shrink: 0;
 }
 
-// Generate notes (floating button)
+// Generate notes (floating button, absolutely positioned above audio-pill)
 .generate-btn {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  border-radius: 24px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
   border: none;
   background: var(--accent-primary);
   color: #1a1a1a;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
 
   &:hover:not(:disabled) {
     filter: brightness(1.1);
-    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(74, 222, 128, 0.4);
   }
 
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+    box-shadow: none;
   }
 
   &.processing {
@@ -51,21 +56,31 @@
   width: 100%;
 }
 
+// Audio column (generate button + audio pill stacked vertically)
+.audio-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
 // Audio pill (detached mini-pill)
 .audio-pill {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  border-radius: 16px;
-  background: var(--bg-pill, #2a2a2e);
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--bg-pill);
   border: 1px solid var(--border-subtle);
   flex-shrink: 0;
-  transition: border-color 0.2s, opacity 0.2s;
-  height: 38px;
+  transition: border-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+  height: 40px;
 
   &.active {
-    border-color: var(--accent-recording, #ef4444);
+    border-color: var(--accent-recording);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
   }
 
   &.disabled {
@@ -78,15 +93,15 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-radius: 16px;
-  background: var(--bg-pill, #2a2a2e);
+  border-radius: var(--radius-lg);
+  background: var(--bg-pill);
   border: 1px solid var(--border-subtle);
   min-width: 0;
   overflow: hidden;
   cursor: text;
 
   &:not(.expanded) {
-    height: 38px;
+    height: 40px;
     justify-content: center;
   }
 
@@ -291,4 +306,12 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+
+.vu-wrapper,
+.chevron-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
