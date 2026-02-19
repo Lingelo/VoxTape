@@ -18,6 +18,8 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
   private worker: ChildProcess | null = null;
   private _status: SttStatus = 'loading';
   private workerPath: string;
+  // Track speech state per channel to emit combined state
+  private speechState: Record<AudioChannel, boolean> = { mic: false, system: false };
 
   constructor() {
     super();
@@ -58,7 +60,12 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
             this.emit('partial', { text: msg.data.text });
             break;
           case 'speech-detected':
-            this.emit('speech-detected', msg.data as boolean);
+            // Track per-channel speech state and emit combined state
+            const channel = (msg.channel as AudioChannel) || 'mic';
+            this.speechState[channel] = msg.data as boolean;
+            // Emit true if either channel is speaking
+            const anySpeaking = this.speechState.mic || this.speechState.system;
+            this.emit('speech-detected', anySpeaking);
             break;
           case 'error':
             this._status = 'error';
