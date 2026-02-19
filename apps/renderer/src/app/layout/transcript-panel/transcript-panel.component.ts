@@ -2,6 +2,7 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  AfterViewInit,
   ElementRef,
   ViewChild,
   Input,
@@ -25,7 +26,7 @@ import { ElectronIpcService } from '../../services/electron-ipc.service';
   templateUrl: './transcript-panel.component.html',
   styleUrl: './transcript-panel.component.scss',
 })
-export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges {
+export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef<HTMLDivElement>;
   @Input() highlightSegmentIds: string[] = [];
 
@@ -62,6 +63,11 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges {
     );
   }
 
+  ngAfterViewInit(): void {
+    // Scroll to bottom when panel opens (after view is ready)
+    setTimeout(() => this.scrollToBottom(), 100);
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['highlightSegmentIds'] && this.highlightSegmentIds.length > 0) {
       // Scroll to first highlighted segment
@@ -72,7 +78,7 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges {
   private scrollToBottom(): void {
     const el = this.scrollContainer?.nativeElement;
     if (el) {
-      el.scrollTop = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }
 
