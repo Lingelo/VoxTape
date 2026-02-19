@@ -121,10 +121,15 @@ export class SessionService implements OnDestroy {
     const updateStatus = () => {
       const viewingId = this._id$.value;
       const recordingId = this._recordingSessionId$.value;
-      if (viewingId === recordingId) {
-        this._status$.next(this._recordingStatus$.value);
+      const recordingStatus = this._recordingStatus$.value;
+      const viewStatus = this._viewStatus$.value;
+
+      // If viewing the recording session AND actively recording/draining, show recording status
+      // Otherwise, show view status (includes 'processing' for summary generation)
+      if (viewingId === recordingId && (recordingStatus === 'recording' || recordingStatus === 'draining')) {
+        this._status$.next(recordingStatus);
       } else {
-        this._status$.next(this._viewStatus$.value);
+        this._status$.next(viewStatus);
       }
     };
 
@@ -177,14 +182,18 @@ export class SessionService implements OnDestroy {
     this.setupComputedObservables();
 
     // Subscribe to incoming transcript segments - add to live segments if recording or draining
+    // Includes deduplication to avoid showing same content from mic + system audio
     this.ipc.segment$
       .pipe(takeUntil(this._destroy$))
       .subscribe((segment: TranscriptSegment) => {
         const status = this._recordingStatus$.value;
         if (status === 'recording' || status === 'draining') {
           const current = this._liveSegments$.value;
-          this._liveSegments$.next([...current, segment]);
-          this.requestSave();
+          // Skip if this segment is a duplicate of a recent one
+          if (!this.isDuplicateSegment(segment, current)) {
+            this._liveSegments$.next([...current, segment]);
+            this.requestSave();
+          }
         }
       });
 
@@ -382,10 +391,11 @@ export class SessionService implements OnDestroy {
         try {
           const { title, body } = this.extractTitleFromSummary(payload.fullText || '');
           if (title) this._title$.next(title);
-          this._aiSummary$.next(body);
+          // Use body if non-empty, otherwise fallback to fullText to ensure aiSummary is set
+          this._aiSummary$.next(body || payload.fullText || '(Résumé généré)');
         } catch (err) {
           console.error('[SessionService] Error parsing enhance result:', err);
-          this._aiSummary$.next(payload.fullText || '');
+          this._aiSummary$.next(payload.fullText || '(Résumé généré)');
         }
         this._viewStatus$.next('done');
         this.requestSave();
@@ -586,6 +596,74 @@ export class SessionService implements OnDestroy {
 
   private generateId(): string {
     return `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  /**
+   * Check if a new segment is a duplicate of a recent segment.
+   * This prevents showing the same content twice when both mic and system audio
+   * are capturing the same sound source.
+   */
+  private isDuplicateSegment(newSeg: TranscriptSegment, existing: TranscriptSegment[]): boolean {
+    // Only check the last few segments
+    const recentSegments = existing.slice(-15);
+    if (recentSegments.length === 0) return false;
+
+    const newText = newSeg.text.toLowerCase().trim();
+    if (newText.length < 8) return false; // Don't dedupe very short segments
+
+    // Extract source from segment ID (seg-mic-X or seg-system-X)
+    const newSource = newSeg.id?.includes('-system-') ? 'system' : 'mic';
+
+    for (const seg of recentSegments) {
+      const existingText = seg.text.toLowerCase().trim();
+      const existingSource = seg.id?.includes('-system-') ? 'system' : 'mic';
+
+      // Only dedupe if from different sources (mic vs system)
+      if (newSource === existingSource) continue;
+
+      // Calculate text similarity
+      const similarity = this.calculateTextSimilarity(newText, existingText);
+
+      if (similarity > 0.5) {
+        console.log(`[Dedupe] Skipping duplicate: "${newText.slice(0, 50)}..." (${(similarity * 100).toFixed(0)}% similar to existing)`);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Calculate similarity between two texts (0-1 score).
+   */
+  private calculateTextSimilarity(a: string, b: string): number {
+    if (a === b) return 1;
+    if (a.length === 0 || b.length === 0) return 0;
+
+    // Normalize: remove punctuation and extra spaces
+    const normalize = (s: string) => s.replace(/[.,!?;:'"()-]/g, ' ').replace(/\s+/g, ' ').trim();
+    const normA = normalize(a);
+    const normB = normalize(b);
+
+    if (normA === normB) return 1;
+
+    // Check if one contains most of the other
+    const shorter = normA.length < normB.length ? normA : normB;
+    const longer = normA.length < normB.length ? normB : normA;
+
+    if (longer.includes(shorter) && shorter.length > 20) {
+      return 0.9; // High similarity if one contains the other
+    }
+
+    // Word overlap (Jaccard similarity)
+    const wordsA = new Set(normA.split(/\s+/).filter(w => w.length > 2));
+    const wordsB = new Set(normB.split(/\s+/).filter(w => w.length > 2));
+
+    if (wordsA.size === 0 || wordsB.size === 0) return 0;
+
+    const intersection = [...wordsA].filter(w => wordsB.has(w));
+    const union = new Set([...wordsA, ...wordsB]);
+
+    return intersection.length / union.size;
   }
 
   /**
