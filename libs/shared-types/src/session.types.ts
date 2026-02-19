@@ -1,7 +1,7 @@
 import { TranscriptSegment } from './transcript.types.js';
 import { EnhancedNote } from './llm.types.js';
 
-export type SessionStatus = 'idle' | 'recording' | 'processing' | 'done';
+export type SessionStatus = 'idle' | 'recording' | 'draining' | 'processing' | 'done';
 
 export interface ChatMessage {
   id: string;

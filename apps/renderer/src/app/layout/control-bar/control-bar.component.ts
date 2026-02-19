@@ -45,9 +45,9 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   private subs: Subscription[] = [];
   private selectedDeviceId = '';
 
-  /** True if currently recording in this session */
+  /** True if currently recording (or draining) in this session */
   get isRecording(): boolean {
-    return this.status === 'recording';
+    return this.status === 'recording' || this.status === 'draining';
   }
 
   ngOnInit(): void {

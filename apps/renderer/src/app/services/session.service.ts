@@ -16,7 +16,7 @@ export interface TranscriptSegment {
   speaker?: number;
 }
 
-export type SessionStatus = 'idle' | 'recording' | 'processing' | 'done';
+export type SessionStatus = 'idle' | 'recording' | 'draining' | 'processing' | 'done';
 
 interface SessionListItem {
   id: string;
@@ -143,8 +143,9 @@ export class SessionService implements OnDestroy {
     const updateIsRecordingElsewhere = () => {
       const recordingId = this._recordingSessionId$.value;
       const viewingId = this._id$.value;
-      const isRecording = this._recordingStatus$.value === 'recording';
-      this._isRecordingElsewhere$.next(isRecording && recordingId !== null && recordingId !== viewingId);
+      const status = this._recordingStatus$.value;
+      const isRecordingOrDraining = status === 'recording' || status === 'draining';
+      this._isRecordingElsewhere$.next(isRecordingOrDraining && recordingId !== null && recordingId !== viewingId);
     };
 
     // Subscribe to all source changes
@@ -175,11 +176,12 @@ export class SessionService implements OnDestroy {
     // Setup computed observables first
     this.setupComputedObservables();
 
-    // Subscribe to incoming transcript segments - only add to live segments if recording
+    // Subscribe to incoming transcript segments - add to live segments if recording or draining
     this.ipc.segment$
       .pipe(takeUntil(this._destroy$))
       .subscribe((segment: TranscriptSegment) => {
-        if (this._recordingStatus$.value === 'recording') {
+        const status = this._recordingStatus$.value;
+        if (status === 'recording' || status === 'draining') {
           const current = this._liveSegments$.value;
           this._liveSegments$.next([...current, segment]);
           this.requestSave();
@@ -231,7 +233,8 @@ export class SessionService implements OnDestroy {
   }
 
   async startRecording(deviceId?: string): Promise<void> {
-    if (this._recordingStatus$.value === 'recording') return;
+    const status = this._recordingStatus$.value;
+    if (status === 'recording' || status === 'draining') return;
 
     const currentId = this._id$.value;
     const isResume = this._viewStatus$.value === 'done';
@@ -293,6 +296,8 @@ export class SessionService implements OnDestroy {
   stopRecording(): void {
     if (this._recordingStatus$.value !== 'recording') return;
 
+    // Enter draining state - still accept segments but no new audio
+    this._recordingStatus$.next('draining');
     this.audioCapture.stopRecording();
 
     if (this.timerInterval) {
@@ -300,6 +305,15 @@ export class SessionService implements OnDestroy {
       this.timerInterval = null;
     }
 
+    // Wait for remaining segments to arrive from STT worker
+    // The worker flushes VAD buffers on stop, which may produce final segments
+    const drainTimeout = setTimeout(() => {
+      this.finalizeStopRecording();
+    }, 500); // 500ms should be enough for final segments to arrive
+    this.pendingTimeouts.push(drainTimeout);
+  }
+
+  private finalizeStopRecording(): void {
     // Merge live segments into loaded segments for the recording session
     const recordingId = this._recordingSessionId$.value;
     if (recordingId) {
