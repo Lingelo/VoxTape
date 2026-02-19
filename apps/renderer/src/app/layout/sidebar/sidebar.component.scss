@@ -7,7 +7,7 @@
   width: 240px;
   height: 100%;
   background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-subtle);
+  border-right: 2px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -25,19 +25,26 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .logo-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  image-rendering: pixelated;
 }
 
 .logo-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--accent-primary);
+  letter-spacing: 2px;
+  text-shadow:
+    0 0 5px rgba(74, 222, 128, 0.8),
+    0 0 10px rgba(74, 222, 128, 0.5),
+    0 0 20px rgba(74, 222, 128, 0.3);
 }
 
 .sidebar-body {
@@ -55,18 +62,23 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   margin: 0 var(--space-2) var(--space-2);
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--border-subtle);
+  border-radius: 0;
+  border: 3px solid;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
   background: none;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.1s;
 
   &:hover {
     background: var(--accent-primary-tint);
     color: var(--accent-primary);
-    border-color: var(--accent-primary);
+    border-color: #6fe8a8 #1a5c34 #1a5c34 #6fe8a8;
+  }
+
+  &:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
   }
 }
 
@@ -75,11 +87,12 @@
   align-items: center;
   gap: var(--space-2);
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border: 3px solid;
+  border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  border-radius: 0;
   padding: var(--space-2) var(--space-3);
   margin-bottom: var(--space-3);
-  transition: border-color 0.15s;
+  transition: border-color 0.1s;
 
   &:focus-within {
     border-color: var(--accent-primary);
@@ -115,13 +128,15 @@
 }
 
 .nav-section-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--accent-primary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   padding: 4px 12px;
   margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
 }
 
 .session-item {
@@ -129,13 +144,16 @@
   flex-direction: column;
   gap: 2px;
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   cursor: pointer;
-  transition: background 0.15s;
-  border-left: 2px solid transparent;
+  transition: background 0.1s;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
 
   &:hover {
     background: var(--accent-hover);
+    border-left-color: var(--bevel-light);
+    border-right-color: var(--bevel-dark);
 
     .action-btn {
       opacity: 1;
@@ -150,6 +168,7 @@
   &.active {
     background: var(--accent-primary-tint);
     border-left-color: var(--accent-primary);
+    border-right-color: transparent;
   }
 }
 
@@ -162,30 +181,34 @@
 .recording-indicator {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: #ef4444;
+  border-radius: 0;
+  background: var(--pixel-red);
   flex-shrink: 0;
-  animation: recordingPulse 1.5s ease-in-out infinite;
+  animation: recordingBlink 0.8s steps(2) infinite;
+  box-shadow:
+    0 0 6px rgba(255, 0, 0, 0.8),
+    0 0 12px rgba(255, 0, 0, 0.5);
 }
 
-@keyframes recordingPulse {
+@keyframes recordingBlink {
   0%, 100% {
     opacity: 1;
-    transform: scale(1);
   }
   50% {
-    opacity: 0.5;
-    transform: scale(0.8);
+    opacity: 0.3;
   }
 }
 
 .session-title {
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--accent-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  text-shadow:
+    0 0 5px rgba(74, 222, 128, 0.6),
+    0 0 10px rgba(74, 222, 128, 0.3);
 }
 
 .action-btn {
@@ -199,10 +222,14 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  transition: opacity 0.1s, color 0.1s, background 0.1s;
 
   &:hover {
     opacity: 1;
+  }
+
+  &:active {
+    transform: translate(1px, 1px);
   }
 
   &:focus-visible {
@@ -218,8 +245,8 @@
 }
 
 .delete-btn:hover {
-  color: var(--accent-recording);
-  background: rgba(239, 68, 68, 0.15);
+  color: var(--pixel-red);
+  background: rgba(255, 0, 0, 0.15);
 }
 
 .session-meta {
@@ -231,14 +258,18 @@
 }
 
 .summary-badge {
-  font-size: 9px;
-  font-weight: 600;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  padding: 2px 5px;
-  border-radius: 4px;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 0;
+  border: 1px solid var(--accent-primary);
   background: var(--accent-primary-tint);
   color: var(--accent-primary);
+  text-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.2);
 }
 
 .session-excerpt {
@@ -286,97 +317,118 @@
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 0;
+  border: 3px solid;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 14px;
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  font-weight: 700;
   text-decoration: none;
-  transition: background 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background 0.1s;
   width: 100%;
 
   &:hover {
     background: var(--accent-hover);
     color: var(--text-primary);
   }
+
+  &:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  }
 }
 
-// Modal styles
+// Modal styles (DOS/Windows 3.1 inspired)
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.15s ease;
+  animation: fadeIn 0.1s steps(3);
 }
 
 .modal-content {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 320px;
+  background: var(--bg-pill);
+  border: 4px solid;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+  border-radius: 0;
+  padding: 20px;
+  max-width: 280px;
   width: 90%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  animation: scaleIn 0.15s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  gap: 14px;
+  animation: pixelIn 0.15s steps(4);
 }
 
 .modal-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(239, 68, 68, 0.15);
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  border: 2px solid var(--pixel-red);
+  background: rgba(255, 0, 0, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ef4444;
+  color: var(--pixel-red);
+  align-self: center;
 }
 
 .modal-text {
-  color: #e5e5e5;
-  font-size: 14px;
+  color: var(--text-primary);
+  font-size: 13px;
   text-align: center;
   margin: 0;
+  line-height: 1.5;
 }
 
 .modal-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
+  margin-top: 4px;
 }
 
 .modal-btn {
   flex: 1;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 0;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.1s;
+  border: 3px solid;
+
+  &:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  }
 
   &.cancel {
-    background: #2a2a2e;
-    border: 1px solid #444;
-    color: #e5e5e5;
+    background: var(--bg-surface);
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+    color: var(--text-secondary);
 
     &:hover {
-      background: #3a3a3e;
+      background: var(--accent-hover);
+      color: var(--text-primary);
     }
   }
 
   &.confirm {
-    background: #ef4444;
-    border: none;
+    background: var(--pixel-red);
+    border-color: #ff6666 #990000 #990000 #ff6666;
     color: white;
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
 
     &:hover {
-      background: #dc2626;
+      background: #cc0000;
+      box-shadow: 0 0 18px rgba(255, 0, 0, 0.6);
     }
   }
 }
@@ -386,7 +438,8 @@
   to { opacity: 1; }
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes pixelIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 0.5; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
 }

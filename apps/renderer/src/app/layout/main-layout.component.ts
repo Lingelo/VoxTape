@@ -57,7 +57,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         // Load saved device from config (same as ControlBar)
         let deviceId: string | undefined;
         try {
-          const api = (window as Window & { sourdine?: { config?: { get: () => Promise<{ audio?: { defaultDeviceId?: string } }> } } }).sourdine?.config;
+          const api = (window as Window & { voxtape?: { config?: { get: () => Promise<{ audio?: { defaultDeviceId?: string } }> } } }).voxtape?.config;
           if (api) {
             const cfg = await api.get();
             deviceId = cfg?.audio?.defaultDeviceId;

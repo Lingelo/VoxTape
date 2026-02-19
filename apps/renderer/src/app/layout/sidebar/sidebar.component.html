@@ -1,8 +1,8 @@
 <aside class="sidebar">
   <div class="sidebar-header">
     <div class="logo">
-      <img class="logo-icon" src="assets/logo.svg" alt="Sourdine" width="24" height="24" />
-      <span class="logo-text">Sourdine</span>
+      <img class="logo-icon" src="assets/logo.svg" alt="VoxTape" width="36" height="36" />
+      <span class="logo-text">VoxTape</span>
     </div>
   </div>
 
@@ -126,13 +126,6 @@
 @if (showDeleteModal) {
   <div class="modal-overlay" (click)="cancelDelete()" (keydown.escape)="cancelDelete()" tabindex="-1" role="dialog" aria-modal="true">
     <div class="modal-content" (click)="$event.stopPropagation()" (keydown.escape)="cancelDelete()" role="document">
-      <div class="modal-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-          <line x1="10" y1="11" x2="10" y2="17"/>
-          <line x1="14" y1="11" x2="14" y2="17"/>
-        </svg>
-      </div>
       <p class="modal-text">{{ 'session.deleteConfirm' | translate }}</p>
       <div class="modal-actions">
         <button class="modal-btn cancel" (click)="cancelDelete()">

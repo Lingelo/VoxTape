@@ -7,6 +7,7 @@
 .layout {
   display: flex;
   height: 100%;
+  position: relative;
 }
 
 .main-content {
@@ -34,8 +35,13 @@
 
 .panel-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: 10;
+  top: 38px; // Below titlebar
+  left: 240px; // After sidebar
+  right: 0;
+  bottom: 0;
+  z-index: 100; // Above everything except titlebar
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.15); // Subtle darkening
 }
 
 sdn-control-bar {

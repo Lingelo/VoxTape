@@ -10,13 +10,14 @@ import { FirstLaunchService, TooltipStep } from '../../services/first-launch.ser
 import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
 import { TranscriptPanelComponent } from '../transcript-panel/transcript-panel.component';
 import { GuideTooltipComponent } from '../../components/guide-tooltip/guide-tooltip.component';
-import type { LlmStatus } from '@sourdine/shared-types';
+import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.component';
+import type { LlmStatus } from '@voxtape/shared-types';
 
 @Component({
   selector: 'sdn-control-bar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslateModule, ChatPanelComponent, TranscriptPanelComponent, GuideTooltipComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, ChatPanelComponent, TranscriptPanelComponent, GuideTooltipComponent, GlitchLoaderComponent],
   templateUrl: './control-bar.component.html',
   styleUrl: './control-bar.component.scss',
 })
@@ -39,7 +40,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   elapsed = 0;
   isRecordingElsewhere = false;
 
-  vuBars = [0, 1, 2, 3, 4];
+  vuBars = [0, 1, 2];  // 3 barres comme le voice modulator de KITT
 
   // First-launch tooltip state
   tooltipStep: TooltipStep | null = null;
@@ -84,7 +85,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
 
   private async loadSavedDevice(): Promise<void> {
     try {
-      const api = (window as Window & { sourdine?: { config?: { get: () => Promise<{ audio?: { defaultDeviceId?: string } }> } } }).sourdine?.config;
+      const api = (window as Window & { voxtape?: { config?: { get: () => Promise<{ audio?: { defaultDeviceId?: string } }> } } }).voxtape?.config;
       if (api) {
         const cfg = await api.get();
         if (cfg?.audio?.defaultDeviceId) {
@@ -102,16 +103,46 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   }
 
   getBarHeight(index: number): number {
-    if (this.audioLevel < 0.01) return 4;
-    // KITT wave: center bar tallest, edges shorter
-    const wave = [0.5, 0.8, 1.0, 0.8, 0.5];
-    return 4 + this.audioLevel * wave[index] * 16;
+    // KITT voice modulator: 3 bars, center (index 1) tallest
+    const heightMultiplier = [0.55, 1.0, 0.55];
+    const base = 6;
+    const amplifiedLevel = Math.min(1, this.audioLevel * 1.6);
+    const maxHeight = 22;
+    return base + amplifiedLevel * heightMultiplier[index] * maxHeight;
   }
 
-  getBarOpacity(index: number): number {
-    if (this.audioLevel < 0.01) return 0.3;
-    const wave = [0.6, 0.8, 1.0, 0.8, 0.6];
-    return 0.3 + this.audioLevel * wave[index] * 0.7;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getBarOpacity(_index: number): number {
+    return 0.85 + this.audioLevel * 0.15;
+  }
+
+  /**
+   * KITT VU meter: determines if a segment should be lit
+   * Lights up from CENTER outward (like real KITT voice modulator)
+   * @param column 0 = left (5 segments), 1 = center (8 segments), 2 = right (5 segments)
+   * @param segment index from bottom (0 = bottom)
+   */
+  isSegmentLit(column: number, segment: number): boolean {
+    if (!this.isRecording) return false;
+
+    // Amplify audio level for better visual response
+    const amplified = Math.min(1, this.audioLevel * 1.8);
+
+    // Number of segments per column
+    const maxSegments = column === 1 ? 8 : 5;
+    const center = (maxSegments - 1) / 2;
+
+    // Distance from center (0 = center, higher = further from center)
+    const distanceFromCenter = Math.abs(segment - center);
+
+    // Max distance from center
+    const maxDistance = center;
+
+    // How far from center we light based on audio level
+    const litRadius = amplified * maxDistance;
+
+    // Light if within the lit radius from center
+    return distanceFromCenter <= litRadius;
   }
 
   async toggleRecording(): Promise<void> {

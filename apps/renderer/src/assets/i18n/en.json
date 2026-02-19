@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Sourdine",
+    "name": "VoxTape",
     "tagline": "Smart meeting notes"
   },
   "session": {
@@ -88,7 +88,7 @@
     "back": "Back"
   },
   "onboarding": {
-    "welcome": "Welcome to Sourdine",
+    "welcome": "Welcome to VoxTape",
     "subtitle": "Your 100% local meeting assistant",
     "feature1Title": "Real-time transcription",
     "feature1Desc": "Your meetings transcribed automatically, no internet needed",
@@ -121,7 +121,7 @@
     "sysAudioDetected": "System audio detected!",
     "sysAudioPlayMedia": "Play a video or music...",
     "installTitle": "Installation",
-    "installSubtitle": "Sourdine needs to download a few components to work",
+    "installSubtitle": "VoxTape needs to download a few components to work",
     "installVoice": "Voice detection",
     "installTranscription": "Multilingual transcription",
     "installDiarization": "Speaker identification",
@@ -136,7 +136,7 @@
     "installDone": "Installation complete",
     "installError": "An error occurred. Check your connection and try again.",
     "readyTitle": "Ready!",
-    "readySubtitle": "Sourdine is configured. Start your first session."
+    "readySubtitle": "VoxTape is configured. Start your first session."
   },
   "export": {
     "markdown": "Export as Markdown",

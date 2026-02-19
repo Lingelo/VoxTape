@@ -8,7 +8,7 @@
       <div class="panel-backdrop" tabindex="0" role="button" (click)="closeAllPanels()" (keydown.enter)="closeAllPanels()"></div>
     }
 
-    <div class="editor-area">
+    <div class="editor-area" tabindex="-1" (click)="closeAllPanels()" (keydown.escape)="closeAllPanels()">
       <sdn-note-editor></sdn-note-editor>
     </div>
 

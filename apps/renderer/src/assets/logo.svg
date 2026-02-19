@@ -1,20 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <!-- Rounded square background -->
-  <rect width="128" height="128" rx="28" fill="#1a1a1a"/>
+  <!-- Background -->
+  <rect width="128" height="128" fill="#1a1a1a"/>
 
-  <!-- Sound wave arcs (left) -->
-  <path d="M38 52c-4 4-6 9-6 14s2 10 6 14" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
-  <path d="M44 56c-2.5 2.5-4 6-4 9s1.5 6.5 4 9" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.75"/>
+  <!-- VU Meter frame -->
+  <rect x="12" y="12" width="104" height="104" fill="#0a0a0a" stroke="#333" stroke-width="3"/>
 
-  <!-- Central microphone -->
-  <rect x="56" y="40" width="16" height="32" rx="8" fill="#4ade80"/>
-  <rect x="56" y="40" width="16" height="10" rx="8" fill="#3bc96f"/>
+  <!-- Left bar (5 segments) -->
+  <rect x="24" y="84" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="74" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="64" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="54" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="44" width="20" height="6" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="28" y="84" width="12" height="6" fill="#ff4444"/>
+  <rect x="28" y="74" width="12" height="6" fill="#ff5555"/>
+  <rect x="28" y="64" width="12" height="6" fill="#ff6666"/>
+  <rect x="28" y="54" width="12" height="6" fill="#ff5555"/>
+  <rect x="28" y="44" width="12" height="6" fill="#ff4444"/>
 
-  <!-- Mic stand -->
-  <path d="M64 76v12" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
-  <path d="M56 88h16" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
+  <!-- Center bar (7 segments) -->
+  <rect x="54" y="94" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="84" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="74" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="64" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="54" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="44" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="34" width="20" height="6" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="58" y="94" width="12" height="6" fill="#ff3333"/>
+  <rect x="58" y="84" width="12" height="6" fill="#ff4444"/>
+  <rect x="58" y="74" width="12" height="6" fill="#ff5555"/>
+  <rect x="58" y="64" width="12" height="6" fill="#ff6666"/>
+  <rect x="58" y="54" width="12" height="6" fill="#ff5555"/>
+  <rect x="58" y="44" width="12" height="6" fill="#ff4444"/>
+  <rect x="58" y="34" width="12" height="6" fill="#ff3333"/>
 
-  <!-- Sound wave arcs (right) -->
-  <path d="M84 56c2.5 2.5 4 6 4 9s-1.5 6.5-4 9" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.75"/>
-  <path d="M90 52c4 4 6 9 6 14s-2 10-6 14" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <!-- Right bar (5 segments) -->
+  <rect x="84" y="84" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="74" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="64" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="54" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="44" width="20" height="6" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="88" y="84" width="12" height="6" fill="#ff4444"/>
+  <rect x="88" y="74" width="12" height="6" fill="#ff5555"/>
+  <rect x="88" y="64" width="12" height="6" fill="#ff6666"/>
+  <rect x="88" y="54" width="12" height="6" fill="#ff5555"/>
+  <rect x="88" y="44" width="12" height="6" fill="#ff4444"/>
+
+  <!-- VT text centered - V as diagonal -->
+  <!-- V (pixel art diagonal) -->
+  <rect x="36" y="60" width="6" height="6" fill="#4ade80"/>
+  <rect x="38" y="66" width="6" height="6" fill="#4ade80"/>
+  <rect x="40" y="72" width="6" height="6" fill="#4ade80"/>
+  <rect x="44" y="78" width="6" height="6" fill="#4ade80"/>
+  <rect x="48" y="72" width="6" height="6" fill="#4ade80"/>
+  <rect x="50" y="66" width="6" height="6" fill="#4ade80"/>
+  <rect x="52" y="60" width="6" height="6" fill="#4ade80"/>
+
+  <!-- T -->
+  <rect x="66" y="60" width="24" height="6" fill="#4ade80"/>
+  <rect x="74" y="60" width="8" height="24" fill="#4ade80"/>
 </svg>

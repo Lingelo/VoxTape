@@ -21,11 +21,10 @@
     }
 
     @if (isSpeechActive) {
-      <div class="listening-indicator">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </div>
+      <sdn-glitch-loader
+        [messages]="['ECOUTE EN COURS...', 'TRANSCRIPTION...', 'DECODAGE AUDIO...', 'ANALYSE VOCALE...']"
+        [typingSpeed]="40"
+      ></sdn-glitch-loader>
     }
 
     @if (segments.length === 0 && !isSpeechActive) {

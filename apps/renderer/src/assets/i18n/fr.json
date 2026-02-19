@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Sourdine",
+    "name": "VoxTape",
     "tagline": "Notes de reunion intelligentes"
   },
   "session": {
@@ -88,7 +88,7 @@
     "back": "Retour"
   },
   "onboarding": {
-    "welcome": "Bienvenue sur Sourdine",
+    "welcome": "Bienvenue sur VoxTape",
     "subtitle": "Votre assistant de reunion 100% local",
     "feature1Title": "Transcription en temps reel",
     "feature1Desc": "Vos reunions transcrites automatiquement, sans connexion internet",
@@ -121,7 +121,7 @@
     "sysAudioDetected": "Audio systeme detecte !",
     "sysAudioPlayMedia": "Lancez une video ou de la musique...",
     "installTitle": "Installation",
-    "installSubtitle": "Sourdine a besoin de telecharger quelques composants pour fonctionner",
+    "installSubtitle": "VoxTape a besoin de telecharger quelques composants pour fonctionner",
     "installVoice": "Detection de voix",
     "installTranscription": "Transcription multilingue",
     "installDiarization": "Identification des locuteurs",
@@ -136,7 +136,7 @@
     "installDone": "Installation terminee",
     "installError": "Une erreur est survenue. Verifiez votre connexion et reessayez.",
     "readyTitle": "Pret !",
-    "readySubtitle": "Sourdine est configure. Commencez votre premiere session."
+    "readySubtitle": "VoxTape est configure. Commencez votre premiere session."
   },
   "export": {
     "markdown": "Exporter en Markdown",
