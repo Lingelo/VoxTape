@@ -42,81 +42,45 @@ export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .position-bottom {
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
-      margin-top: 12px;
+      margin-top: 16px;
     }
 
     .position-left {
       right: 100%;
       top: 50%;
       transform: translateY(-50%);
-      margin-right: 12px;
+      margin-right: 16px;
     }
 
     .position-right {
       left: 100%;
       top: 50%;
       transform: translateY(-50%);
-      margin-left: 12px;
+      margin-left: 16px;
     }
 
     .tooltip {
       pointer-events: auto;
-      background: var(--bg-surface);
-      border: 1px solid var(--accent-primary);
-      border-radius: var(--radius-sm);
+      background: var(--bg-pill);
+      border: 3px solid;
+      border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+      border-radius: 0;
       padding: var(--space-3);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(74, 222, 128, 0.2);
-      min-width: 220px;
-      max-width: 280px;
-      animation: tooltipIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+      min-width: 240px;
+      max-width: 300px;
+      animation: tooltipIn 0.2s steps(4);
     }
 
     .tooltip-arrow {
-      position: absolute;
-      width: 12px;
-      height: 12px;
-      background: var(--bg-surface);
-      border: 1px solid var(--accent-primary);
-      transform: rotate(45deg);
-    }
-
-    .position-top .tooltip-arrow {
-      bottom: -7px;
-      left: 50%;
-      margin-left: -6px;
-      border-top: none;
-      border-left: none;
-    }
-
-    .position-bottom .tooltip-arrow {
-      top: -7px;
-      left: 50%;
-      margin-left: -6px;
-      border-bottom: none;
-      border-right: none;
-    }
-
-    .position-left .tooltip-arrow {
-      right: -7px;
-      top: 50%;
-      margin-top: -6px;
-      border-left: none;
-      border-bottom: none;
-    }
-
-    .position-right .tooltip-arrow {
-      left: -7px;
-      top: 50%;
-      margin-top: -6px;
-      border-right: none;
-      border-top: none;
+      display: none;
     }
 
     .tooltip-content {
@@ -125,9 +89,13 @@ export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 
     .tooltip-text {
       margin: 0 0 var(--space-3);
-      font-size: 13px;
-      line-height: 1.5;
-      color: var(--text-primary);
+      font-family: var(--font-pixel);
+      font-size: 18px;
+      line-height: 1.4;
+      color: var(--accent-primary);
+      text-shadow:
+        0 0 5px rgba(74, 222, 128, 0.6),
+        0 0 10px rgba(74, 222, 128, 0.3);
     }
 
     .tooltip-actions {
@@ -137,64 +105,81 @@ export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
     }
 
     .skip-btn, .next-btn {
-      padding: var(--space-1) var(--space-3);
-      border-radius: var(--radius-sm);
-      font-size: 12px;
-      font-weight: 500;
+      padding: var(--space-2) var(--space-3);
+      border-radius: 0;
+      font-family: var(--font-pixel);
+      font-size: 16px;
+      font-weight: 400;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.1s;
+      border: 3px solid;
+      text-transform: uppercase;
     }
 
     .skip-btn {
-      background: transparent;
-      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
       color: var(--text-secondary);
 
       &:hover {
         background: var(--accent-hover);
         color: var(--text-primary);
       }
+
+      &:active {
+        border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+      }
     }
 
     .next-btn {
       background: var(--accent-primary);
-      border: none;
+      border-color: #6fe8a8 #1a5c34 #1a5c34 #6fe8a8;
       color: #1a1a1a;
+      box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
 
       &:hover {
         filter: brightness(1.1);
+        box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+      }
+
+      &:active {
+        border-color: #1a5c34 #6fe8a8 #6fe8a8 #1a5c34;
       }
     }
 
     .tooltip-progress {
       display: flex;
       justify-content: center;
-      gap: var(--space-1);
+      gap: 6px;
       margin-top: var(--space-3);
       padding-top: var(--space-2);
-      border-top: 1px solid var(--border-subtle);
+      border-top: 2px solid var(--bevel-dark);
     }
 
     .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--border-subtle);
-      transition: background 0.2s;
+      width: 8px;
+      height: 8px;
+      border-radius: 0;
+      background: #333;
+      transition: background 0.1s, box-shadow 0.1s;
 
       &.active {
         background: var(--accent-primary);
+        box-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
       }
     }
 
     @keyframes tooltipIn {
-      from {
+      0% {
         opacity: 0;
-        transform: translateY(8px);
+        transform: scale(0.9);
       }
-      to {
+      50% {
+        opacity: 0.5;
+      }
+      100% {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1);
       }
     }
   `]

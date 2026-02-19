@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.component';
 
 interface ModelInfo {
   id: string;
@@ -25,7 +26,7 @@ interface AudioDevice {
   label: string;
 }
 
-interface SourdineOnboardingApi {
+interface VoxTapeOnboardingApi {
   config?: {
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
   };
@@ -51,7 +52,7 @@ interface SourdineOnboardingApi {
 @Component({
   selector: 'sdn-onboarding',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, GlitchLoaderComponent],
   templateUrl: './onboarding.component.html',
   styleUrl: './onboarding.component.scss',
 })
@@ -96,8 +97,8 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
 
-  private get sourdineApi(): SourdineOnboardingApi | undefined {
-    return (window as Window & { sourdine?: SourdineOnboardingApi }).sourdine;
+  private get voxtapeApi(): VoxTapeOnboardingApi | undefined {
+    return (window as Window & { voxtape?: VoxTapeOnboardingApi }).voxtape;
   }
 
   async ngOnInit(): Promise<void> {
@@ -180,7 +181,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
     try {
       // On macOS, request mic access through Electron's system preferences first
-      const mediaApi = this.sourdineApi?.media;
+      const mediaApi = this.voxtapeApi?.media;
       if (mediaApi) {
         await mediaApi.requestMicAccess();
       }
@@ -267,7 +268,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // ── System Audio ────────────────────────────────────────────────────
 
   private async checkSystemAudioSupport(): Promise<void> {
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (!api) return;
     try {
       this.systemAudioSupported = await api.isSupported();
@@ -279,7 +280,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   private setupSystemAudioLevelListener(): void {
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (!api?.onLevel) return;
 
     this.systemAudioLevelCleanup = api.onLevel((level: number) => {
@@ -292,7 +293,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   onSystemAudioToggle(): void {
     this.saveConfig('audio.systemAudioEnabled', this.systemAudioEnabled);
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (!api) return;
 
     if (this.systemAudioEnabled) {
@@ -304,7 +305,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   stopSystemAudioTest(): void {
-    const api = this.sourdineApi?.systemAudio;
+    const api = this.voxtapeApi?.systemAudio;
     if (api && this.systemAudioEnabled) {
       api.stop();
     }
@@ -323,7 +324,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   private async loadModels(): Promise<void> {
-    const api = this.sourdineApi?.model;
+    const api = this.voxtapeApi?.model;
     if (!api) return;
 
     const result = await api.list();
@@ -346,7 +347,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   startInstall(): void {
-    const api = this.sourdineApi?.model;
+    const api = this.voxtapeApi?.model;
     if (!api) return;
 
     this.installState = 'downloading';
@@ -365,7 +366,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   private setupProgressListener(): void {
-    const api = this.sourdineApi?.model;
+    const api = this.voxtapeApi?.model;
     if (!api) return;
 
     this.progressCleanup = api.onDownloadProgress(
@@ -391,7 +392,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
             if (pending.length === 0) {
               this.installState = 'done';
               // Restart STT worker now that models are available
-              this.sourdineApi?.stt?.restart?.();
+              this.voxtapeApi?.stt?.restart?.();
             } else {
               this.currentInstallLabel = this.getInstallLabel(pending[0]);
               this.downloads[pending[0]] = { modelId: pending[0], progress: 0, total: 0, status: 'downloading' };
@@ -432,7 +433,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // ── Config ────────────────────────────────────────────────────────
 
   private async saveConfig(key: string, value: string | boolean | number | null): Promise<void> {
-    const api = this.sourdineApi?.config;
+    const api = this.voxtapeApi?.config;
     if (api) {
       await api.set(key, value);
     }

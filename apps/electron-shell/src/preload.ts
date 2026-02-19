@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-const sourdineApi = {
+const voxtapeApi = {
   audio: {
     sendChunk: (samples: number[]): void => {
       ipcRenderer.send('audio:chunk', samples);
@@ -250,6 +250,6 @@ const sourdineApi = {
   },
 };
 
-contextBridge.exposeInMainWorld('sourdine', sourdineApi);
+contextBridge.exposeInMainWorld('voxtape', voxtapeApi);
 
-export type SourdineApi = typeof sourdineApi;
+export type VoxTapeApi = typeof voxtapeApi;

@@ -8,7 +8,7 @@ import {
   LlmTokenPayload,
   LlmCompletePayload,
   LlmErrorPayload,
-} from '@sourdine/shared-types';
+} from '@voxtape/shared-types';
 
 export interface LlmEvents {
   token: [LlmTokenPayload];

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject } from 'rxjs';
 
-interface SourdineConfigApi {
+interface VoxTapeConfigApi {
   config?: {
     get: () => Promise<{ language?: string }>;
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
@@ -23,8 +23,8 @@ export class LanguageService {
     return this._currentLang$.value;
   }
 
-  private get sourdineApi(): SourdineConfigApi | undefined {
-    return (window as Window & { sourdine?: SourdineConfigApi }).sourdine;
+  private get voxtapeApi(): VoxTapeConfigApi | undefined {
+    return (window as Window & { voxtape?: VoxTapeConfigApi }).voxtape;
   }
 
   async init(): Promise<void> {
@@ -32,7 +32,7 @@ export class LanguageService {
     this.translate.setDefaultLang('fr');
 
     // Load saved language from config
-    const api = this.sourdineApi?.config;
+    const api = this.voxtapeApi?.config;
     if (api) {
       try {
         const cfg = await api.get();
@@ -65,7 +65,7 @@ export class LanguageService {
   }
 
   private async saveLanguage(lang: SupportedLanguage): Promise<void> {
-    const api = this.sourdineApi?.config;
+    const api = this.voxtapeApi?.config;
     if (api) {
       await api.set('language', lang);
     }

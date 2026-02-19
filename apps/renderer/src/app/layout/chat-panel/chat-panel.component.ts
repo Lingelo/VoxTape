@@ -18,7 +18,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LlmService } from '../../services/llm.service';
 import { SessionService } from '../../services/session.service';
 import { RECIPES, Recipe } from '../../services/recipes';
-import type { ChatMessage } from '@sourdine/shared-types';
+import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.component';
+import type { ChatMessage } from '@voxtape/shared-types';
 
 interface ChatMessageWithHtml extends ChatMessage {
   html?: string;
@@ -28,7 +29,7 @@ interface ChatMessageWithHtml extends ChatMessage {
   selector: 'sdn-chat-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, GlitchLoaderComponent],
   templateUrl: './chat-panel.component.html',
   styleUrl: './chat-panel.component.scss',
 })
@@ -92,6 +93,13 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subs.forEach((s) => s.unsubscribe());
     this.chatSubs.forEach((s) => s.unsubscribe());
+  }
+
+  onWheel(event: WheelEvent): void {
+    if (this.messagesEl) {
+      const el = this.messagesEl.nativeElement;
+      el.scrollTop += event.deltaY;
+    }
   }
 
   onInputChange(): void {

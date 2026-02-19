@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable, Subject, Subscription, debounceTime, takeU
 import { ElectronIpcService, DiarizationSegment } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
 import { LlmService } from './llm.service';
-import type { EnhancedNote, ChatMessage } from '@sourdine/shared-types';
+import type { EnhancedNote, ChatMessage } from '@voxtape/shared-types';
 
 export interface TranscriptSegment {
   id: string;
@@ -38,7 +38,7 @@ interface SessionData {
   durationMs?: number;
 }
 
-interface SourdineSessionApi {
+interface VoxTapeSessionApi {
   session?: {
     load: (id: string) => Promise<SessionData | null>;
     save: (data: SessionData & { createdAt: number; updatedAt: number }) => Promise<void>;
@@ -276,7 +276,7 @@ export class SessionService implements OnDestroy {
 
   /** Save session immediately (bypasses debounce) */
   private async saveSessionImmediate(): Promise<void> {
-    const api = this.sourdineApi?.session;
+    const api = this.voxtapeApi?.session;
     if (!api) return;
 
     const segments = this.getCurrentSegments();
@@ -433,13 +433,13 @@ export class SessionService implements OnDestroy {
     this._chatMessages$.next([]);
   }
 
-  private get sourdineApi(): SourdineSessionApi | undefined {
-    return (window as Window & { sourdine?: SourdineSessionApi }).sourdine;
+  private get voxtapeApi(): VoxTapeSessionApi | undefined {
+    return (window as Window & { voxtape?: VoxTapeSessionApi }).voxtape;
   }
 
   /** Load a session from persistence */
   async loadSession(id: string): Promise<void> {
-    const api = this.sourdineApi?.session;
+    const api = this.voxtapeApi?.session;
     if (!api) return;
 
     const data = await api.load(id);
@@ -461,7 +461,7 @@ export class SessionService implements OnDestroy {
 
   /** Delete a session */
   async deleteSession(id: string): Promise<void> {
-    const api = this.sourdineApi?.session;
+    const api = this.voxtapeApi?.session;
     if (!api) return;
     await api.delete(id);
 
@@ -528,7 +528,7 @@ export class SessionService implements OnDestroy {
   }
 
   private async saveSession(): Promise<void> {
-    const api = this.sourdineApi?.session;
+    const api = this.voxtapeApi?.session;
     if (!api) return;
 
     const segments = this.getCurrentSegments();
@@ -560,7 +560,7 @@ export class SessionService implements OnDestroy {
   }
 
   private async loadSessionsList(): Promise<void> {
-    const api = this.sourdineApi?.session;
+    const api = this.voxtapeApi?.session;
     if (!api) {
       // Preload not ready yet, retry after a short delay
       const timeout = setTimeout(() => this.loadSessionsList(), 500);

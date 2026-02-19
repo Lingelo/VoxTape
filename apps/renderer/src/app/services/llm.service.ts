@@ -5,9 +5,9 @@ import type {
   LlmTokenPayload,
   LlmCompletePayload,
   LlmErrorPayload,
-} from '@sourdine/shared-types';
+} from '@voxtape/shared-types';
 
-interface SourdineApi {
+interface VoxTapeApi {
   llm: {
     initialize(): void;
     prompt(payload: {
@@ -27,7 +27,7 @@ interface SourdineApi {
 
 @Injectable({ providedIn: 'root' })
 export class LlmService implements OnDestroy {
-  private readonly api: SourdineApi['llm'] | undefined;
+  private readonly api: VoxTapeApi['llm'] | undefined;
   private requestCounter = 0;
   private cleanups: (() => void)[] = [];
 
@@ -49,7 +49,7 @@ export class LlmService implements OnDestroy {
   private readonly ngZone = inject(NgZone);
 
   constructor() {
-    this.api = (window as Window & { sourdine?: { llm?: SourdineApi['llm'] } }).sourdine?.llm;
+    this.api = (window as Window & { voxtape?: { llm?: VoxTapeApi['llm'] } }).voxtape?.llm;
     if (!this.api) return;
 
     this.cleanups.push(

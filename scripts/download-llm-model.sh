@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# ── Sourdine LLM Model Downloader ────────────────────────────────
+# ── VoxTape LLM Model Downloader ────────────────────────────────
 # Downloads Mistral-7B-Instruct GGUF (~4.4GB) from HuggingFace
 
 MODELS_DIR="$(cd "$(dirname "$0")/.." && pwd)/models"
@@ -11,7 +11,7 @@ MODEL_NAME="Mistral-7B-Instruct-v0.3-Q4_K_M.gguf"
 MODEL_URL="https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/$MODEL_NAME"
 
 echo "╔══════════════════════════════════════════════════╗"
-echo "║       Sourdine — LLM Model Downloader            ║"
+echo "║       VoxTape — LLM Model Downloader             ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 

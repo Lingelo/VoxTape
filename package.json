@@ -1,6 +1,6 @@
 {
-  "name": "sourdine",
-  "productName": "Sourdine",
+  "name": "voxtape",
+  "productName": "VoxTape",
   "version": "0.2.0-beta.1",
   "license": "MIT",
   "main": "apps/electron-shell/dist/main.js",
@@ -90,7 +90,7 @@
     "@nestjs/platform-express": "^11.0.0",
     "@ngx-translate/core": "^17.0.0",
     "@ngx-translate/http-loader": "^17.0.0",
-    "@sourdine/native-audio-capture": "file:libs/native-audio-capture",
+    "@voxtape/native-audio-capture": "file:libs/native-audio-capture",
     "@tiptap/core": "^3.19.0",
     "@tiptap/extension-placeholder": "^3.19.0",
     "@tiptap/pm": "^3.19.0",

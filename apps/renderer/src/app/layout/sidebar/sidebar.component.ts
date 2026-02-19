@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { Subscription, Subject, debounceTime } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SessionService } from '../../services/session.service';
-import { sanitizeExcerpt } from '@sourdine/shared-types';
+import { sanitizeExcerpt } from '@voxtape/shared-types';
 
 interface SessionItem {
   id: string;
@@ -100,7 +100,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   async onExportSession(event: Event, id: string): Promise<void> {
     event.stopPropagation();
-    const api = (window as Window & { sourdine?: { export?: { markdown: (id: string) => Promise<void> } } }).sourdine?.export;
+    const api = (window as Window & { voxtape?: { export?: { markdown: (id: string) => Promise<void> } } }).voxtape?.export;
     if (api) {
       await api.markdown(id);
     }
@@ -123,7 +123,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   private async performSearch(term: string): Promise<void> {
-    const api = (window as Window & { sourdine?: { search?: { query: (term: string) => Promise<SearchResult[]> } } }).sourdine?.search;
+    const api = (window as Window & { voxtape?: { search?: { query: (term: string) => Promise<SearchResult[]> } } }).voxtape?.search;
     if (!api) return;
     const results = await api.query(term);
     // Sanitize excerpts to prevent XSS while preserving <mark> tags

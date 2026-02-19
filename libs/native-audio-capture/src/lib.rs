@@ -99,16 +99,16 @@ type SckAudioCallback = unsafe extern "C" fn(
 );
 
 extern "C" {
-    fn sourdine_sck_start_capture(
+    fn voxtape_sck_start_capture(
         callback: SckAudioCallback,
         user_data: *mut c_void,
     ) -> i32;
 
-    fn sourdine_sck_stop_capture();
+    fn voxtape_sck_stop_capture();
 
-    fn sourdine_has_screen_capture_access() -> i32;
-    fn sourdine_request_screen_capture_access() -> i32;
-    fn sourdine_request_sck_permission() -> i32;
+    fn voxtape_has_screen_capture_access() -> i32;
+    fn voxtape_request_screen_capture_access() -> i32;
+    fn voxtape_request_sck_permission() -> i32;
 }
 
 // ── Exported API ────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ pub fn is_supported() -> bool {
 pub fn has_screen_capture_access() -> bool {
     #[cfg(target_os = "macos")]
     unsafe {
-        sourdine_has_screen_capture_access() != 0
+        voxtape_has_screen_capture_access() != 0
     }
     #[cfg(not(target_os = "macos"))]
     false
@@ -166,7 +166,7 @@ pub fn has_screen_capture_access() -> bool {
 pub fn request_screen_capture_access() -> bool {
     #[cfg(target_os = "macos")]
     unsafe {
-        sourdine_request_screen_capture_access() != 0
+        voxtape_request_screen_capture_access() != 0
     }
     #[cfg(not(target_os = "macos"))]
     false
@@ -177,7 +177,7 @@ pub fn request_screen_capture_access() -> bool {
 pub fn request_audio_capture_permission() -> bool {
     #[cfg(target_os = "macos")]
     unsafe {
-        sourdine_request_sck_permission() != 0
+        voxtape_request_sck_permission() != 0
     }
     #[cfg(not(target_os = "macos"))]
     false
@@ -224,7 +224,7 @@ pub fn start_capture(
 
         eprintln!("[native-audio] Starting SCK capture...");
 
-        let result = sourdine_sck_start_capture(sck_audio_callback, user_data);
+        let result = voxtape_sck_start_capture(sck_audio_callback, user_data);
 
         if result != 0 {
             // Cleanup context on failure
@@ -277,7 +277,7 @@ pub fn stop_capture() -> Result<()> {
     unsafe {
         match capture.backend {
             CaptureBackend::Sck => {
-                sourdine_sck_stop_capture();
+                voxtape_sck_stop_capture();
                 eprintln!("[native-audio] SCK capture stopped");
             }
         }
@@ -298,8 +298,8 @@ struct CMeetingAppInfo {
 }
 
 extern "C" {
-    fn sourdine_get_running_meeting_apps(out_count: *mut i32) -> *mut CMeetingAppInfo;
-    fn sourdine_free_meeting_apps(apps: *mut CMeetingAppInfo, count: i32);
+    fn voxtape_get_running_meeting_apps(out_count: *mut i32) -> *mut CMeetingAppInfo;
+    fn voxtape_free_meeting_apps(apps: *mut CMeetingAppInfo, count: i32);
 }
 
 /// Information about a detected meeting application
@@ -322,7 +322,7 @@ pub fn get_running_meeting_apps() -> Vec<MeetingAppInfo> {
     #[cfg(target_os = "macos")]
     unsafe {
         let mut count: i32 = 0;
-        let apps_ptr = sourdine_get_running_meeting_apps(&mut count);
+        let apps_ptr = voxtape_get_running_meeting_apps(&mut count);
 
         if apps_ptr.is_null() || count == 0 {
             return Vec::new();
@@ -355,7 +355,7 @@ pub fn get_running_meeting_apps() -> Vec<MeetingAppInfo> {
             });
         }
 
-        sourdine_free_meeting_apps(apps_ptr, count);
+        voxtape_free_meeting_apps(apps_ptr, count);
         result
     }
 

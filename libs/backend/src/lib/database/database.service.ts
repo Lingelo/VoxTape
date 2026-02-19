@@ -9,7 +9,7 @@ import type {
   Folder,
   SessionSummary,
   SearchResult,
-} from '@sourdine/shared-types';
+} from '@voxtape/shared-types';
 
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
@@ -18,7 +18,7 @@ export class DatabaseService implements OnModuleDestroy {
 
   /** Must be called once from main.ts with app.getPath('userData') */
   open(userDataPath: string): void {
-    this._dbPath = join(userDataPath, 'sourdine.db');
+    this._dbPath = join(userDataPath, 'voxtape.db');
     this.db = new Database(this._dbPath);
 
     // Pragmas

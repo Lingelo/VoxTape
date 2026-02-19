@@ -25,7 +25,7 @@ export interface DiarizationResult {
 }
 
 /** Type-safe bridge to the preload API exposed via contextBridge */
-interface SourdineApi {
+interface VoxTapeApi {
   audio: {
     sendChunk(samples: number[]): void;
     startRecording(): void;
@@ -58,13 +58,13 @@ interface SourdineApi {
 
 declare global {
   interface Window {
-    sourdine?: SourdineApi;
+    voxtape?: VoxTapeApi;
   }
 }
 
 @Injectable({ providedIn: 'root' })
 export class ElectronIpcService {
-  private readonly api: SourdineApi | undefined;
+  private readonly api: VoxTapeApi | undefined;
 
   private readonly _sttStatus$ = new BehaviorSubject<'loading' | 'ready' | 'error'>('loading');
   private readonly _speechDetected$ = new BehaviorSubject<boolean>(false);
@@ -85,9 +85,9 @@ export class ElectronIpcService {
   private readonly ngZone = inject(NgZone);
 
   constructor() {
-    this.api = window.sourdine;
+    this.api = window.voxtape;
     if (!this.api) {
-      console.warn('[ElectronIpcService] window.sourdine not available — running outside Electron?');
+      console.warn('[ElectronIpcService] window.voxtape not available — running outside Electron?');
       // Outside Electron: hide the loading indicator
       this._sttStatus$.next('ready');
       return;

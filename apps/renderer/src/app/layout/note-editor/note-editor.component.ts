@@ -19,7 +19,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { SessionService } from '../../services/session.service';
 import { AiBlock } from './ai-block.extension';
-import type { EnhancedNote } from '@sourdine/shared-types';
+import type { EnhancedNote } from '@voxtape/shared-types';
 
 @Component({
   selector: 'sdn-note-editor',

@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 export type TooltipStep = 'record' | 'transcript' | 'generate' | 'done';
 
-interface SourdineConfigApi {
+interface VoxTapeConfigApi {
   config?: {
     get: () => Promise<{ firstLaunchComplete?: boolean }>;
     set: (key: string, value: boolean) => Promise<void>;
@@ -18,14 +18,19 @@ export class FirstLaunchService {
   readonly currentStep$: Observable<TooltipStep | null> = this._currentStep$.asObservable();
   readonly isFirstLaunch$: Observable<boolean> = this._isFirstLaunch$.asObservable();
 
-  private get api(): SourdineConfigApi['config'] | undefined {
-    return (window as Window & { sourdine?: SourdineConfigApi }).sourdine?.config;
+  private get api(): VoxTapeConfigApi['config'] | undefined {
+    return (window as Window & { voxtape?: VoxTapeConfigApi }).voxtape?.config;
   }
 
   async checkFirstLaunch(): Promise<void> {
     try {
-      const config = await this.api?.get();
-      if (!config?.firstLaunchComplete) {
+      // If API is not available, don't show tooltips (could be dev mode or error)
+      if (!this.api) {
+        return;
+      }
+      const config = await this.api.get();
+      // Only show tooltips if firstLaunchComplete is explicitly false (not just falsy/undefined)
+      if (config && config.firstLaunchComplete === false) {
         this._isFirstLaunch$.next(true);
         this._currentStep$.next('record');
       }
@@ -61,9 +66,13 @@ export class FirstLaunchService {
     this._currentStep$.next('done');
     this._isFirstLaunch$.next(false);
     try {
-      await this.api?.set('firstLaunchComplete', true);
-    } catch {
-      // Ignore save errors
+      if (this.api) {
+        await this.api.set('firstLaunchComplete', true);
+      } else {
+        console.warn('[FirstLaunchService] API not available, cannot save completion state');
+      }
+    } catch (err) {
+      console.warn('[FirstLaunchService] Failed to save completion state:', err);
     }
   }
 }

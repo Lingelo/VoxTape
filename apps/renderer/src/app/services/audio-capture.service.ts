@@ -81,7 +81,7 @@ export class AudioCaptureService implements OnDestroy {
     // Auto-detect system audio preference from config if not explicitly passed
     if (systemAudio === undefined) {
       try {
-        const api = (window as Window & { sourdine?: { config?: { get: () => Promise<{ audio?: { systemAudioEnabled?: boolean } }> } } }).sourdine?.config;
+        const api = (window as Window & { voxtape?: { config?: { get: () => Promise<{ audio?: { systemAudioEnabled?: boolean } }> } } }).voxtape?.config;
         if (api) {
           const cfg = await api.get();
           systemAudio = cfg?.audio?.systemAudioEnabled === true;
@@ -93,7 +93,7 @@ export class AudioCaptureService implements OnDestroy {
 
     try {
       // Request microphone permission on macOS first
-      const mediaApi = (window as Window & { sourdine?: { media?: { requestMicAccess: () => Promise<boolean> } } }).sourdine?.media;
+      const mediaApi = (window as Window & { voxtape?: { media?: { requestMicAccess: () => Promise<boolean> } } }).voxtape?.media;
       if (mediaApi) {
         const granted = await mediaApi.requestMicAccess();
         if (!granted) {

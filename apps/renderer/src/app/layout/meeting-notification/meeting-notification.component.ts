@@ -13,7 +13,7 @@ import { Subscription } from 'rxjs';
 import { MeetingService } from '../../services/meeting.service';
 import { AudioCaptureService } from '../../services/audio-capture.service';
 import { SessionService } from '../../services/session.service';
-import type { MeetingApp } from '@sourdine/shared-types';
+import type { MeetingApp } from '@voxtape/shared-types';
 
 /**
  * Meeting notification component - shows a slide-in notification when a meeting app is detected.

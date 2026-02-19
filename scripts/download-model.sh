@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# ── Sourdine Model Downloader ─────────────────────────────────────
+# ── VoxTape Model Downloader ─────────────────────────────────────
 # Downloads Silero VAD + Whisper small int8 models for sherpa-onnx
 
 MODELS_DIR="$(cd "$(dirname "$0")/.." && pwd)/models"
@@ -11,7 +11,7 @@ STT_DIR="$MODELS_DIR/stt"
 SHERPA_RELEASE="https://github.com/k2-fsa/sherpa-onnx/releases/download"
 
 echo "╔══════════════════════════════════════════════════╗"
-echo "║          Sourdine — Model Downloader             ║"
+echo "║          VoxTape — Model Downloader              ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 

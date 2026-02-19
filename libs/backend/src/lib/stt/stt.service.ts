@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ChildProcess, fork } from 'child_process';
 import { EventEmitter } from 'events';
 import { join } from 'path';
-import { TranscriptSegment, SttStatus } from '@sourdine/shared-types';
+import { TranscriptSegment, SttStatus } from '@voxtape/shared-types';
 
 export type AudioChannel = 'mic' | 'system';
 

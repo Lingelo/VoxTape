@@ -1,8 +1,8 @@
 import { Injectable, NgZone, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import type { MeetingApp, MeetingDetectionEvent } from '@sourdine/shared-types';
+import type { MeetingApp, MeetingDetectionEvent } from '@voxtape/shared-types';
 
-interface SourdineApi {
+interface VoxTapeApi {
   meeting: {
     getDetected(): Promise<MeetingApp[]>;
     isMonitoring(): Promise<boolean>;
@@ -22,7 +22,7 @@ interface SourdineApi {
  */
 @Injectable({ providedIn: 'root' })
 export class MeetingService implements OnDestroy {
-  private readonly api: SourdineApi['meeting'] | undefined;
+  private readonly api: VoxTapeApi['meeting'] | undefined;
   private cleanups: (() => void)[] = [];
 
   private readonly _detectedApps$ = new BehaviorSubject<MeetingApp[]>([]);
@@ -50,7 +50,7 @@ export class MeetingService implements OnDestroy {
   private _notifiedBundleIds = new Set<string>();
 
   constructor() {
-    this.api = (window as Window & { sourdine?: { meeting?: SourdineApi['meeting'] } }).sourdine?.meeting;
+    this.api = (window as Window & { voxtape?: { meeting?: VoxTapeApi['meeting'] } }).voxtape?.meeting;
     if (!this.api) {
       console.warn('[MeetingService] Meeting API not available');
       return;

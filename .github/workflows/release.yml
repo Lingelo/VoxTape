@@ -50,13 +50,13 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sourdine-macOS-arm64
+          name: VoxTape-macOS-arm64
           path: out/make/*.dmg
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Sourdine-macOS-arm64-zip
+          name: VoxTape-macOS-arm64-zip
           path: out/make/zip/**/*.zip
 
   release:
@@ -78,7 +78,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          name: Sourdine ${{ github.event.inputs.version }}
+          name: VoxTape ${{ github.event.inputs.version }}
           files: |
             artifacts/**/*.dmg
             artifacts/**/*.zip

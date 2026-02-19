@@ -4,11 +4,11 @@ import type {
   MeetingApp,
   MeetingDetectionEvent,
   MeetingDetectionConfig,
-} from '@sourdine/shared-types';
+} from '@voxtape/shared-types';
 import {
   DEFAULT_MEETING_DETECTION_CONFIG,
   MEETING_APP_BUNDLE_IDS,
-} from '@sourdine/shared-types';
+} from '@voxtape/shared-types';
 import { BrowserUrlService } from './browser-url.service.js';
 
 /**
@@ -142,7 +142,7 @@ export class MeetingDetectionService extends EventEmitter implements OnModuleDes
     }> = [];
 
     try {
-      const nativeAudio = require('@sourdine/native-audio-capture');
+      const nativeAudio = require('@voxtape/native-audio-capture');
       nativeApps = nativeAudio.getRunningMeetingApps() || [];
     } catch (err) {
       // Native module not available - continue without native detection

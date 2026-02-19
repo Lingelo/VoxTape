@@ -27,8 +27,8 @@ import {
   SystemAudioService,
   DiarizationService,
   MeetingDetectionService,
-} from '@sourdine/backend';
-import type { LlmPromptPayload, MeetingDetectionEvent } from '@sourdine/shared-types';
+} from '@voxtape/backend';
+import type { LlmPromptPayload, MeetingDetectionEvent } from '@voxtape/shared-types';
 
 // ── State ──────────────────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ let lastMeetingNotificationId: string | null = null;
 let meetingNotificationDismissed = false;
 let lastDetectedMeetingName: string | null = null;
 
-app.setName('Sourdine');
+app.setName('VoxTape');
 const isDev = !app.isPackaged;
 const preloadPath = join(__dirname, 'preload.js');
 const rendererUrl = isDev
@@ -92,7 +92,7 @@ async function bootstrapNest(): Promise<void> {
 
   const modelsDir = join(userData, 'models');
 
-  // Migrate models from legacy paths to Application Support/Sourdine/models
+  // Migrate models from legacy paths to Application Support/VoxTape/models
   const legacyDirs: string[] = [];
   if (process.platform === 'darwin') {
     legacyDirs.push(join(homedir(), 'Library', 'Application Support', 'Electron', 'models'));
@@ -118,7 +118,7 @@ async function bootstrapNest(): Promise<void> {
 
   modelManager.setModelsDir(modelsDir);
   // Pass models dir to workers via env so they can find downloaded models
-  process.env.SOURDINE_MODELS_DIR = modelsDir;
+  process.env.VOXTAPE_MODELS_DIR = modelsDir;
 }
 
 // ── Dock Icon ─────────────────────────────────────────────────────────────
@@ -127,14 +127,33 @@ function setDockIcon(): void {
   const size = 256;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 128 128" fill="none">
     <rect width="128" height="128" rx="28" fill="#1a1a1a"/>
-    <path d="M38 52c-4 4-6 9-6 14s2 10 6 14" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
-    <path d="M44 56c-2.5 2.5-4 6-4 9s1.5 6.5 4 9" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.75"/>
-    <rect x="56" y="40" width="16" height="32" rx="8" fill="#4ade80"/>
-    <rect x="56" y="40" width="16" height="10" rx="8" fill="#3bc96f"/>
-    <path d="M64 76v12" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
-    <path d="M56 88h16" stroke="#4ade80" stroke-width="3" stroke-linecap="round"/>
-    <path d="M84 56c2.5 2.5 4 6 4 9s-1.5 6.5-4 9" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.75"/>
-    <path d="M90 52c4 4 6 9 6 14s-2 10-6 14" stroke="#4ade80" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.5"/>
+    <rect x="12" y="12" width="104" height="104" fill="#0a0a0a" stroke="#333" stroke-width="3"/>
+    <!-- Left bar -->
+    <rect x="24" y="84" width="20" height="6" fill="#dd0000"/><rect x="28" y="84" width="12" height="6" fill="#ff4444"/>
+    <rect x="24" y="74" width="20" height="6" fill="#dd0000"/><rect x="28" y="74" width="12" height="6" fill="#ff5555"/>
+    <rect x="24" y="64" width="20" height="6" fill="#dd0000"/><rect x="28" y="64" width="12" height="6" fill="#ff6666"/>
+    <rect x="24" y="54" width="20" height="6" fill="#dd0000"/><rect x="28" y="54" width="12" height="6" fill="#ff5555"/>
+    <rect x="24" y="44" width="20" height="6" fill="#dd0000"/><rect x="28" y="44" width="12" height="6" fill="#ff4444"/>
+    <!-- Center bar -->
+    <rect x="54" y="94" width="20" height="6" fill="#dd0000"/><rect x="58" y="94" width="12" height="6" fill="#ff3333"/>
+    <rect x="54" y="84" width="20" height="6" fill="#dd0000"/><rect x="58" y="84" width="12" height="6" fill="#ff4444"/>
+    <rect x="54" y="74" width="20" height="6" fill="#dd0000"/><rect x="58" y="74" width="12" height="6" fill="#ff5555"/>
+    <rect x="54" y="64" width="20" height="6" fill="#dd0000"/><rect x="58" y="64" width="12" height="6" fill="#ff6666"/>
+    <rect x="54" y="54" width="20" height="6" fill="#dd0000"/><rect x="58" y="54" width="12" height="6" fill="#ff5555"/>
+    <rect x="54" y="44" width="20" height="6" fill="#dd0000"/><rect x="58" y="44" width="12" height="6" fill="#ff4444"/>
+    <rect x="54" y="34" width="20" height="6" fill="#dd0000"/><rect x="58" y="34" width="12" height="6" fill="#ff3333"/>
+    <!-- Right bar -->
+    <rect x="84" y="84" width="20" height="6" fill="#dd0000"/><rect x="88" y="84" width="12" height="6" fill="#ff4444"/>
+    <rect x="84" y="74" width="20" height="6" fill="#dd0000"/><rect x="88" y="74" width="12" height="6" fill="#ff5555"/>
+    <rect x="84" y="64" width="20" height="6" fill="#dd0000"/><rect x="88" y="64" width="12" height="6" fill="#ff6666"/>
+    <rect x="84" y="54" width="20" height="6" fill="#dd0000"/><rect x="88" y="54" width="12" height="6" fill="#ff5555"/>
+    <rect x="84" y="44" width="20" height="6" fill="#dd0000"/><rect x="88" y="44" width="12" height="6" fill="#ff4444"/>
+    <!-- VT -->
+    <rect x="36" y="60" width="6" height="6" fill="#4ade80"/><rect x="38" y="66" width="6" height="6" fill="#4ade80"/>
+    <rect x="40" y="72" width="6" height="6" fill="#4ade80"/><rect x="44" y="78" width="6" height="6" fill="#4ade80"/>
+    <rect x="48" y="72" width="6" height="6" fill="#4ade80"/><rect x="50" y="66" width="6" height="6" fill="#4ade80"/>
+    <rect x="52" y="60" width="6" height="6" fill="#4ade80"/>
+    <rect x="66" y="60" width="24" height="6" fill="#4ade80"/><rect x="74" y="60" width="8" height="24" fill="#4ade80"/>
   </svg>`;
 
   const html = `<html><body style="margin:0;padding:0;background:transparent;width:${size}px;height:${size}px;overflow:hidden">${svg}</body></html>`;
@@ -166,7 +185,7 @@ function createMainWindow(): void {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: 'Sourdine',
+    title: 'VoxTape',
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#1a1a1a',
     webPreferences: {
@@ -194,7 +213,7 @@ function createTray(): void {
   // Use a simple 16x16 template image for macOS menu bar
   const icon = nativeImage.createEmpty();
   tray = new Tray(icon);
-  tray.setToolTip('Sourdine');
+  tray.setToolTip('VoxTape');
   updateTrayMenu();
 }
 
@@ -208,7 +227,7 @@ function updateTrayMenu(): void {
     },
     { type: 'separator' },
     {
-      label: 'Ouvrir Sourdine',
+      label: 'Ouvrir VoxTape',
       click: () => {
         mainWindow?.show();
         mainWindow?.focus();
@@ -515,7 +534,7 @@ function setupIpc(): void {
     configService.reset();
     databaseService.clearAll();
     // Delete all downloaded models
-    const modelsPath = process.env.SOURDINE_MODELS_DIR || join(app.getPath('userData'), 'models');
+    const modelsPath = process.env.VOXTAPE_MODELS_DIR || join(app.getPath('userData'), 'models');
     for (const subdir of ['llm', 'vad', 'stt', 'diarization']) {
       const dir = join(modelsPath, subdir);
       if (existsSync(dir)) {
@@ -759,15 +778,15 @@ app.whenReady().then(async () => {
   // Application menu
   const appMenu = Menu.buildFromTemplate([
     {
-      label: 'Sourdine',
+      label: 'VoxTape',
       submenu: [
-        { role: 'about', label: 'A propos de Sourdine' },
+        { role: 'about', label: 'A propos de VoxTape' },
         { type: 'separator' },
-        { role: 'hide', label: 'Masquer Sourdine' },
+        { role: 'hide', label: 'Masquer VoxTape' },
         { role: 'hideOthers', label: 'Masquer les autres' },
         { role: 'unhide', label: 'Tout afficher' },
         { type: 'separator' },
-        { role: 'quit', label: 'Quitter Sourdine' },
+        { role: 'quit', label: 'Quitter VoxTape' },
       ],
     },
     {

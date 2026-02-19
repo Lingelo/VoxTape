@@ -17,12 +17,13 @@ import { Subscription } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SessionService, TranscriptSegment } from '../../services/session.service';
 import { ElectronIpcService } from '../../services/electron-ipc.service';
+import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.component';
 
 @Component({
   selector: 'sdn-transcript-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, TranslateModule, GlitchLoaderComponent],
   templateUrl: './transcript-panel.component.html',
   styleUrl: './transcript-panel.component.scss',
 })

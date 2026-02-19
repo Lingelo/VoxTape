@@ -23,12 +23,12 @@ interface ChannelState {
 const channels: Record<string, ChannelState> = {};
 
 /** Search for a model file.
- * SOURDINE_MODELS_DIR is set by main.ts to userData/models before spawning workers.
+ * VOXTAPE_MODELS_DIR is set by main.ts to userData/models before spawning workers.
  * Dev fallback searches project root/models for local development.
  */
 function findModel(relativePath: string): string | null {
   const dirs = [
-    process.env.SOURDINE_MODELS_DIR,                      // Primary: ~/Library/Application Support/Sourdine/models
+    process.env.VOXTAPE_MODELS_DIR,                      // Primary: ~/Library/Application Support/VoxTape/models
     join(__dirname, '..', '..', '..', 'models'),          // Dev fallback: project root/models
   ];
   for (const dir of dirs) {
