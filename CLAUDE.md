@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Sourdine** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Parakeet TDT + Silero VAD) and node-llama-cpp for LLM features (Mistral 7B).
+**Sourdine** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper small + Silero VAD) and node-llama-cpp for LLM features (Mistral 7B).
 
 ## Commands
 
@@ -47,7 +47,7 @@ npx nx build renderer    # Angular prod build only
 node apps/electron-shell/build.mjs
 
 # Model downloads (required for first run)
-npm run download-model       # STT: Silero VAD (2MB) + Parakeet TDT v3 int8 (640MB)
+npm run download-model       # STT: Silero VAD (2MB) + Whisper small int8 (245MB)
 npm run download-llm-model   # LLM: Mistral 7B Q4_K_M (4.4GB)
 
 # Icon generation
@@ -109,7 +109,7 @@ npm run generate-icon
 ```
 Renderer AudioWorklet (48kHz → 16kHz Int16 PCM, 100ms chunks)
   → IPC audio:chunk
-  → Main SttService → stt-worker (Silero VAD → Parakeet TDT)
+  → Main SttService → stt-worker (Silero VAD → Whisper small)
   → process.send({ type: 'segment' })
   → Main emits transcript:segment → Renderer SessionService
   → Auto-save to SQLite (debounced 2s)

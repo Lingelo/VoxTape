@@ -1,7 +1,7 @@
 /**
  * STT Worker — runs as a child process with ELECTRON_RUN_AS_NODE=1
  *
- * Loads Silero VAD + Parakeet TDT v3 via sherpa-onnx-node (native bindings).
+ * Loads Silero VAD + Whisper small via sherpa-onnx-node (native bindings).
  * Supports two independent audio channels (mic + system), each with its own
  * VAD instance, sharing a single recognizer. This prevents audio source
  * interleaving from confusing the VAD speech detection.
@@ -73,17 +73,18 @@ async function initialize(): Promise<void> {
     }
     console.log('[stt-worker] VAD model:', vadModelPath);
 
-    const parakeetEncoder = findModel(join('stt', 'encoder.int8.onnx'));
-    const parakeetDecoder = findModel(join('stt', 'decoder.int8.onnx'));
-    const parakeetJoiner = findModel(join('stt', 'joiner.int8.onnx'));
-    const parakeetTokens = findModel(join('stt', 'tokens.txt'));
+    // Whisper small int8 model files
+    const whisperEncoder = findModel(join('stt', 'whisper-small-encoder.int8.onnx'));
+    const whisperDecoder = findModel(join('stt', 'whisper-small-decoder.int8.onnx'));
+    const whisperTokens = findModel(join('stt', 'whisper-small-tokens.txt'));
 
-    if (!parakeetEncoder || !parakeetDecoder || !parakeetJoiner || !parakeetTokens) {
+    if (!whisperEncoder || !whisperDecoder || !whisperTokens) {
       throw new Error(
         'STT model files not found. Run "npm run download-model" first.'
       );
     }
-    console.log('[stt-worker] STT model:', parakeetEncoder);
+    console.log('[stt-worker] STT model: Whisper small int8');
+    console.log('[stt-worker] Encoder:', whisperEncoder);
 
     // Create two VAD instances — one per audio source
     console.log('[stt-worker] Creating VAD (mic)...');
@@ -108,20 +109,19 @@ async function initialize(): Promise<void> {
       source: 'system',
     };
 
-    // Single shared recognizer (the expensive part: ~640MB model)
-    console.log('[stt-worker] Creating offline recognizer...');
+    // Single shared recognizer (Whisper small ~245MB)
+    console.log('[stt-worker] Creating offline recognizer (Whisper)...');
     recognizer = new sherpaOnnx.OfflineRecognizer({
       featConfig: {
         sampleRate: 16000,
         featureDim: 80,
       },
       modelConfig: {
-        transducer: {
-          encoder: parakeetEncoder,
-          decoder: parakeetDecoder,
-          joiner: parakeetJoiner,
+        whisper: {
+          encoder: whisperEncoder,
+          decoder: whisperDecoder,
         },
-        tokens: parakeetTokens,
+        tokens: whisperTokens,
         numThreads: 2,
         debug: 0,
         provider: 'cpu',
