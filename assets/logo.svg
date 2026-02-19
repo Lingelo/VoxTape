@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Background -->
+  <rect width="128" height="128" fill="#1a1a1a"/>
+
+  <!-- VU Meter frame -->
+  <rect x="12" y="12" width="104" height="104" fill="#0a0a0a" stroke="#333" stroke-width="3"/>
+
+  <!-- Left bar (5 segments) -->
+  <rect x="24" y="84" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="74" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="64" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="54" width="20" height="6" fill="#dd0000"/>
+  <rect x="24" y="44" width="20" height="6" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="28" y="84" width="12" height="6" fill="#ff4444"/>
+  <rect x="28" y="74" width="12" height="6" fill="#ff5555"/>
+  <rect x="28" y="64" width="12" height="6" fill="#ff6666"/>
+  <rect x="28" y="54" width="12" height="6" fill="#ff5555"/>
+  <rect x="28" y="44" width="12" height="6" fill="#ff4444"/>
+
+  <!-- Center bar (7 segments) -->
+  <rect x="54" y="94" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="84" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="74" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="64" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="54" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="44" width="20" height="6" fill="#dd0000"/>
+  <rect x="54" y="34" width="20" height="6" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="58" y="94" width="12" height="6" fill="#ff3333"/>
+  <rect x="58" y="84" width="12" height="6" fill="#ff4444"/>
+  <rect x="58" y="74" width="12" height="6" fill="#ff5555"/>
+  <rect x="58" y="64" width="12" height="6" fill="#ff6666"/>
+  <rect x="58" y="54" width="12" height="6" fill="#ff5555"/>
+  <rect x="58" y="44" width="12" height="6" fill="#ff4444"/>
+  <rect x="58" y="34" width="12" height="6" fill="#ff3333"/>
+
+  <!-- Right bar (5 segments) -->
+  <rect x="84" y="84" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="74" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="64" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="54" width="20" height="6" fill="#dd0000"/>
+  <rect x="84" y="44" width="20" height="6" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="88" y="84" width="12" height="6" fill="#ff4444"/>
+  <rect x="88" y="74" width="12" height="6" fill="#ff5555"/>
+  <rect x="88" y="64" width="12" height="6" fill="#ff6666"/>
+  <rect x="88" y="54" width="12" height="6" fill="#ff5555"/>
+  <rect x="88" y="44" width="12" height="6" fill="#ff4444"/>
+
+  <!-- VT text centered - V as diagonal -->
+  <!-- V (pixel art diagonal) -->
+  <rect x="36" y="60" width="6" height="6" fill="#4ade80"/>
+  <rect x="38" y="66" width="6" height="6" fill="#4ade80"/>
+  <rect x="40" y="72" width="6" height="6" fill="#4ade80"/>
+  <rect x="44" y="78" width="6" height="6" fill="#4ade80"/>
+  <rect x="48" y="72" width="6" height="6" fill="#4ade80"/>
+  <rect x="50" y="66" width="6" height="6" fill="#4ade80"/>
+  <rect x="52" y="60" width="6" height="6" fill="#4ade80"/>
+
+  <!-- T -->
+  <rect x="66" y="60" width="24" height="6" fill="#4ade80"/>
+  <rect x="74" y="60" width="8" height="24" fill="#4ade80"/>
+</svg>

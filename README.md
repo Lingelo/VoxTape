@@ -1,16 +1,16 @@
-# Sourdine
+# VoxTape
 
 <p align="center">
-  <img src="assets/icon.icns" alt="Sourdine Logo" width="128" height="128">
+  <img src="assets/logo.svg" alt="VoxTape Logo" width="128" height="128">
 </p>
 
 <p align="center">
-  <strong>Transcription de réunions et prise de notes assistée par IA — 100% locale, 100% privée</strong>
+  <strong>🎙️ Transcription de réunions et prise de notes assistée par IA — 100% locale, 100% privée</strong>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/macOS-14.2%2B-blue?logo=apple" alt="macOS">
-  <img src="https://img.shields.io/badge/Electron-34-47848F?logo=electron" alt="Electron">
+  <img src="https://img.shields.io/badge/Electron-35-47848F?logo=electron" alt="Electron">
   <img src="https://img.shields.io/badge/Angular-21-DD0031?logo=angular" alt="Angular">
   <img src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs" alt="NestJS">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
@@ -42,20 +42,20 @@ Application macOS pour la transcription en temps réel de vos réunions (Teams, 
 
 ## Installation (Utilisateurs)
 
-1. Télécharger le DMG depuis [Releases](https://github.com/Lingelo/Sourdine/releases)
-2. Glisser Sourdine dans Applications
+1. Télécharger le DMG depuis [Releases](https://github.com/Lingelo/VoxTape/releases)
+2. Glisser VoxTape dans Applications
 
 ### Contournement Gatekeeper
 
 L'application n'est pas signée. macOS affichera "application endommagée". Exécutez :
 
 ```bash
-xattr -cr /Applications/Sourdine.app
+xattr -cr /Applications/VoxTape.app
 ```
 
 ### Premier lancement
 
-1. Lancer Sourdine
+1. Lancer VoxTape
 2. L'assistant télécharge les modèles IA (~5 Go)
 3. Autoriser l'accès micro + enregistrement d'écran dans Préférences Système
 
@@ -73,8 +73,8 @@ xattr -cr /Applications/Sourdine.app
 
 ```bash
 # Cloner et installer
-git clone https://github.com/Lingelo/Sourdine.git
-cd Sourdine
+git clone https://github.com/Lingelo/VoxTape.git
+cd VoxTape
 npm install
 
 # Télécharger les modèles IA
@@ -94,7 +94,7 @@ L'application s'ouvre automatiquement. Angular tourne sur `http://localhost:4200
 | `npm run dev` | Mode développement avec hot-reload |
 | `npm test` | Lancer les tests (Vitest) |
 | `npm run build` | Build de production |
-| `npm run package` | Créer Sourdine.app |
+| `npm run package` | Créer VoxTape.app |
 | `npm run make` | Créer DMG + ZIP |
 | `npm run build:native` | Compiler le module Rust |
 
@@ -133,7 +133,7 @@ L'application s'ouvre automatiquement. Angular tourne sur `http://localhost:4200
 | Modèle | Taille | Usage |
 |--------|--------|-------|
 | Silero VAD | 2 Mo | Détection de voix |
-| Parakeet TDT 0.6B | 640 Mo | Transcription (STT) |
+| Whisper small (int8) | 460 Mo | Transcription (STT) |
 | Mistral 7B Q4_K_M | 4.4 Go | Résumé et chat |
 
 ## Contribuer
