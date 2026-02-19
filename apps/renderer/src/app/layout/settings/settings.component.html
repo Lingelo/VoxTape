@@ -110,6 +110,61 @@
         }
       </section>
 
+      <!-- Meeting Detection -->
+      <section class="settings-section">
+        <h2>{{ 'settings.meetingDetection' | translate }}</h2>
+
+        <div class="setting-row">
+          <div class="setting-label-group">
+            <span class="label-text">{{ 'settings.meetingDetectionEnabled' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.meetingDetectionHint' | translate }}</span>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [(ngModel)]="meetingDetectionEnabled"
+              (change)="onMeetingDetectionToggle()"
+              [attr.aria-label]="'settings.meetingDetectionEnabled' | translate"
+            />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label-group">
+            <span class="label-text">{{ 'settings.detectWebMeetings' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.detectWebMeetingsHint' | translate }}</span>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [(ngModel)]="detectWebMeetings"
+              (change)="onDetectWebMeetingsToggle()"
+              [disabled]="!meetingDetectionEnabled"
+              [attr.aria-label]="'settings.detectWebMeetings' | translate"
+            />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label-group">
+            <span class="label-text">{{ 'settings.showMeetingNotification' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.showMeetingNotificationHint' | translate }}</span>
+          </div>
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              [(ngModel)]="showMeetingNotification"
+              (change)="onShowMeetingNotificationToggle()"
+              [disabled]="!meetingDetectionEnabled"
+              [attr.aria-label]="'settings.showMeetingNotification' | translate"
+            />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </section>
+
       <!-- Models -->
       <section class="settings-section">
         <h2>{{ 'settings.models' | translate }}</h2>

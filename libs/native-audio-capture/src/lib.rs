@@ -1,6 +1,7 @@
 mod resampler;
 
-use std::ffi::c_void;
+use std::ffi::{c_void, CStr};
+use std::os::raw::c_char;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use napi::bindgen_prelude::*;
@@ -283,4 +284,83 @@ pub fn stop_capture() -> Result<()> {
     }
 
     Ok(())
+}
+
+// ── Meeting App Detection ───────────────────────────────────────────────────
+
+/// FFI struct for meeting app info from ObjC
+#[repr(C)]
+struct CMeetingAppInfo {
+    bundle_id: *const c_char,
+    name: *const c_char,
+    pid: i32,
+    is_active: i32,
+}
+
+extern "C" {
+    fn sourdine_get_running_meeting_apps(out_count: *mut i32) -> *mut CMeetingAppInfo;
+    fn sourdine_free_meeting_apps(apps: *mut CMeetingAppInfo, count: i32);
+}
+
+/// Information about a detected meeting application
+#[napi(object)]
+pub struct MeetingAppInfo {
+    /// Bundle identifier (e.g., "us.zoom.xos")
+    pub bundle_id: String,
+    /// Human-readable app name (e.g., "Zoom")
+    pub name: String,
+    /// Process ID
+    pub pid: i32,
+    /// Whether the app window is currently active/frontmost
+    pub is_active: bool,
+}
+
+/// Get list of currently running meeting applications.
+/// Returns an array of MeetingAppInfo for any detected meeting apps.
+#[napi]
+pub fn get_running_meeting_apps() -> Vec<MeetingAppInfo> {
+    #[cfg(target_os = "macos")]
+    unsafe {
+        let mut count: i32 = 0;
+        let apps_ptr = sourdine_get_running_meeting_apps(&mut count);
+
+        if apps_ptr.is_null() || count == 0 {
+            return Vec::new();
+        }
+
+        let mut result = Vec::with_capacity(count as usize);
+
+        for i in 0..count {
+            let app = apps_ptr.add(i as usize);
+
+            let bundle_id = if (*app).bundle_id.is_null() {
+                String::new()
+            } else {
+                CStr::from_ptr((*app).bundle_id)
+                    .to_string_lossy()
+                    .into_owned()
+            };
+
+            let name = if (*app).name.is_null() {
+                String::new()
+            } else {
+                CStr::from_ptr((*app).name).to_string_lossy().into_owned()
+            };
+
+            result.push(MeetingAppInfo {
+                bundle_id,
+                name,
+                pid: (*app).pid,
+                is_active: (*app).is_active != 0,
+            });
+        }
+
+        sourdine_free_meeting_apps(apps_ptr, count);
+        result
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        Vec::new()
+    }
 }

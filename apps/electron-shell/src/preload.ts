@@ -190,6 +190,64 @@ const sourdineApi = {
       return () => ipcRenderer.removeListener('model:download-progress', handler);
     },
   },
+
+  meeting: {
+    getDetected: (): Promise<any> => ipcRenderer.invoke('meeting:get-detected'),
+    isMonitoring: (): Promise<boolean> => ipcRenderer.invoke('meeting:is-monitoring'),
+    startMonitoring: (): void => ipcRenderer.send('meeting:start-monitoring'),
+    stopMonitoring: (): void => ipcRenderer.send('meeting:stop-monitoring'),
+    forceCheck: (): Promise<any> => ipcRenderer.invoke('meeting:force-check'),
+    onDetected: (
+      callback: (event: {
+        type: 'detected';
+        apps: Array<{
+          bundleId: string;
+          name: string;
+          pid: number;
+          isActive: boolean;
+          source: 'process' | 'browser';
+        }>;
+        timestamp: number;
+      }) => void
+    ): (() => void) => {
+      const handler = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('meeting:detected', handler);
+      return () => ipcRenderer.removeListener('meeting:detected', handler);
+    },
+    onEnded: (
+      callback: (event: {
+        type: 'ended';
+        apps: Array<any>;
+        timestamp: number;
+      }) => void
+    ): (() => void) => {
+      const handler = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('meeting:ended', handler);
+      return () => ipcRenderer.removeListener('meeting:ended', handler);
+    },
+    onChange: (
+      callback: (event: {
+        type: 'detected' | 'ended' | 'changed';
+        apps: Array<{
+          bundleId: string;
+          name: string;
+          pid: number;
+          isActive: boolean;
+          source: 'process' | 'browser';
+        }>;
+        timestamp: number;
+      }) => void
+    ): (() => void) => {
+      const handler = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('meeting:change', handler);
+      return () => ipcRenderer.removeListener('meeting:change', handler);
+    },
+    onStartRecordingRequested: (callback: (data: { meetingName?: string }) => void): (() => void) => {
+      const handler = (_event: any, data: { meetingName?: string }) => callback(data || {});
+      ipcRenderer.on('meeting:start-recording-requested', handler);
+      return () => ipcRenderer.removeListener('meeting:start-recording-requested', handler);
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('sourdine', sourdineApi);

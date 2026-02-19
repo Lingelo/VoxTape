@@ -290,3 +290,100 @@ void sourdine_sck_stop_capture(void) {
     g_sck_delegate = nil;
     NSLog(@"[native-audio] SCK: Capture stopped");
 }
+
+// ── Meeting App Detection (NSWorkspace) ─────────────────────────────────────
+
+#import <AppKit/AppKit.h>
+
+/// Structure to hold info about a running meeting app
+typedef struct {
+    const char *bundleId;
+    const char *name;
+    int pid;
+    int isActive;
+} MeetingAppInfo;
+
+/// Known meeting app bundle IDs
+static NSArray<NSString *> *getMeetingBundleIds(void) {
+    return @[
+        @"us.zoom.xos",
+        @"com.microsoft.teams",
+        @"com.microsoft.teams2",
+        @"com.tinyspeck.slackmacgap",
+        @"com.hnc.Discord",
+        @"com.cisco.webexmeetingsapp",
+        @"com.skype.skype",
+        @"com.apple.FaceTime"
+    ];
+}
+
+/// Get the number of running meeting apps
+int sourdine_get_running_meeting_apps_count(void) {
+    @autoreleasepool {
+        NSArray<NSString *> *meetingBundleIds = getMeetingBundleIds();
+        NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
+        NSArray<NSRunningApplication *> *apps = [workspace runningApplications];
+
+        int count = 0;
+        for (NSRunningApplication *app in apps) {
+            if (app.bundleIdentifier && [meetingBundleIds containsObject:app.bundleIdentifier]) {
+                count++;
+            }
+        }
+        return count;
+    }
+}
+
+/// Get running meeting apps. Caller must free the returned array and strings.
+/// Returns NULL if no meeting apps found.
+MeetingAppInfo *sourdine_get_running_meeting_apps(int *outCount) {
+    @autoreleasepool {
+        NSArray<NSString *> *meetingBundleIds = getMeetingBundleIds();
+        NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
+        NSArray<NSRunningApplication *> *apps = [workspace runningApplications];
+        NSRunningApplication *activeApp = [workspace frontmostApplication];
+
+        NSMutableArray<NSRunningApplication *> *meetingApps = [NSMutableArray array];
+        for (NSRunningApplication *app in apps) {
+            if (app.bundleIdentifier && [meetingBundleIds containsObject:app.bundleIdentifier]) {
+                [meetingApps addObject:app];
+            }
+        }
+
+        int count = (int)[meetingApps count];
+        *outCount = count;
+
+        if (count == 0) {
+            return NULL;
+        }
+
+        MeetingAppInfo *result = (MeetingAppInfo *)malloc(sizeof(MeetingAppInfo) * count);
+
+        for (int i = 0; i < count; i++) {
+            NSRunningApplication *app = meetingApps[i];
+
+            // Copy bundle ID
+            const char *bundleIdCStr = [app.bundleIdentifier UTF8String];
+            result[i].bundleId = bundleIdCStr ? strdup(bundleIdCStr) : strdup("");
+
+            // Copy localized name
+            const char *nameCStr = [app.localizedName UTF8String];
+            result[i].name = nameCStr ? strdup(nameCStr) : strdup("");
+
+            result[i].pid = (int)app.processIdentifier;
+            result[i].isActive = (app == activeApp) ? 1 : 0;
+        }
+
+        return result;
+    }
+}
+
+/// Free the memory allocated by sourdine_get_running_meeting_apps
+void sourdine_free_meeting_apps(MeetingAppInfo *apps, int count) {
+    if (!apps) return;
+    for (int i = 0; i < count; i++) {
+        free((void *)apps[i].bundleId);
+        free((void *)apps[i].name);
+    }
+    free(apps);
+}
