@@ -6,15 +6,17 @@ import { TranslateModule } from '@ngx-translate/core';
 import { SessionService, SessionStatus } from '../../services/session.service';
 import { AudioCaptureService } from '../../services/audio-capture.service';
 import { LlmService } from '../../services/llm.service';
+import { FirstLaunchService, TooltipStep } from '../../services/first-launch.service';
 import { ChatPanelComponent } from '../chat-panel/chat-panel.component';
 import { TranscriptPanelComponent } from '../transcript-panel/transcript-panel.component';
+import { GuideTooltipComponent } from '../../components/guide-tooltip/guide-tooltip.component';
 import type { LlmStatus } from '@sourdine/shared-types';
 
 @Component({
   selector: 'sdn-control-bar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslateModule, ChatPanelComponent, TranscriptPanelComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, ChatPanelComponent, TranscriptPanelComponent, GuideTooltipComponent],
   templateUrl: './control-bar.component.html',
   styleUrl: './control-bar.component.scss',
 })
@@ -33,14 +35,19 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   audioLevel = 0;
   chatInput = '';
   hasAiSummary = false;
+  hasSegments = false;
   elapsed = 0;
   isRecordingElsewhere = false;
 
   vuBars = [0, 1, 2, 3, 4];
 
+  // First-launch tooltip state
+  tooltipStep: TooltipStep | null = null;
+
   private readonly session = inject(SessionService);
   private readonly audioCapture = inject(AudioCaptureService);
   private readonly llm = inject(LlmService);
+  private readonly firstLaunch = inject(FirstLaunchService);
   private readonly cdr = inject(ChangeDetectorRef);
   private subs: Subscription[] = [];
   private selectedDeviceId = '';
@@ -63,9 +70,11 @@ export class ControlBarComponent implements OnInit, OnDestroy {
       this.audioCapture.audioLevel$.subscribe((l) => { this.audioLevel = l; this.cdr.markForCheck(); }),
       this.session.status$.subscribe((s) => { this.status = s; this.cdr.markForCheck(); }),
       this.session.aiSummary$.subscribe((s) => { this.hasAiSummary = !!s; this.cdr.markForCheck(); }),
+      this.session.segments$.subscribe((segs) => { this.hasSegments = segs.length > 0; this.cdr.markForCheck(); }),
       this.session.elapsed$.subscribe((e) => { this.elapsed = e; this.cdr.markForCheck(); }),
       this.session.isRecordingElsewhere$.subscribe((e) => { this.isRecordingElsewhere = e; this.cdr.markForCheck(); }),
-      this.llm.status$.subscribe((s) => { this.llmStatus = s; this.cdr.markForCheck(); })
+      this.llm.status$.subscribe((s) => { this.llmStatus = s; this.cdr.markForCheck(); }),
+      this.firstLaunch.currentStep$.subscribe((s) => { this.tooltipStep = s; this.cdr.markForCheck(); })
     );
   }
 
@@ -88,7 +97,8 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   }
 
   get showGenerateBtn(): boolean {
-    return (this.status === 'done' && !this.hasAiSummary) || this.status === 'processing';
+    // Show button if: recording done + has transcript + not yet summarized, OR currently processing
+    return (this.status === 'done' && this.hasSegments && !this.hasAiSummary) || this.status === 'processing';
   }
 
   getBarHeight(index: number): number {
@@ -134,5 +144,36 @@ export class ControlBarComponent implements OnInit, OnDestroy {
     if (!question) return;
     this.chatInput = '';
     this.openChat.emit(question);
+  }
+
+  // First-launch tooltip handlers
+  onTooltipNext(): void {
+    this.firstLaunch.nextStep();
+  }
+
+  onTooltipSkip(): void {
+    this.firstLaunch.skipAll();
+  }
+
+  getTooltipText(): string {
+    switch (this.tooltipStep) {
+      case 'record':
+        return 'Cliquez ici pour démarrer un enregistrement audio.';
+      case 'transcript':
+        return 'La transcription apparaît ici en temps réel.';
+      case 'generate':
+        return 'Générez un résumé intelligent de votre réunion.';
+      default:
+        return '';
+    }
+  }
+
+  getTooltipStepNumber(): number {
+    switch (this.tooltipStep) {
+      case 'record': return 1;
+      case 'transcript': return 2;
+      case 'generate': return 3;
+      default: return 0;
+    }
   }
 }
