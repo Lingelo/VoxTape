@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import type { MeetingDetectionConfig } from '@sourdine/shared-types';
+import { DEFAULT_MEETING_DETECTION_CONFIG } from '@sourdine/shared-types';
 
 export interface SourdineConfig {
   language: string;
   theme: 'dark' | 'light' | 'system';
   audio: {
     defaultDeviceId: string | null;
+    systemAudioEnabled?: boolean;
   };
   llm: {
     modelPath: string | null;
@@ -16,6 +19,7 @@ export interface SourdineConfig {
   stt: {
     modelPath: string | null;
   };
+  meetingDetection: MeetingDetectionConfig;
   onboardingComplete: boolean;
 }
 
@@ -25,6 +29,7 @@ const DEFAULT_CONFIG: SourdineConfig = {
   audio: { defaultDeviceId: null },
   llm: { modelPath: null, contextSize: 4096, temperature: 0.7 },
   stt: { modelPath: null },
+  meetingDetection: { ...DEFAULT_MEETING_DETECTION_CONFIG },
   onboardingComplete: false,
 };
 

@@ -9,6 +9,7 @@ import {
   globalShortcut,
   dialog,
   systemPreferences,
+  Notification,
 } from 'electron';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -25,8 +26,9 @@ import {
   ModelManagerService,
   SystemAudioService,
   DiarizationService,
+  MeetingDetectionService,
 } from '@sourdine/backend';
-import type { LlmPromptPayload } from '@sourdine/shared-types';
+import type { LlmPromptPayload, MeetingDetectionEvent } from '@sourdine/shared-types';
 
 // ── State ──────────────────────────────────────────────────────────────────
 
@@ -41,7 +43,11 @@ let configService: ConfigService;
 let modelManager: ModelManagerService;
 let systemAudioService: SystemAudioService;
 let diarizationService: DiarizationService;
+let meetingDetectionService: MeetingDetectionService;
 let isRecording = false;
+let lastMeetingNotificationId: string | null = null;
+let meetingNotificationDismissed = false;
+let lastDetectedMeetingName: string | null = null;
 
 app.setName('Sourdine');
 const isDev = !app.isPackaged;
@@ -65,6 +71,7 @@ async function bootstrapNest(): Promise<void> {
   modelManager = appContext.get(ModelManagerService);
   systemAudioService = appContext.get(SystemAudioService);
   diarizationService = appContext.get(DiarizationService);
+  meetingDetectionService = appContext.get(MeetingDetectionService);
 
   // Set worker paths relative to this bundle
   sttService.setWorkerPath(join(__dirname, 'stt-worker.js'));
@@ -451,6 +458,11 @@ function setupIpc(): void {
     'llm.contextSize': 'number',
     'llm.temperature': 'number',
     'stt.modelPath': 'string|null',
+    'meetingDetection.enabled': 'boolean',
+    'meetingDetection.detectWebMeetings': 'boolean',
+    'meetingDetection.showNotification': 'boolean',
+    'meetingDetection.notificationDurationMs': 'number',
+    'meetingDetection.pollIntervalMs': 'number',
     'onboardingComplete': 'boolean',
   };
 
@@ -489,6 +501,11 @@ function setupIpc(): void {
         contextSize: llmCfg.contextSize,
         temperature: llmCfg.temperature,
       });
+    }
+    // Live-update meeting detection config when relevant keys change
+    if (key.startsWith('meetingDetection.')) {
+      const meetingCfg = configService.get('meetingDetection');
+      meetingDetectionService.setConfig(meetingCfg);
     }
     return { ok: true };
   });
@@ -591,6 +608,112 @@ function setupIpc(): void {
   systemAudioService.on('level', (level: number) => {
     mainWindow?.webContents.send('system-audio:level', level);
   });
+
+  // ── Meeting Notification ─────────────────────────────────────────────
+  function showMeetingNotification(appName: string): void {
+    if (!Notification.isSupported()) {
+      console.log('[Main] System notifications not supported');
+      return;
+    }
+
+    // Save the meeting name so we can use it when the notification is clicked
+    // (even if the meeting "ends" before the click due to tab switching)
+    lastDetectedMeetingName = appName;
+
+    const notification = new Notification({
+      title: `🎙️ ${appName} détecté`,
+      body: 'Cliquez pour démarrer l\'enregistrement',
+      silent: false,
+      urgency: 'normal',
+      timeoutType: 'default',
+      // Note: actions only work when the app is signed and packaged
+      actions: [
+        { type: 'button', text: 'Enregistrer' },
+        { type: 'button', text: 'Ignorer' },
+      ],
+    });
+
+    notification.on('click', () => {
+      // Show and focus the main window, then start recording
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+        // Start recording automatically when notification is clicked
+        // Pass the meeting name we saved earlier
+        mainWindow.webContents.send('meeting:start-recording-requested', {
+          meetingName: lastDetectedMeetingName
+        });
+      }
+    });
+
+    notification.on('action', (_event: any, index: number) => {
+      if (index === 0) {
+        // "Enregistrer" button clicked - start recording
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send('meeting:start-recording-requested');
+        }
+      } else if (index === 1) {
+        // "Ignorer" button clicked - dismiss and don't show again for this meeting
+        meetingNotificationDismissed = true;
+      }
+    });
+
+    notification.show();
+  }
+
+  // ── Meeting Detection IPC ──────────────────────────────────────────
+  ipcMain.handle('meeting:get-detected', () => {
+    return meetingDetectionService.detectedApps;
+  });
+
+  ipcMain.handle('meeting:is-monitoring', () => {
+    return meetingDetectionService.isMonitoring;
+  });
+
+  ipcMain.on('meeting:start-monitoring', () => {
+    meetingDetectionService.startMonitoring();
+  });
+
+  ipcMain.on('meeting:stop-monitoring', () => {
+    meetingDetectionService.stopMonitoring();
+  });
+
+  ipcMain.handle('meeting:force-check', () => {
+    return meetingDetectionService.forceCheck();
+  });
+
+  // Forward meeting detection events to renderer
+  meetingDetectionService.on('detected', (event: MeetingDetectionEvent) => {
+    mainWindow?.webContents.send('meeting:detected', event);
+
+    // Show system notification if enabled and not already recording
+    const meetingConfig = configService.get('meetingDetection');
+    if (meetingConfig?.showNotification && !isRecording && !meetingNotificationDismissed) {
+      const app = event.apps[0];
+      if (app) {
+        // Avoid duplicate notifications for the same meeting
+        if (lastMeetingNotificationId !== app.bundleId) {
+          lastMeetingNotificationId = app.bundleId;
+          showMeetingNotification(app.name);
+        }
+      }
+    }
+  });
+
+  meetingDetectionService.on('ended', (event: MeetingDetectionEvent) => {
+    mainWindow?.webContents.send('meeting:ended', event);
+    // Reset notification state when meeting ends
+    lastMeetingNotificationId = null;
+    meetingNotificationDismissed = false;
+  });
+
+  meetingDetectionService.on('change', (event: MeetingDetectionEvent) => {
+    mainWindow?.webContents.send('meeting:change', event);
+  });
 }
 
 // ── App Lifecycle ──────────────────────────────────────────────────────────
@@ -611,6 +734,12 @@ app.whenReady().then(async () => {
   //   console.error('[Main] Speaker identification will not be available.');
   // });
 
+  // Configure meeting detection (but don't start yet - need window first)
+  const meetingConfig = configService.get('meetingDetection');
+  if (meetingConfig) {
+    meetingDetectionService.setConfig(meetingConfig);
+  }
+
   // Set dock icon on macOS
   if (process.platform === 'darwin' && app.dock) {
     setDockIcon();
@@ -620,6 +749,11 @@ app.whenReady().then(async () => {
   // Create windows
   createMainWindow();
   createTray();
+
+  // Start meeting detection AFTER window is created (so IPC events can be sent)
+  if (meetingConfig?.enabled !== false) {
+    meetingDetectionService.startMonitoring();
+  }
 
   // Application menu
   const appMenu = Menu.buildFromTemplate([

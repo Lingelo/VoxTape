@@ -37,12 +37,21 @@ interface ModelInfo {
   description: string;
 }
 
+interface MeetingDetectionConfig {
+  enabled: boolean;
+  detectWebMeetings: boolean;
+  showNotification: boolean;
+  notificationDurationMs: number;
+  pollIntervalMs: number;
+}
+
 interface Config {
   language: string;
   theme: 'dark' | 'light' | 'system';
-  audio: { defaultDeviceId: string | null };
+  audio: { defaultDeviceId: string | null; systemAudioEnabled?: boolean };
   llm: { modelPath: string | null; contextSize: number; temperature: number };
   stt: { modelPath: string | null };
+  meetingDetection?: MeetingDetectionConfig;
   onboardingComplete: boolean;
 }
 
@@ -64,6 +73,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
   systemAudioEnabled = false;
   systemAudioLevel = 0;
   isTestingSystemAudio = false;
+
+  // Meeting detection
+  meetingDetectionEnabled = true;
+  detectWebMeetings = false;
+  showMeetingNotification = true;
+
   private progressCleanup: (() => void) | null = null;
   private systemAudioLevelCleanup: (() => void) | null = null;
 
@@ -105,6 +120,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         this.config = cfg;
         if (this.config) this.applyTheme(this.config.theme);
+        // Load meeting detection config
+        this.loadMeetingDetectionConfig();
         this.cdr.markForCheck();
       });
     }
@@ -155,6 +172,28 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (!this.systemAudioEnabled && this.isTestingSystemAudio) {
       this.stopSystemAudioTest();
     }
+  }
+
+  // ── Meeting Detection ─────────────────────────────────────────────────────
+
+  private loadMeetingDetectionConfig(): void {
+    if (!this.config?.meetingDetection) return;
+    const mc = this.config.meetingDetection;
+    this.meetingDetectionEnabled = mc.enabled;
+    this.detectWebMeetings = mc.detectWebMeetings;
+    this.showMeetingNotification = mc.showNotification;
+  }
+
+  onMeetingDetectionToggle(): void {
+    this.save('meetingDetection.enabled', this.meetingDetectionEnabled);
+  }
+
+  onDetectWebMeetingsToggle(): void {
+    this.save('meetingDetection.detectWebMeetings', this.detectWebMeetings);
+  }
+
+  onShowMeetingNotificationToggle(): void {
+    this.save('meetingDetection.showNotification', this.showMeetingNotification);
   }
 
   toggleSystemAudioTest(): void {

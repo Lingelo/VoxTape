@@ -5,6 +5,8 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 import { NoteEditorComponent } from './note-editor/note-editor.component';
 import { ControlBarComponent } from './control-bar/control-bar.component';
 import { AudioCaptureService } from '../services/audio-capture.service';
+import { MeetingService } from '../services/meeting.service';
+import { SessionService } from '../services/session.service';
 
 @Component({
   selector: 'sdn-main-layout',
@@ -25,6 +27,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   transcriptOpen = false;
 
   private readonly audioCapture = inject(AudioCaptureService);
+  private readonly meetingService = inject(MeetingService);
+  private readonly sessionService = inject(SessionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private subs: Subscription[] = [];
 
@@ -36,6 +40,29 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           this.transcriptOpen = true;
         }
         this.cdr.markForCheck();
+      }),
+      // Handle system notification click to start recording
+      this.meetingService.startRecordingRequested$.subscribe(async (data) => {
+        // Create a new session with the meeting name
+        this.sessionService.newSession();
+        if (data.meetingName) {
+          this.sessionService.updateTitle(`${data.meetingName} Meeting`);
+        }
+
+        // Load saved device from config (same as ControlBar)
+        let deviceId: string | undefined;
+        try {
+          const api = (window as Window & { sourdine?: { config?: { get: () => Promise<{ audio?: { defaultDeviceId?: string } }> } } }).sourdine?.config;
+          if (api) {
+            const cfg = await api.get();
+            deviceId = cfg?.audio?.defaultDeviceId;
+          }
+        } catch {
+          // Ignore config errors
+        }
+
+        // Start recording with the configured device - same as ControlBar
+        await this.sessionService.startRecording(deviceId);
       })
     );
   }

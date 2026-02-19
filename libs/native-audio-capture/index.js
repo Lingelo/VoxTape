@@ -576,6 +576,7 @@ if (!nativeBinding) {
 }
 
 module.exports = nativeBinding
+module.exports.getRunningMeetingApps = nativeBinding.getRunningMeetingApps
 module.exports.hasScreenCaptureAccess = nativeBinding.hasScreenCaptureAccess
 module.exports.isSupported = nativeBinding.isSupported
 module.exports.requestAudioCapturePermission = nativeBinding.requestAudioCapturePermission

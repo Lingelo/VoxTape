@@ -17,3 +17,6 @@ export * from './lib/system-audio/system-audio.service.js';
 export * from './lib/system-audio/system-audio.module.js';
 export * from './lib/diarization/diarization.service.js';
 export * from './lib/diarization/diarization.module.js';
+export * from './lib/meeting-detection/meeting-detection.service.js';
+export * from './lib/meeting-detection/meeting-detection.module.js';
+export * from './lib/meeting-detection/browser-url.service.js';
