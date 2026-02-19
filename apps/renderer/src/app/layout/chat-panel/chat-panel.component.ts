@@ -45,6 +45,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   showRecipes = false;
   filteredRecipes: Recipe[] = [];
   recipeIndex = 0;
+  private pendingCommandDisplay = '';  // Command to display instead of full prompt (e.g., "/resume")
 
   private readonly llm = inject(LlmService);
   private readonly session = inject(SessionService);
@@ -74,7 +75,12 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       if (this.initialPrompt) {
         // Resolve slash command to recipe prompt if applicable
         const recipe = RECIPES.find((r) => this.initialPrompt.trim() === r.command);
-        this.input = recipe ? recipe.prompt : this.initialPrompt;
+        if (recipe) {
+          this.pendingCommandDisplay = recipe.command;
+          this.input = recipe.prompt;
+        } else {
+          this.input = this.initialPrompt;
+        }
         this.initialPrompt = '';
         this.onSend();
       } else {
@@ -135,6 +141,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   }
 
   selectRecipe(recipe: Recipe): void {
+    this.pendingCommandDisplay = recipe.command;
     this.input = recipe.prompt;
     this.showRecipes = false;
     this.cdr.markForCheck();
@@ -145,7 +152,10 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     const question = this.input.trim();
     if (!question || this.isGenerating) return;
 
-    this.session.addChatMessage({ role: 'user', content: question });
+    // Display command (e.g., "/resume") instead of full prompt if this was a slash command
+    const displayText = this.pendingCommandDisplay || question;
+    this.session.addChatMessage({ role: 'user', content: displayText });
+    this.pendingCommandDisplay = '';
     this.input = '';
     this.isGenerating = true;
     this.cdr.markForCheck();
