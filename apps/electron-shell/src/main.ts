@@ -464,6 +464,7 @@ function setupIpc(): void {
     'meetingDetection.notificationDurationMs': 'number',
     'meetingDetection.pollIntervalMs': 'number',
     'onboardingComplete': 'boolean',
+    'firstLaunchComplete': 'boolean',
   };
 
   function validateConfigValue(key: string, value: unknown): boolean {

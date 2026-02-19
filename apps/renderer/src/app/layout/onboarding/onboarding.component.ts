@@ -408,7 +408,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // Approximate sizes in bytes for weighted progress
   private readonly MODEL_WEIGHTS: Record<string, number> = {
     'silero-vad': 2_000_000,
-    'whisper-small': 245_000_000,
+    'whisper-small': 460_000_000,
     'mistral-7b-instruct-q4': 4_400_000_000,
   };
 
