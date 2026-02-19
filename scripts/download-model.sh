@@ -26,15 +26,15 @@ else
   echo "✓ Silero VAD downloaded"
 fi
 
-# ── Download Whisper small int8 (multilingual, ~245MB) ───────────
+# ── Download Whisper small (multilingual, ~460MB) ───────────
 mkdir -p "$STT_DIR"
-if [ -f "$STT_DIR/whisper-small-encoder.int8.onnx" ]; then
+if [ -f "$STT_DIR/small-encoder.int8.onnx" ]; then
   echo "✓ Whisper small already downloaded"
 else
-  MODEL_TAR="sherpa-onnx-whisper-small.int8.tar.bz2"
+  MODEL_TAR="sherpa-onnx-whisper-small.tar.bz2"
   MODEL_URL="$SHERPA_RELEASE/asr-models/$MODEL_TAR"
 
-  echo "⬇ Downloading Whisper small int8 (~245MB)..."
+  echo "⬇ Downloading Whisper small (~460MB)..."
   echo "   This may take a few minutes..."
   curl -fL --progress-bar -o "/tmp/$MODEL_TAR" "$MODEL_URL"
 
@@ -42,7 +42,7 @@ else
   tar -xjf "/tmp/$MODEL_TAR" -C "$MODELS_DIR/"
 
   # Move files from extracted dir to stt/
-  EXTRACTED_DIR="$MODELS_DIR/sherpa-onnx-whisper-small.int8"
+  EXTRACTED_DIR="$MODELS_DIR/sherpa-onnx-whisper-small"
   if [ -d "$EXTRACTED_DIR" ]; then
     cp "$EXTRACTED_DIR"/*.onnx "$STT_DIR/" 2>/dev/null || true
     cp "$EXTRACTED_DIR"/*.txt "$STT_DIR/" 2>/dev/null || true
@@ -59,5 +59,5 @@ fi
 echo ""
 echo "── Model Status ──────────────────────────────────"
 echo "VAD:  $([ -f "$VAD_DIR/silero_vad.onnx" ] && echo '✓ Ready' || echo '✗ Missing')"
-echo "STT:  $([ -f "$STT_DIR/whisper-small-encoder.int8.onnx" ] && echo '✓ Ready' || echo '✗ Missing')"
+echo "STT:  $([ -f "$STT_DIR/small-encoder.int8.onnx" ] && echo '✓ Ready' || echo '✗ Missing')"
 echo ""
