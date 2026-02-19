@@ -15,7 +15,7 @@
     <!-- Step 0: Welcome -->
     @if (step === 0) {
     <div class="step-content">
-      <img src="assets/logo.svg" alt="Sourdine" class="welcome-logo" />
+      <img src="assets/logo.svg" alt="VoxTape" class="welcome-logo" />
       <h1>{{ 'app.name' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.subtitle' | translate }}</p>
 
@@ -88,8 +88,10 @@
 
       <div class="mic-test">
         @if (micState !== 'error') {
-          <div class="vu-meter">
-            <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
+          <div class="vu-kitt">
+            @for (i of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]; track i) {
+              <div class="vu-segment" [class.lit]="audioLevel * 15 > i" [class.hot]="i >= 12"></div>
+            }
           </div>
         }
         @if (micState === 'idle') {
@@ -160,8 +162,10 @@
 
           @if (systemAudioEnabled) {
             <div class="mic-test">
-              <div class="vu-meter">
-                <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+              <div class="vu-kitt">
+                @for (i of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]; track i) {
+                  <div class="vu-segment" [class.lit]="systemAudioLevel * 15 > i" [class.hot]="i >= 12"></div>
+                }
               </div>
               <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
                 {{ systemAudioLevel > 0.02 ? ('onboarding.sysAudioDetected' | translate) : ('onboarding.sysAudioPlayMedia' | translate) }}
@@ -206,7 +210,12 @@
       <!-- During install -->
       @if (installState === 'downloading') {
         <div class="install-progress">
-          <p class="install-step-label">{{ currentInstallLabel }}</p>
+          <sdn-glitch-loader
+            [messages]="[currentInstallLabel]"
+            [typingSpeed]="50"
+            [glitchDuration]="99999"
+            [showCursor]="false"
+          ></sdn-glitch-loader>
           <div class="progress-bar large">
             <div class="progress-fill" [style.width.%]="overallProgress"></div>
           </div>
@@ -217,10 +226,6 @@
       <!-- Done -->
       @if (installState === 'done') {
         <div class="install-done">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
           <p class="install-done-text">{{ 'onboarding.installDone' | translate }}</p>
         </div>
       }
@@ -260,13 +265,6 @@
     <div class="step-content">
       <h1>{{ 'onboarding.readyTitle' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.readySubtitle' | translate }}</p>
-
-      <div class="ready-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-      </div>
 
       <button class="primary-btn" (click)="finish()">{{ 'onboarding.start' | translate }}</button>
     </div>

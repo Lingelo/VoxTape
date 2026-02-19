@@ -13,17 +13,70 @@ const assetsDir = join(rootDir, 'assets');
 const iconsetDir = join(assetsDir, 'icon.iconset');
 const icnsPath = join(assetsDir, 'icon.icns');
 
-// SVG content (same as logo.svg but with solid background for icon)
+// SVG content - VoxTape VU meter logo (scaled to 1024x1024 from 128x128)
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <!-- Background with rounded corners for macOS icon -->
   <rect width="1024" height="1024" rx="224" fill="#1a1a1a"/>
-  <path d="M304 416c-32 32-48 72-48 112s16 80 48 112" stroke="#4ade80" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.5"/>
-  <path d="M352 448c-20 20-32 48-32 72s12 52 32 72" stroke="#4ade80" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.75"/>
-  <rect x="448" y="320" width="128" height="256" rx="64" fill="#4ade80"/>
-  <rect x="448" y="320" width="128" height="80" rx="64" fill="#3bc96f"/>
-  <path d="M512 608v96" stroke="#4ade80" stroke-width="24" stroke-linecap="round"/>
-  <path d="M448 704h128" stroke="#4ade80" stroke-width="24" stroke-linecap="round"/>
-  <path d="M672 448c20 20 32 48 32 72s-12 52-32 72" stroke="#4ade80" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.75"/>
-  <path d="M720 416c32 32 48 72 48 112s-16 80-48 112" stroke="#4ade80" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.5"/>
+
+  <!-- VU Meter frame (scaled 8x from 128) -->
+  <rect x="96" y="96" width="832" height="832" fill="#0a0a0a" stroke="#333" stroke-width="24"/>
+
+  <!-- Left bar (5 segments) -->
+  <rect x="192" y="672" width="160" height="48" fill="#dd0000"/>
+  <rect x="192" y="592" width="160" height="48" fill="#dd0000"/>
+  <rect x="192" y="512" width="160" height="48" fill="#dd0000"/>
+  <rect x="192" y="432" width="160" height="48" fill="#dd0000"/>
+  <rect x="192" y="352" width="160" height="48" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="224" y="672" width="96" height="48" fill="#ff4444"/>
+  <rect x="224" y="592" width="96" height="48" fill="#ff5555"/>
+  <rect x="224" y="512" width="96" height="48" fill="#ff6666"/>
+  <rect x="224" y="432" width="96" height="48" fill="#ff5555"/>
+  <rect x="224" y="352" width="96" height="48" fill="#ff4444"/>
+
+  <!-- Center bar (7 segments) -->
+  <rect x="432" y="752" width="160" height="48" fill="#dd0000"/>
+  <rect x="432" y="672" width="160" height="48" fill="#dd0000"/>
+  <rect x="432" y="592" width="160" height="48" fill="#dd0000"/>
+  <rect x="432" y="512" width="160" height="48" fill="#dd0000"/>
+  <rect x="432" y="432" width="160" height="48" fill="#dd0000"/>
+  <rect x="432" y="352" width="160" height="48" fill="#dd0000"/>
+  <rect x="432" y="272" width="160" height="48" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="464" y="752" width="96" height="48" fill="#ff3333"/>
+  <rect x="464" y="672" width="96" height="48" fill="#ff4444"/>
+  <rect x="464" y="592" width="96" height="48" fill="#ff5555"/>
+  <rect x="464" y="512" width="96" height="48" fill="#ff6666"/>
+  <rect x="464" y="432" width="96" height="48" fill="#ff5555"/>
+  <rect x="464" y="352" width="96" height="48" fill="#ff4444"/>
+  <rect x="464" y="272" width="96" height="48" fill="#ff3333"/>
+
+  <!-- Right bar (5 segments) -->
+  <rect x="672" y="672" width="160" height="48" fill="#dd0000"/>
+  <rect x="672" y="592" width="160" height="48" fill="#dd0000"/>
+  <rect x="672" y="512" width="160" height="48" fill="#dd0000"/>
+  <rect x="672" y="432" width="160" height="48" fill="#dd0000"/>
+  <rect x="672" y="352" width="160" height="48" fill="#dd0000"/>
+  <!-- Highlights -->
+  <rect x="704" y="672" width="96" height="48" fill="#ff4444"/>
+  <rect x="704" y="592" width="96" height="48" fill="#ff5555"/>
+  <rect x="704" y="512" width="96" height="48" fill="#ff6666"/>
+  <rect x="704" y="432" width="96" height="48" fill="#ff5555"/>
+  <rect x="704" y="352" width="96" height="48" fill="#ff4444"/>
+
+  <!-- VT text centered - V as diagonal (scaled 8x) -->
+  <!-- V -->
+  <rect x="288" y="480" width="48" height="48" fill="#4ade80"/>
+  <rect x="304" y="528" width="48" height="48" fill="#4ade80"/>
+  <rect x="320" y="576" width="48" height="48" fill="#4ade80"/>
+  <rect x="352" y="624" width="48" height="48" fill="#4ade80"/>
+  <rect x="384" y="576" width="48" height="48" fill="#4ade80"/>
+  <rect x="400" y="528" width="48" height="48" fill="#4ade80"/>
+  <rect x="416" y="480" width="48" height="48" fill="#4ade80"/>
+
+  <!-- T -->
+  <rect x="528" y="480" width="192" height="48" fill="#4ade80"/>
+  <rect x="592" y="480" width="64" height="192" fill="#4ade80"/>
 </svg>`;
 
 // Required icon sizes for macOS .icns

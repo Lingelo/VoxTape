@@ -4,7 +4,7 @@
     <!-- Left column: Generate button + Audio pill -->
     <div class="audio-column">
       <!-- Generate notes button (above audio pill) -->
-      @if (showGenerateBtn) {
+      @if (showGenerateBtn && !transcriptOpen && !chatOpen) {
         <button
           class="generate-btn"
           [class.processing]="status === 'processing'"
@@ -12,26 +12,40 @@
           (click)="onEnhance()"
         >
           @if (status === 'processing') {
-            <span class="spinner"></span>
+            <sdn-glitch-loader
+              [messages]="['EN COURS...']"
+              [typingSpeed]="60"
+              [glitchDuration]="99999"
+              [showCursor]="false"
+            ></sdn-glitch-loader>
+          } @else {
+            <span>RESUMER</span>
           }
-          {{ status === 'processing' ? 'Résumé en cours...' : 'Résumer' }}
         </button>
       }
 
       <!-- Audio pill (detached) -->
       <div class="audio-pill" [class.active]="isRecording" [class.disabled]="isRecordingElsewhere">
       <div class="vu-wrapper">
-        <div class="vu-bars" tabindex="0" role="button"
-          (click)="!isRecordingElsewhere && toggleRecording()"
-          (keydown.enter)="!isRecordingElsewhere && toggleRecording()"
-          [class.disabled]="isRecordingElsewhere"
-          [title]="isRecordingElsewhere ? ('transcript.recordingElsewhere' | translate) : ''">
-          @for (bar of vuBars; track $index; let i = $index) {
-            <div class="vu-bar"
-              [style.height.px]="isRecording ? getBarHeight(i) : 4"
-              [style.opacity]="isRecording ? getBarOpacity(i) : 0.4"
-            ></div>
-          }
+        <div class="vu-kitt">
+          <!-- Left column (5 segments) -->
+          <div class="vu-column vu-column-side">
+            @for (seg of [0,1,2,3,4]; track seg) {
+              <div class="vu-segment" [class.lit]="isSegmentLit(0, seg)"></div>
+            }
+          </div>
+          <!-- Center column (8 segments) -->
+          <div class="vu-column vu-column-center">
+            @for (seg of [0,1,2,3,4,5,6,7]; track seg) {
+              <div class="vu-segment" [class.lit]="isSegmentLit(1, seg)"></div>
+            }
+          </div>
+          <!-- Right column (5 segments) -->
+          <div class="vu-column vu-column-side">
+            @for (seg of [0,1,2,3,4]; track seg) {
+              <div class="vu-segment" [class.lit]="isSegmentLit(2, seg)"></div>
+            }
+          </div>
         </div>
         <!-- Tooltip: Step 1 - Record -->
         <sdn-guide-tooltip
@@ -44,10 +58,19 @@
           (skip)="onTooltipSkip()"
         ></sdn-guide-tooltip>
       </div>
+      @if (isRecording) {
+        <button class="stop-btn" (click)="toggleRecording()" title="Stop">
+          <span class="stop-square"></span>
+        </button>
+      } @else {
+        <button class="rec-btn" (click)="!isRecordingElsewhere && toggleRecording()" [class.disabled]="isRecordingElsewhere">
+          <span class="rec-dot"></span>
+        </button>
+      }
       <div class="chevron-wrapper">
         <button class="chevron-btn" [class.open]="transcriptOpen" (click)="showTranscript.emit()" [title]="'transcript.title' | translate">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
-            <polyline points="2,6 5,3 8,6"/>
+            <polyline points="3,2 7,5 3,8"/>
           </svg>
         </button>
         <!-- Tooltip: Step 2 - Transcript -->
@@ -61,11 +84,6 @@
           (skip)="onTooltipSkip()"
         ></sdn-guide-tooltip>
       </div>
-      @if (isRecording) {
-        <button class="stop-btn" (click)="toggleRecording()">
-          <span class="stop-square"></span>
-        </button>
-      }
     </div>
     </div>
 

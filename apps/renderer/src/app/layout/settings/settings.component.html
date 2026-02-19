@@ -11,39 +11,6 @@
 
   @if (config) {
     <div class="settings-body">
-      <!-- General -->
-      <section class="settings-section">
-        <h2>{{ 'settings.general' | translate }}</h2>
-
-        <div class="setting-row">
-          <span class="label-text">{{ 'settings.theme' | translate }}</span>
-          <div class="theme-toggle" role="group" [attr.aria-label]="'settings.theme' | translate">
-            @for (t of themes; track t.value) {
-              <button
-                [class.active]="config.theme === t.value"
-                (click)="setTheme(t.value)"
-              >
-                {{ t.labelKey | translate }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <span class="label-text">{{ 'settings.language' | translate }}</span>
-          <div class="theme-toggle" role="group" [attr.aria-label]="'settings.language' | translate">
-            @for (lang of languages; track lang.value) {
-              <button
-                [class.active]="currentLang === lang.value"
-                (click)="setLanguage(lang.value)"
-              >
-                {{ lang.label }}
-              </button>
-            }
-          </div>
-        </div>
-      </section>
-
       <!-- Audio -->
       <section class="settings-section">
         <h2>{{ 'settings.audio' | translate }}</h2>
@@ -63,8 +30,10 @@
         </div>
         @if (isTestingMic) {
           <div class="mic-test-box">
-            <div class="vu-meter">
-              <div class="vu-bar" [style.width.%]="audioLevel * 100"></div>
+            <div class="vu-kitt">
+              @for (i of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]; track i) {
+                <div class="vu-segment" [class.lit]="audioLevel * 15 > i" [class.hot]="i >= 12"></div>
+              }
             </div>
             <p class="mic-status" [class.active]="audioLevel > 0.02">
               {{ audioLevel > 0.02 ? ('settings.signalDetected' | translate) : ('settings.speakToTest' | translate) }}
@@ -92,16 +61,18 @@
               </button>
             </div>
           </div>
-        }
-        @if (isTestingSystemAudio) {
-          <div class="mic-test-box">
-            <div class="vu-meter">
-              <div class="vu-bar" [style.width.%]="systemAudioLevel * 100"></div>
+          @if (isTestingSystemAudio) {
+            <div class="mic-test-box">
+              <div class="vu-kitt">
+                @for (i of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]; track i) {
+                  <div class="vu-segment" [class.lit]="systemAudioLevel * 15 > i" [class.hot]="i >= 12"></div>
+                }
+              </div>
+              <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
+                {{ systemAudioLevel > 0.02 ? ('settings.systemAudioDetected' | translate) : ('settings.playMediaToTest' | translate) }}
+              </p>
             </div>
-            <p class="mic-status" [class.active]="systemAudioLevel > 0.02">
-              {{ systemAudioLevel > 0.02 ? ('settings.systemAudioDetected' | translate) : ('settings.playMediaToTest' | translate) }}
-            </p>
-          </div>
+          }
         }
         @if (!systemAudioSupported) {
           <div class="setting-row unsupported-hint">

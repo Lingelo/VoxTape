@@ -11,19 +11,26 @@
 }
 
 .title-input {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 400;
   background: none;
   border: none;
-  color: var(--text-primary);
+  color: var(--accent-primary);
   outline: none;
   padding: 0;
   margin-bottom: 24px;
-  font-family: var(--font-editor);
+  font-family: var(--font-pixel);
+  text-shadow:
+    0 0 5px rgba(74, 222, 128, 0.8),
+    0 0 10px rgba(74, 222, 128, 0.5),
+    0 0 20px rgba(74, 222, 128, 0.3);
 
   &::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.5;
+    color: var(--accent-primary);
+    opacity: 0.4;
+    text-shadow:
+      0 0 5px rgba(74, 222, 128, 0.4),
+      0 0 10px rgba(74, 222, 128, 0.2);
   }
 }
 
@@ -70,8 +77,11 @@
   position: relative;
   padding: 10px 40px 10px 14px;
   margin: 8px 0;
-  border-radius: 8px;
-  border-left: 3px solid var(--accent-primary);
+  border-radius: 0;
+  border-left: 4px solid var(--accent-primary);
+  border-top: 2px solid var(--bevel-dark);
+  border-right: 2px solid var(--bevel-light);
+  border-bottom: 2px solid var(--bevel-light);
   background: var(--bg-surface);
 
   .ai-block-content {
@@ -86,18 +96,22 @@
 
   &--summary {
     border-left-color: var(--accent-primary);
+    box-shadow: inset 4px 0 8px rgba(74, 222, 128, 0.1);
   }
 
   &--decision {
     border-left-color: #f59e0b;
+    box-shadow: inset 4px 0 8px rgba(245, 158, 11, 0.1);
   }
 
   &--action-item {
     border-left-color: #3b82f6;
+    box-shadow: inset 4px 0 8px rgba(59, 130, 246, 0.1);
   }
 
   &--key-point {
     border-left-color: #8b5cf6;
+    box-shadow: inset 4px 0 8px rgba(139, 92, 246, 0.1);
   }
 }
 
@@ -119,21 +133,27 @@
   }
 }
 
-// AI Summary
+// AI Summary - DOS terminal style
 .ai-summary {
   margin-bottom: 20px;
   padding: 16px 20px;
-  background: var(--bg-surface);
-  border-radius: 10px;
-  border: 1px solid var(--border-subtle);
+  background: rgba(0, 20, 0, 0.3);
+  border-radius: 0;
+  border: 3px solid;
+  border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  box-shadow: inset 0 0 20px rgba(74, 222, 128, 0.05);
 }
 
 :host ::ng-deep .ai-summary-body {
   h2 {
-    font-size: 15px;
-    font-weight: 600;
+    font-family: var(--font-pixel);
+    font-size: 18px;
+    font-weight: 400;
     color: var(--accent-primary);
-    margin: 14px 0 6px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 16px 0 8px 0;
+    text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
 
     &:first-child {
       margin-top: 0;
@@ -157,5 +177,9 @@
     line-height: 1.6;
     color: var(--text-primary);
     margin-bottom: 4px;
+
+    &::marker {
+      color: var(--accent-primary);
+    }
   }
 }

@@ -1,10 +1,9 @@
 :host {
-  display: block;
+  display: contents;
 }
 
 .transcript-panel {
-  display: flex;
-  flex-direction: column;
+  display: contents;
 }
 
 .recording-elsewhere-banner {
@@ -44,7 +43,6 @@
 }
 
 .segments-container {
-  overflow-y: auto;
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
@@ -53,8 +51,9 @@
 
 .segment-block {
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--bevel-dark);
   font-size: 13px;
   line-height: 1.55;
   color: var(--text-primary);
@@ -69,47 +68,55 @@
 
   &.highlighted {
     background: rgba(74, 222, 128, 0.15);
+    border-left-color: var(--accent-primary);
     animation: flashHighlight 2s ease-out;
   }
 }
 
 .speaker-badge {
   flex-shrink: 0;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 0;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
   &[data-speaker="0"] {
     background: rgba(59, 130, 246, 0.2);
     color: #60a5fa;
+    text-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
   }
 
   &[data-speaker="1"] {
     background: rgba(168, 85, 247, 0.2);
     color: #c084fc;
+    text-shadow: 0 0 6px rgba(168, 85, 247, 0.6);
   }
 
   &[data-speaker="2"] {
     background: rgba(34, 197, 94, 0.2);
     color: #4ade80;
+    text-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
   }
 
   &[data-speaker="3"] {
     background: rgba(249, 115, 22, 0.2);
     color: #fb923c;
+    text-shadow: 0 0 6px rgba(249, 115, 22, 0.6);
   }
 
   &[data-speaker="4"] {
     background: rgba(236, 72, 153, 0.2);
     color: #f472b6;
+    text-shadow: 0 0 6px rgba(236, 72, 153, 0.6);
   }
 
   &[data-speaker="5"] {
     background: rgba(20, 184, 166, 0.2);
     color: #2dd4bf;
+    text-shadow: 0 0 6px rgba(20, 184, 166, 0.6);
   }
 }
 
@@ -117,26 +124,42 @@
   flex: 1;
 }
 
-.listening-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+// Scanner K2000 horizontal
+.kitt-scanner {
   padding: 8px 12px;
+  width: 120px;
+  align-self: flex-start;
 }
 
-.dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  animation: pulse 1.4s ease-in-out infinite;
+.kitt-track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: rgba(80, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
 
-  &:nth-child(2) {
-    animation-delay: 0.2s;
+.kitt-light {
+  width: 25%;
+  height: 100%;
+  background: #ff0000;
+  border-radius: 3px;
+  filter: blur(1px);
+  box-shadow:
+    0 0 8px rgba(255, 0, 0, 0.9),
+    0 0 16px rgba(255, 0, 0, 0.6),
+    0 0 24px rgba(255, 0, 0, 0.4),
+    0 0 32px rgba(255, 0, 0, 0.2);
+  animation: kittScan 1s ease-in-out infinite alternate;
+}
+
+@keyframes kittScan {
+  from {
+    margin-left: 0;
   }
-
-  &:nth-child(3) {
-    animation-delay: 0.4s;
+  to {
+    margin-left: 75%;
   }
 }
 
@@ -167,8 +190,9 @@
   display: inline-block;
   margin-top: 4px;
   padding: 6px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  border: 3px solid;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+  border-radius: 0;
   background: none;
   color: var(--text-primary);
   font-size: 12px;
@@ -177,6 +201,10 @@
 
   &:hover {
     background: var(--accent-hover);
+  }
+
+  &:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
   }
 }
 
