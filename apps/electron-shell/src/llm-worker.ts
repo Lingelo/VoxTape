@@ -1,7 +1,7 @@
 /**
  * LLM Worker — runs as a child process with ELECTRON_RUN_AS_NODE=1
  *
- * Loads Mistral 7B GGUF via node-llama-cpp v3.
+ * Loads a GGUF model (default: Ministral 3B) via node-llama-cpp v3.
  * Receives prompts from the main process, streams tokens back.
  * LAZY loading: model is only loaded on first prompt or explicit initialize.
  */
@@ -58,7 +58,7 @@ function findModelFile(): string | null {
   return null;
 }
 
-async function initialize(opts?: { contextSize?: number }): Promise<void> {
+async function initialize(opts?: { contextSize?: number; modelPath?: string | null }): Promise<void> {
   if (model) {
     process.send?.({ type: 'status', data: 'ready' });
     return;
@@ -72,7 +72,8 @@ async function initialize(opts?: { contextSize?: number }): Promise<void> {
     const getLlama = nodeLlamaCpp.getLlama;
     llama = await getLlama();
 
-    const modelPath = findModelFile();
+    // Use explicit modelPath from config, or auto-detect
+    const modelPath = (opts?.modelPath && existsSync(opts.modelPath)) ? opts.modelPath : findModelFile();
     if (!modelPath) {
       throw new Error(
         'No LLM model (.gguf) found in models/llm/. Run "npm run download-llm-model" first.'

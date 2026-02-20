@@ -88,6 +88,7 @@ async function bootstrapNest(): Promise<void> {
   llmService.setLlmConfig({
     contextSize: llmCfg.contextSize,
     temperature: llmCfg.temperature,
+    modelPath: llmCfg.modelPath,
   });
 
   const modelsDir = join(userData, 'models');
@@ -520,6 +521,7 @@ function setupIpc(): void {
       llmService.setLlmConfig({
         contextSize: llmCfg.contextSize,
         temperature: llmCfg.temperature,
+        modelPath: llmCfg.modelPath,
       });
     }
     // Live-update meeting detection config when relevant keys change

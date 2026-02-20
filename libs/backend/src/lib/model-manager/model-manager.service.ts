@@ -53,13 +53,13 @@ const KNOWN_MODELS: ModelInfo[] = [
     archive: true,
   },
   {
-    id: 'mistral-7b-instruct-q4',
-    name: 'Mistral 7B Instruct v0.3 (Q4_K_M)',
+    id: 'ministral-3b-instruct-q4',
+    name: 'Ministral 3B Instruct (Q4_K_M)',
     type: 'llm',
-    url: 'https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf',
-    size: '~4.4 Go',
-    description: 'Assistant IA local (résumés, chat)',
-    filename: 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf',
+    url: 'https://huggingface.co/bartowski/mistralai_Ministral-3-3B-Instruct-2512-GGUF/resolve/main/mistralai_Ministral-3-3B-Instruct-2512-Q4_K_M.gguf',
+    size: '~2.1 Go',
+    description: 'Assistant IA local rapide (résumés, chat) — recommandé',
+    filename: 'mistralai_Ministral-3-3B-Instruct-2512-Q4_K_M.gguf',
   },
   // Diarization models disabled - too slow for real-time use
   // {

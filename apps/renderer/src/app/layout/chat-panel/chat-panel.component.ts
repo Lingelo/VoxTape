@@ -47,6 +47,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   filteredRecipes: Recipe[] = [];
   recipeIndex = 0;
   private pendingCommandDisplay = '';  // Command to display instead of full prompt (e.g., "/resume")
+  private pendingRecipePrompt = '';   // Recipe prompt to inject in system prompt
 
   private readonly llm = inject(LlmService);
   private readonly session = inject(SessionService);
@@ -78,6 +79,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
         const recipe = RECIPES.find((r) => this.initialPrompt.trim() === r.command);
         if (recipe) {
           this.pendingCommandDisplay = recipe.command;
+          this.pendingRecipePrompt = recipe.prompt;
           this.input = recipe.prompt;
         } else {
           this.input = this.initialPrompt;
@@ -150,6 +152,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
 
   selectRecipe(recipe: Recipe): void {
     this.pendingCommandDisplay = recipe.command;
+    this.pendingRecipePrompt = recipe.prompt;
     this.input = recipe.prompt;
     this.showRecipes = false;
     this.cdr.markForCheck();
@@ -162,8 +165,10 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
 
     // Display command (e.g., "/resume") instead of full prompt if this was a slash command
     const displayText = this.pendingCommandDisplay || question;
+    const recipePrompt = this.pendingRecipePrompt || undefined;
     this.session.addChatMessage({ role: 'user', content: displayText });
     this.pendingCommandDisplay = '';
+    this.pendingRecipePrompt = '';
     this.input = '';
     this.isGenerating = true;
     this.cdr.markForCheck();
@@ -174,12 +179,34 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     this.chatSubs.forEach((s) => s.unsubscribe());
     this.chatSubs = [];
 
-    const requestId = this.llm.chat(question, context);
+    const requestId = this.llm.chat(question, context, recipePrompt);
+
+    // Add a placeholder assistant message for streaming
+    const streamMsgId = `stream-${Date.now()}`;
+    this.messages.push({
+      id: streamMsgId,
+      role: 'assistant',
+      content: '',
+      createdAt: Date.now(),
+    });
+    this.cdr.markForCheck();
 
     this.chatSubs.push(
+      this.llm.streamedText$.subscribe((text) => {
+        const streamMsg = this.messages.find((m) => m.id === streamMsgId);
+        if (streamMsg && text) {
+          streamMsg.content = text;
+          streamMsg.html = this.markdownToHtml(text);
+          this.cdr.markForCheck();
+          this.scrollToBottom();
+        }
+      }),
       this.llm.complete$.subscribe((payload) => {
         if (payload.requestId !== requestId) return;
         setTimeout(() => {
+          // Remove streaming placeholder
+          this.messages = this.messages.filter((m) => m.id !== streamMsgId);
+          // Add final message via session (persisted)
           this.session.addChatMessage({ role: 'assistant', content: payload.fullText });
           this.isGenerating = false;
           this.cdr.markForCheck();
@@ -189,6 +216,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       this.llm.error$.subscribe((payload) => {
         if (payload.requestId !== requestId) return;
         setTimeout(() => {
+          this.messages = this.messages.filter((m) => m.id !== streamMsgId);
           const errorLabel = this.translate.instant('chat.error');
           this.session.addChatMessage({ role: 'assistant', content: `${errorLabel}: ${payload.error}` });
           this.isGenerating = false;
@@ -197,6 +225,11 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
         });
       })
     );
+  }
+
+  hasStreamedContent(): boolean {
+    const last = this.messages[this.messages.length - 1];
+    return !!last && last.role === 'assistant' && !!last.content;
   }
 
   private buildContext(): string {

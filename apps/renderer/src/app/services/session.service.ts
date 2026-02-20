@@ -384,14 +384,19 @@ export class SessionService implements OnDestroy {
       this.llmSubs = [];
     };
 
-    // Listen for completion
+    // Stream tokens progressively into the summary
     this.llmSubs.push(
+      this.llm.streamedText$.subscribe((text) => {
+        if (text) {
+          this._aiSummary$.next(text);
+        }
+      }),
       this.llm.complete$.subscribe((payload) => {
         if (payload.requestId !== requestId) return;
         try {
           const { title, body } = this.extractTitleFromSummary(payload.fullText || '');
           if (title) this._title$.next(title);
-          // Use body if non-empty, otherwise fallback to fullText to ensure aiSummary is set
+          // Final clean version replaces the streamed text
           this._aiSummary$.next(body || payload.fullText || '(Résumé généré)');
         } catch (err) {
           console.error('[SessionService] Error parsing enhance result:', err);
