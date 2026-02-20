@@ -38,10 +38,12 @@ export class LlmService extends EventEmitter implements OnModuleDestroy {
 
   private _contextSize = 4096;
   private _defaultTemperature = 0.7;
+  private _modelPath: string | null = null;
 
-  setLlmConfig(opts: { contextSize?: number; temperature?: number }): void {
+  setLlmConfig(opts: { contextSize?: number; temperature?: number; modelPath?: string | null }): void {
     if (opts.contextSize) this._contextSize = opts.contextSize;
     if (opts.temperature !== undefined) this._defaultTemperature = opts.temperature;
+    if (opts.modelPath !== undefined) this._modelPath = opts.modelPath;
   }
 
   async initialize(): Promise<void> {
@@ -51,7 +53,7 @@ export class LlmService extends EventEmitter implements OnModuleDestroy {
     }
 
     this.spawnWorker();
-    this.worker!.send({ type: 'initialize', data: { contextSize: this._contextSize } });
+    this.worker!.send({ type: 'initialize', data: { contextSize: this._contextSize, modelPath: this._modelPath } });
   }
 
   private spawnWorker(): void {

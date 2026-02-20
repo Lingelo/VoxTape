@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VoxTape** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper small + Silero VAD) and node-llama-cpp for LLM features (Mistral 7B).
+**VoxTape** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper small + Silero VAD) and node-llama-cpp for LLM features (Ministral 3B).
 
 ## Commands
 
@@ -48,7 +48,7 @@ node apps/electron-shell/build.mjs
 
 # Model downloads (required for first run)
 npm run download-model       # STT: Silero VAD (2MB) + Whisper small int8 (460MB)
-npm run download-llm-model   # LLM: Mistral 7B Q4_K_M (4.4GB)
+npm run download-llm-model   # LLM: Ministral 3B Q4_K_M (2.1GB)
 
 # Icon generation
 npm run generate-icon

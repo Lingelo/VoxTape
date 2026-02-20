@@ -23,7 +23,7 @@ Application macOS pour la transcription en temps réel de vos réunions (Teams, 
 ## Fonctionnalités
 
 - **Transcription temps réel** — Capture simultanée micro + audio système
-- **IA locale** — Résumé, points clés, actions via Mistral 7B
+- **IA locale** — Résumé, points clés, actions via Ministral 3B
 - **Chat contextuel** — Questions sur vos réunions passées
 - **Recherche full-text** — SQLite FTS5
 - **Export** — Markdown ou texte brut
@@ -134,7 +134,7 @@ L'application s'ouvre automatiquement. Angular tourne sur `http://localhost:4200
 |--------|--------|-------|
 | Silero VAD | 2 Mo | Détection de voix |
 | Whisper small (int8) | 460 Mo | Transcription (STT) |
-| Mistral 7B Q4_K_M | 4.4 Go | Résumé et chat |
+| Ministral 3B Q4_K_M | 2.1 Go | Résumé et chat |
 
 ## Contribuer
 

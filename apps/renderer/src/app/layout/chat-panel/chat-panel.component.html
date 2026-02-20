@@ -1,4 +1,4 @@
-<div class="chat-expand" #chatExpandEl (wheel)="onWheel($event)">
+<div class="chat-expand" #chatExpandEl>
   <!-- Messages area -->
   <div class="chat-messages" #messagesContainer>
     @if (messages.length === 0 && !isGenerating) {
@@ -13,7 +13,7 @@
       </div>
     }
 
-    @if (isGenerating) {
+    @if (isGenerating && !hasStreamedContent()) {
       <div class="chat-msg assistant">
         <div class="msg-bubble typing">
           <sdn-glitch-loader

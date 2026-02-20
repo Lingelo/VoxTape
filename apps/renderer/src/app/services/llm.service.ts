@@ -108,16 +108,28 @@ export class LlmService implements OnDestroy {
     return requestId;
   }
 
-  chat(message: string, context: string): string {
+  chat(message: string, context: string, recipePrompt?: string): string {
     const requestId = `chat-${++this.requestCounter}`;
     this._streamedText$.next('');
-    this.api?.prompt({
-      requestId,
-      systemPrompt: CHAT_SYSTEM_PROMPT,
-      userPrompt: `### Contexte de la conversation:\n${context}\n\n### Question:\n${message}`,
-      maxTokens: 2048,
-      temperature: 0.4,
-    });
+
+    if (recipePrompt) {
+      // Recipe mode: instruction goes in system prompt for stronger compliance
+      this.api?.prompt({
+        requestId,
+        systemPrompt: `${CHAT_SYSTEM_PROMPT}\n\nINSTRUCTION — Applique EXACTEMENT le format demandé:\n${recipePrompt}`,
+        userPrompt: context || 'Aucun contexte disponible.',
+        maxTokens: 2048,
+        temperature: 0.3,
+      });
+    } else {
+      this.api?.prompt({
+        requestId,
+        systemPrompt: CHAT_SYSTEM_PROMPT,
+        userPrompt: `### Contexte de la conversation:\n${context}\n\n### Question:\n${message}`,
+        maxTokens: 2048,
+        temperature: 0.4,
+      });
+    }
     return requestId;
   }
 

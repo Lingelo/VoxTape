@@ -89,7 +89,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private readonly REQUIRED_MODELS = [
     'silero-vad',
     'whisper-small',
-    'mistral-7b-instruct-q4',
+    'ministral-3b-instruct-q4',
   ];
 
   private readonly router = inject(Router);
@@ -318,7 +318,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     const labels: Record<string, string> = {
       'silero-vad': 'onboarding.installVoiceLabel',
       'whisper-small': 'onboarding.installTranscriptionLabel',
-      'mistral-7b-instruct-q4': 'onboarding.installAILabel',
+      'ministral-3b-instruct-q4': 'onboarding.installAILabel',
     };
     return this.translate.instant(labels[modelId] ?? 'onboarding.installDownloading');
   }
@@ -410,7 +410,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private readonly MODEL_WEIGHTS: Record<string, number> = {
     'silero-vad': 2_000_000,
     'whisper-small': 460_000_000,
-    'mistral-7b-instruct-q4': 4_400_000_000,
+    'ministral-3b-instruct-q4': 2_100_000_000,
   };
 
   private updateOverallProgress(): void {

@@ -139,10 +139,10 @@
 
 // Pill body (expanded content)
 .pill-body {
-  display: block;
+  display: flex;
+  flex-direction: column;
   height: 30vh;
-  overflow-y: scroll !important;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   pointer-events: auto;
 
   * {
