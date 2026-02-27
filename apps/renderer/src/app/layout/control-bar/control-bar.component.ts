@@ -39,6 +39,8 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   hasSegments = false;
   elapsed = 0;
   isRecordingElsewhere = false;
+  showDirectiveInput = false;
+  regenerateDirective = '';
 
   vuBars = [0, 1, 2];  // 3 barres comme le voice modulator de KITT
 
@@ -98,8 +100,8 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   }
 
   get showGenerateBtn(): boolean {
-    // Show button if: recording done + has transcript + not yet summarized, OR currently processing
-    return (this.status === 'done' && this.hasSegments && !this.hasAiSummary) || this.status === 'processing';
+    // Show button if: recording done + has transcript (even if already summarized), OR currently processing
+    return (this.status === 'done' && this.hasSegments) || this.status === 'processing';
   }
 
   getBarHeight(index: number): number {
@@ -162,8 +164,22 @@ export class ControlBarComponent implements OnInit, OnDestroy {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   }
 
-  onEnhance(): void {
-    this.session.enhanceNotes();
+  onEnhanceClick(): void {
+    if (this.hasAiSummary) {
+      this.showDirectiveInput = !this.showDirectiveInput;
+      if (!this.showDirectiveInput) {
+        this.regenerateDirective = '';
+      }
+    } else {
+      this.session.enhanceNotes();
+    }
+  }
+
+  onEnhanceWithDirective(): void {
+    const directive = this.regenerateDirective.trim();
+    this.session.enhanceNotes(directive || undefined);
+    this.showDirectiveInput = false;
+    this.regenerateDirective = '';
   }
 
   onInputFocus(): void {

@@ -133,6 +133,23 @@
 
 .segment-text {
   flex: 1;
+  cursor: default;
+}
+
+.segment-block.edited {
+  border-left-color: var(--accent-primary);
+}
+
+.segment-edit-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--accent-primary);
+  border-radius: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 2px 6px;
+  outline: none;
 }
 
 // Scanner K2000 horizontal

@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, Subject, Subscription, debounceTime, takeU
 import { ElectronIpcService, DiarizationSegment } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
 import { LlmService } from './llm.service';
+import { GlossaryService } from './glossary.service';
 import type { EnhancedNote, ChatMessage } from '@voxtape/shared-types';
 
 export interface TranscriptSegment {
@@ -14,6 +15,10 @@ export interface TranscriptSegment {
   language?: string;
   /** Speaker ID from diarization (0, 1, 2, ...) */
   speaker?: number;
+  /** True if user manually edited this segment */
+  isEdited?: boolean;
+  /** Original STT text before manual edit */
+  originalText?: string;
 }
 
 export type SessionStatus = 'idle' | 'recording' | 'draining' | 'processing' | 'done';
@@ -38,12 +43,23 @@ interface SessionData {
   durationMs?: number;
 }
 
+interface SummaryHistoryItem {
+  id: number;
+  summary: string;
+  directive: string | null;
+  createdAt: number;
+}
+
 interface VoxTapeSessionApi {
   session?: {
     load: (id: string) => Promise<SessionData | null>;
     save: (data: SessionData & { createdAt: number; updatedAt: number }) => Promise<void>;
     delete: (id: string) => Promise<void>;
     list: () => Promise<SessionListItem[]>;
+  };
+  summaryHistory?: {
+    save: (sessionId: string, summary: string, directive?: string) => Promise<any>;
+    list: (sessionId: string) => Promise<SummaryHistoryItem[]>;
   };
 }
 
@@ -86,6 +102,7 @@ export class SessionService implements OnDestroy {
   private readonly ipc = inject(ElectronIpcService);
   private readonly audioCapture = inject(AudioCaptureService);
   private readonly llm = inject(LlmService);
+  private readonly glossary = inject(GlossaryService);
 
   readonly id$: Observable<string> = this._id$.asObservable();
   readonly recordingSessionId$: Observable<string | null> = this._recordingSessionId$.asObservable();
@@ -94,6 +111,8 @@ export class SessionService implements OnDestroy {
   readonly aiNotes$: Observable<EnhancedNote[]> = this._aiNotes$.asObservable();
   readonly aiSummary$: Observable<string> = this._aiSummary$.asObservable();
   readonly chatMessages$: Observable<ChatMessage[]> = this._chatMessages$.asObservable();
+  private readonly _summaryHistory$ = new BehaviorSubject<SummaryHistoryItem[]>([]);
+  readonly summaryHistory$: Observable<SummaryHistoryItem[]> = this._summaryHistory$.asObservable();
   readonly sessions$: Observable<SessionListItem[]> = this._sessions$.asObservable();
   readonly segments$: Observable<TranscriptSegment[]> = this._segments$.asObservable();
   readonly status$: Observable<SessionStatus> = this._status$.asObservable();
@@ -188,10 +207,16 @@ export class SessionService implements OnDestroy {
       .subscribe((segment: TranscriptSegment) => {
         const status = this._recordingStatus$.value;
         if (status === 'recording' || status === 'draining') {
+          // Apply glossary corrections
+          const correctedText = this.glossary.applyReplacements(segment.text);
+          const correctedSegment: TranscriptSegment = correctedText !== segment.text
+            ? { ...segment, text: correctedText, originalText: segment.text }
+            : segment;
+
           const current = this._liveSegments$.value;
           // Skip if this segment is a duplicate of a recent one
-          if (!this.isDuplicateSegment(segment, current)) {
-            this._liveSegments$.next([...current, segment]);
+          if (!this.isDuplicateSegment(correctedSegment, current)) {
+            this._liveSegments$.next([...current, correctedSegment]);
             this.requestSave();
           }
         }
@@ -346,6 +371,25 @@ export class SessionService implements OnDestroy {
     this.requestSave();
   }
 
+  updateAiSummary(summary: string): void {
+    this._aiSummary$.next(summary);
+    this.requestSave();
+  }
+
+  updateSegmentText(segmentId: string, newText: string): void {
+    const segments = this._loadedSegments$.value.map((seg) => {
+      if (seg.id !== segmentId) return seg;
+      return {
+        ...seg,
+        text: newText,
+        isEdited: true,
+        originalText: seg.originalText ?? seg.text,
+      };
+    });
+    this._loadedSegments$.next(segments);
+    this.requestSave();
+  }
+
   updateTitle(title: string): void {
     this._title$.next(title);
     this.requestSave();
@@ -360,11 +404,17 @@ export class SessionService implements OnDestroy {
     return viewingId === recordingId ? [...loaded, ...live] : loaded;
   }
 
-  enhanceNotes(): void {
+  enhanceNotes(directive?: string): void {
     const segments = this.getCurrentSegments();
     const notes = this._userNotes$.value;
 
     if (segments.length === 0) return;
+
+    // Save current summary to history before regeneration
+    const currentSummary = this._aiSummary$.value;
+    if (currentSummary) {
+      this.saveSummaryToHistory(currentSummary, directive);
+    }
 
     this._viewStatus$.next('processing');
 
@@ -373,11 +423,23 @@ export class SessionService implements OnDestroy {
       .map((s) => `[${s.id}] ${s.text}`)
       .join('\n');
 
+    // Estimate tokens (~4 chars/token in French)
+    const estimatedTokens = Math.ceil(transcript.length / 4);
+
+    if (estimatedTokens > 6000) {
+      // Map-reduce for long transcripts
+      this.enhanceWithMapReduce(notes, segments, directive);
+    } else {
+      this.enhanceDirect(notes, transcript, directive);
+    }
+  }
+
+  private enhanceDirect(notes: string, transcript: string, directive?: string): void {
     // Clean up previous LLM subscriptions
     this.llmSubs.forEach((s) => s.unsubscribe());
     this.llmSubs = [];
 
-    const requestId = this.llm.enhance(notes, transcript);
+    const requestId = this.llm.enhance(notes, transcript, directive);
 
     const cleanupSubs = () => {
       this.llmSubs.forEach((s) => s.unsubscribe());
@@ -396,11 +458,10 @@ export class SessionService implements OnDestroy {
         try {
           const { title, body } = this.extractTitleFromSummary(payload.fullText || '');
           if (title) this._title$.next(title);
-          // Final clean version replaces the streamed text
-          this._aiSummary$.next(body || payload.fullText || '(Résumé généré)');
+          this._aiSummary$.next(body || payload.fullText || '(Resume genere)');
         } catch (err) {
           console.error('[SessionService] Error parsing enhance result:', err);
-          this._aiSummary$.next(payload.fullText || '(Résumé généré)');
+          this._aiSummary$.next(payload.fullText || '(Resume genere)');
         }
         this._viewStatus$.next('done');
         this.requestSave();
@@ -413,6 +474,74 @@ export class SessionService implements OnDestroy {
         cleanupSubs();
       })
     );
+  }
+
+  private async enhanceWithMapReduce(notes: string, segments: TranscriptSegment[], directive?: string): Promise<void> {
+    // Split transcript into chunks of ~800 tokens by segment boundaries
+    const chunks: string[] = [];
+    let currentChunk = '';
+    let currentTokens = 0;
+    const CHUNK_TOKEN_LIMIT = 800;
+
+    for (const seg of segments) {
+      const line = `[${seg.id}] ${seg.text}\n`;
+      const lineTokens = Math.ceil(line.length / 4);
+
+      if (currentTokens + lineTokens > CHUNK_TOKEN_LIMIT && currentChunk) {
+        chunks.push(currentChunk);
+        currentChunk = line;
+        currentTokens = lineTokens;
+      } else {
+        currentChunk += line;
+        currentTokens += lineTokens;
+      }
+    }
+    if (currentChunk) chunks.push(currentChunk);
+
+    console.log(`[SessionService] Map-reduce: ${chunks.length} chunks from ${segments.length} segments`);
+    this._aiSummary$.next(`Condensation en cours (${chunks.length} blocs)...`);
+
+    // Condense each chunk sequentially
+    const condensed: string[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      this._aiSummary$.next(`Condensation bloc ${i + 1}/${chunks.length}...`);
+      try {
+        const result = await this.condenseChunk(chunks[i]);
+        condensed.push(result);
+      } catch (err) {
+        console.error(`[SessionService] Condense chunk ${i} failed:`, err);
+        // Fall back to truncating the chunk
+        condensed.push(chunks[i].slice(0, 500));
+      }
+    }
+
+    // Final pass: merge condensed chunks into the enhance prompt
+    const mergedTranscript = condensed.join('\n\n');
+    this.enhanceDirect(notes, mergedTranscript, directive);
+  }
+
+  private condenseChunk(chunk: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const requestId = this.llm.condense(chunk);
+      const subs: Subscription[] = [];
+
+      const cleanup = () => {
+        subs.forEach((s) => s.unsubscribe());
+      };
+
+      subs.push(
+        this.llm.complete$.subscribe((payload) => {
+          if (payload.requestId !== requestId) return;
+          cleanup();
+          resolve(payload.fullText || '');
+        }),
+        this.llm.error$.subscribe((payload) => {
+          if (payload.requestId !== requestId) return;
+          cleanup();
+          reject(new Error(payload.error));
+        })
+      );
+    });
   }
 
   addChatMessage(msg: { role: 'user' | 'assistant'; content: string }): void {
@@ -462,6 +591,8 @@ export class SessionService implements OnDestroy {
     if (id !== this._recordingSessionId$.value) {
       this._viewStatus$.next('done');
     }
+    // Load summary history
+    this.loadSummaryHistory();
   }
 
   /** Delete a session */
@@ -709,6 +840,36 @@ export class SessionService implements OnDestroy {
       this.requestSave();
       console.log('[SessionService] Applied diarization results to', updatedSegments.length, 'segments');
     }
+  }
+
+  /** Save current summary to history */
+  private async saveSummaryToHistory(summary: string, directive?: string): Promise<void> {
+    const api = this.voxtapeApi?.summaryHistory;
+    if (!api) return;
+    try {
+      await api.save(this._id$.value, summary, directive);
+      this.loadSummaryHistory();
+    } catch (err) {
+      console.error('[SessionService] Failed to save summary history:', err);
+    }
+  }
+
+  /** Load summary history for current session */
+  async loadSummaryHistory(): Promise<void> {
+    const api = this.voxtapeApi?.summaryHistory;
+    if (!api) return;
+    try {
+      const history = await api.list(this._id$.value);
+      this._summaryHistory$.next(history || []);
+    } catch {
+      this._summaryHistory$.next([]);
+    }
+  }
+
+  /** Restore a previous summary version */
+  restoreSummary(summary: string): void {
+    this._aiSummary$.next(summary);
+    this.requestSave();
   }
 
   /** Navigate back to the recording session */

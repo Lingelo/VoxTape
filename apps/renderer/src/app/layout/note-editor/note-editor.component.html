@@ -10,7 +10,32 @@
   <!-- AI Summary (top, main content after recording) -->
   @if (aiSummary) {
     <div class="ai-summary">
-      <div class="ai-summary-body" [innerHTML]="renderedSummary"></div>
+      @if (summaryHistory.length > 0) {
+        <div class="summary-history-bar">
+          <button class="history-toggle-btn" (click)="showHistory = !showHistory">
+            {{ showHistory ? 'Fermer' : 'Historique' }} ({{ summaryHistory.length }})
+          </button>
+          @if (showHistory) {
+            <div class="history-dropdown">
+              @for (item of summaryHistory; track item.id) {
+                <button class="history-item" (click)="onRestoreSummary(item.summary)">
+                  <span class="history-date">{{ formatHistoryDate(item.createdAt) }}</span>
+                  @if (item.directive) {
+                    <span class="history-directive">{{ item.directive }}</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+      <div
+        class="ai-summary-body"
+        contenteditable="true"
+        [innerHTML]="renderedSummary"
+        (input)="onSummaryEdit($event)"
+        (blur)="onSummaryEdit($event)"
+      ></div>
     </div>
   }
 

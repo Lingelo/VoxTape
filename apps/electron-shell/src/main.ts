@@ -437,6 +437,26 @@ function setupIpc(): void {
     }
   });
 
+  // ── Summary History IPC ────────────────────────────────────────────
+  ipcMain.handle('summary-history:save', (_event, sessionId: string, summary: string, directive?: string) => {
+    try {
+      databaseService.saveSummaryVersion(sessionId, summary, directive);
+      return { ok: true };
+    } catch (err: any) {
+      console.error('[Main] summary-history:save error:', err.message);
+      return { ok: false };
+    }
+  });
+
+  ipcMain.handle('summary-history:list', (_event, sessionId: string) => {
+    try {
+      return databaseService.getSummaryHistory(sessionId);
+    } catch (err: any) {
+      console.error('[Main] summary-history:list error:', err.message);
+      return [];
+    }
+  });
+
   // ── Export IPC ────────────────────────────────────────────────────
   ipcMain.handle('export:markdown', async (_event, sessionId: string) => {
     const content = exportService.exportMarkdown(sessionId);

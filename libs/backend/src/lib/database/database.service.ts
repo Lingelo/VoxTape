@@ -124,6 +124,30 @@ export class DatabaseService implements OnModuleDestroy {
       // Column already exists — expected
     }
 
+    // Migration: add original_text and is_edited columns to segments
+    try {
+      this.db.exec(`ALTER TABLE segments ADD COLUMN original_text TEXT`);
+    } catch {
+      // Column already exists — expected
+    }
+    try {
+      this.db.exec(`ALTER TABLE segments ADD COLUMN is_edited INTEGER DEFAULT 0`);
+    } catch {
+      // Column already exists — expected
+    }
+
+    // Migration: summary_history table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS summary_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+        summary TEXT NOT NULL,
+        directive TEXT,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_summary_history_session_id ON summary_history(session_id);
+    `);
+
     // Performance indexes
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_segments_session_id ON segments(session_id);
@@ -163,8 +187,8 @@ export class DatabaseService implements OnModuleDestroy {
 
     const deleteSegmentsStmt = this.db.prepare('DELETE FROM segments WHERE session_id = ?');
     const insertSegmentStmt = this.db.prepare(`
-      INSERT OR REPLACE INTO segments (id, session_id, text, start_time_ms, end_time_ms, is_final, language, speaker)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO segments (id, session_id, text, start_time_ms, end_time_ms, is_final, language, speaker, original_text, is_edited)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const deleteAiNotesStmt = this.db.prepare('DELETE FROM ai_notes WHERE session_id = ?');
@@ -202,7 +226,9 @@ export class DatabaseService implements OnModuleDestroy {
           seg.endTimeMs,
           seg.isFinal ? 1 : 0,
           seg.language ?? null,
-          seg.speaker ?? null
+          seg.speaker ?? null,
+          (seg as any).originalText ?? null,
+          (seg as any).isEdited ? 1 : 0
         );
       }
 
@@ -263,6 +289,8 @@ export class DatabaseService implements OnModuleDestroy {
         isFinal: !!s.is_final,
         language: s.language,
         speaker: s.speaker ?? undefined,
+        isEdited: !!s.is_edited || undefined,
+        originalText: s.original_text ?? undefined,
       })),
       userNotes: session.user_notes,
       aiNotes: aiNotes.map((n) => ({
@@ -406,6 +434,26 @@ export class DatabaseService implements OnModuleDestroy {
     }
 
     return results;
+  }
+
+  // ── Summary History ──────────────────────────────────────────
+
+  saveSummaryVersion(sessionId: string, summary: string, directive?: string): void {
+    this.db
+      .prepare('INSERT INTO summary_history (session_id, summary, directive, created_at) VALUES (?, ?, ?, ?)')
+      .run(sessionId, summary, directive ?? null, Date.now());
+  }
+
+  getSummaryHistory(sessionId: string): Array<{ id: number; summary: string; directive: string | null; createdAt: number }> {
+    return (this.db
+      .prepare('SELECT id, summary, directive, created_at FROM summary_history WHERE session_id = ? ORDER BY created_at DESC LIMIT 10')
+      .all(sessionId) as any[])
+      .map((r) => ({
+        id: r.id,
+        summary: r.summary,
+        directive: r.directive,
+        createdAt: r.created_at,
+      }));
   }
 
   clearAll(): void {

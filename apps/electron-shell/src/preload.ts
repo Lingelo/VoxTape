@@ -134,6 +134,13 @@ const voxtapeApi = {
     query: (term: string): Promise<any> => ipcRenderer.invoke('search:query', term),
   },
 
+  summaryHistory: {
+    save: (sessionId: string, summary: string, directive?: string): Promise<any> =>
+      ipcRenderer.invoke('summary-history:save', sessionId, summary, directive),
+    list: (sessionId: string): Promise<any> =>
+      ipcRenderer.invoke('summary-history:list', sessionId),
+  },
+
   folder: {
     create: (name: string, parentId?: string): Promise<any> =>
       ipcRenderer.invoke('folder:create', name, parentId),

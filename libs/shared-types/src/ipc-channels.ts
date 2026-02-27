@@ -59,6 +59,10 @@ export const IpcChannels = {
   MODEL_DELETE: 'model:delete',
   MODEL_DOWNLOAD_PROGRESS: 'model:download-progress',
 
+  // Summary History: renderer -> main (invoke/handle)
+  SUMMARY_HISTORY_SAVE: 'summary-history:save',
+  SUMMARY_HISTORY_LIST: 'summary-history:list',
+
   // System Audio: renderer -> main
   SYSTEM_AUDIO_START: 'system-audio:start',
   SYSTEM_AUDIO_STOP: 'system-audio:stop',
