@@ -28,7 +28,7 @@ const DEFAULT_CONFIG: VoxTapeConfig = {
   language: 'fr',
   theme: 'dark',
   audio: { defaultDeviceId: null },
-  llm: { modelPath: null, contextSize: 4096, temperature: 0.7 },
+  llm: { modelPath: null, contextSize: 8192, temperature: 0.7 },
   stt: { modelPath: null },
   meetingDetection: { ...DEFAULT_MEETING_DETECTION_CONFIG },
   onboardingComplete: false,

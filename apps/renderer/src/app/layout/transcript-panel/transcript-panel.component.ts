@@ -13,6 +13,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SessionService, TranscriptSegment } from '../../services/session.service';
@@ -23,7 +24,7 @@ import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.
   selector: 'sdn-transcript-panel',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, TranslateModule, GlitchLoaderComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, GlitchLoaderComponent],
   templateUrl: './transcript-panel.component.html',
   styleUrl: './transcript-panel.component.scss',
 })
@@ -35,6 +36,8 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, A
   isSpeechActive = false;
   sttStatus: 'loading' | 'ready' | 'error' = 'loading';
   isRecordingElsewhere = false;
+  editingSegmentId: string | null = null;
+  editingText = '';
   private readonly session = inject(SessionService);
   private readonly ipc = inject(ElectronIpcService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -93,6 +96,27 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, A
 
   restartStt(): void {
     this.ipc.restartStt();
+  }
+
+  onSegmentDoubleClick(segment: TranscriptSegment): void {
+    this.editingSegmentId = segment.id;
+    this.editingText = segment.text;
+    this.cdr.markForCheck();
+  }
+
+  saveSegmentEdit(): void {
+    if (this.editingSegmentId && this.editingText.trim()) {
+      this.session.updateSegmentText(this.editingSegmentId, this.editingText.trim());
+    }
+    this.editingSegmentId = null;
+    this.editingText = '';
+    this.cdr.markForCheck();
+  }
+
+  cancelEdit(): void {
+    this.editingSegmentId = null;
+    this.editingText = '';
+    this.cdr.markForCheck();
   }
 
   trackSegment(_index: number, segment: TranscriptSegment): string {

@@ -194,6 +194,70 @@
         </div>
       </section>
 
+      <!-- LLM Context Size -->
+      <section class="settings-section">
+        <h2>Taille du contexte LLM</h2>
+        <div class="setting-row">
+          <div class="setting-label-group">
+            <span class="label-text">Context size</span>
+            <span class="setting-hint">Taille de la fenetre de contexte pour le modele LLM. Plus grand = meilleur pour les longues reunions mais consomme plus de RAM.</span>
+          </div>
+          <select
+            [(ngModel)]="config.llm.contextSize"
+            (change)="onContextSizeChange()"
+          >
+            @for (opt of contextSizeOptions; track opt.value) {
+              <option [ngValue]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+        @if (config.llm.contextSize >= 16384) {
+          <p class="setting-hint" style="color: #f59e0b; margin-top: 8px;">
+            Attention : 16384 tokens consomme significativement plus de RAM et peut ralentir l'application.
+          </p>
+        }
+      </section>
+
+      <!-- Glossary -->
+      <section class="settings-section">
+        <h2>Glossaire / Vocabulaire</h2>
+        <p class="setting-hint" style="margin-bottom: 12px;">Corrections automatiques appliquees a chaque nouveau segment de transcription.</p>
+
+        @if (glossaryEntries.length > 0) {
+          <div class="glossary-list">
+            @for (entry of glossaryEntries; track $index) {
+              <div class="glossary-entry">
+                <span class="glossary-from">{{ entry.from }}</span>
+                <span class="glossary-arrow">&rarr;</span>
+                <span class="glossary-to">{{ entry.to }}</span>
+                <button class="glossary-remove-btn" (click)="removeGlossaryEntry($index)" title="Supprimer">&times;</button>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="glossary-add-form">
+          <input
+            class="glossary-input"
+            type="text"
+            [(ngModel)]="newGlossaryFrom"
+            placeholder="Quand STT dit..."
+            (keydown.enter)="addGlossaryEntry()"
+          />
+          <span class="glossary-arrow">&rarr;</span>
+          <input
+            class="glossary-input"
+            type="text"
+            [(ngModel)]="newGlossaryTo"
+            placeholder="Remplacer par..."
+            (keydown.enter)="addGlossaryEntry()"
+          />
+          <button class="glossary-add-btn" (click)="addGlossaryEntry()" [disabled]="!newGlossaryFrom.trim() || !newGlossaryTo.trim()">
+            Ajouter
+          </button>
+        </div>
+      </section>
+
       <!-- About -->
       <section class="settings-section">
         <h2>{{ 'settings.about' | translate }}</h2>

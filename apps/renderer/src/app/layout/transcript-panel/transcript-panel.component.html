@@ -15,8 +15,24 @@
         class="segment-block"
         [attr.data-segment-id]="segment.id"
         [class.highlighted]="isHighlighted(segment.id)"
+        [class.edited]="segment.isEdited"
       >
-        <span class="segment-text">{{ segment.text }}</span>
+        @if (editingSegmentId === segment.id) {
+          <input
+            class="segment-edit-input"
+            [(ngModel)]="editingText"
+            (keydown.enter)="saveSegmentEdit()"
+            (keydown.escape)="cancelEdit()"
+            (blur)="saveSegmentEdit()"
+            autofocus
+          />
+        } @else {
+          <span
+            class="segment-text"
+            (dblclick)="onSegmentDoubleClick(segment)"
+            [title]="segment.isEdited ? 'Original: ' + segment.originalText : ''"
+          >{{ segment.text }}</span>
+        }
       </div>
     }
 

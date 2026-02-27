@@ -12,7 +12,8 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -36,6 +37,8 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   title = '';
   aiSummary = '';
   renderedSummary = '';
+  showHistory = false;
+  summaryHistory: Array<{ id: number; summary: string; directive: string | null; createdAt: number }> = [];
   private readonly session = inject(SessionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
@@ -45,6 +48,8 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Stored event listener references for cleanup */
   private loupeClickHandler: ((e: Event) => void) | null = null;
   private inputHandler: ((e: Event) => void) | null = null;
+  /** Debounced summary save */
+  private readonly _summaryEdit$ = new Subject<string>();
 
   ngOnInit(): void {
     this.subs.push(
@@ -60,6 +65,13 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
           this.renderedSummary = this.markdownToHtml(cleaned);
           this.cdr.markForCheck();
         });
+      }),
+      this._summaryEdit$.pipe(debounceTime(500)).subscribe((markdown) => {
+        this.session.updateAiSummary(markdown);
+      }),
+      this.session.summaryHistory$.subscribe((history) => {
+        this.summaryHistory = history;
+        this.cdr.markForCheck();
       })
     );
   }
@@ -156,6 +168,24 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
     this.editor?.destroy();
   }
 
+  onRestoreSummary(summary: string): void {
+    this.session.restoreSummary(summary);
+    this.showHistory = false;
+  }
+
+  formatHistoryDate(timestamp: number): string {
+    const d = new Date(timestamp);
+    return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  onSummaryEdit(event: Event): void {
+    const el = event.target as HTMLDivElement;
+    const markdown = this.htmlToMarkdown(el.innerHTML);
+    this.aiSummary = markdown;
+    this._summaryEdit$.next(markdown);
+    this.cdr.markForCheck();
+  }
+
   onTitleChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.session.updateTitle(value);
@@ -210,6 +240,38 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+  }
+
+  /** Convert contenteditable HTML back to simplified markdown */
+  private htmlToMarkdown(html: string): string {
+    return html
+      // Headings
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1')
+      // List items
+      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1')
+      // Remove ul/ol wrappers
+      .replace(/<\/?ul[^>]*>/gi, '')
+      .replace(/<\/?ol[^>]*>/gi, '')
+      // Bold
+      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+      // Italic
+      .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+      // Paragraphs → newline
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n')
+      // Line breaks
+      .replace(/<br\s*\/?>/gi, '\n')
+      // Divs (contenteditable creates these)
+      .replace(/<div[^>]*>(.*?)<\/div>/gi, '$1\n')
+      // Strip remaining tags
+      .replace(/<[^>]+>/g, '')
+      // Decode HTML entities
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ')
+      // Clean up extra newlines
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 
   /** Basic markdown → HTML (headings, lists, bold, italic, paragraphs) */

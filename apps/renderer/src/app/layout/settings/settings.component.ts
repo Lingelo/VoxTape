@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { SessionService } from '../../services/session.service';
 import { LanguageService, SupportedLanguage } from '../../services/language.service';
+import { GlossaryService, GlossaryEntry } from '../../services/glossary.service';
 
 interface DownloadedModel {
   id: string;
@@ -79,6 +80,18 @@ export class SettingsComponent implements OnInit, OnDestroy {
   detectWebMeetings = false;
   showMeetingNotification = true;
 
+  // Glossary
+  glossaryEntries: GlossaryEntry[] = [];
+  newGlossaryFrom = '';
+  newGlossaryTo = '';
+
+  // LLM context size options
+  contextSizeOptions = [
+    { value: 4096, label: '4096' },
+    { value: 8192, label: '8192 (Recommande)' },
+    { value: 16384, label: '16384 (Avance)' },
+  ];
+
   private progressCleanup: (() => void) | null = null;
   private systemAudioLevelCleanup: (() => void) | null = null;
 
@@ -108,6 +121,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly ngZone = inject(NgZone);
   private readonly sessionService = inject(SessionService);
   private readonly languageService = inject(LanguageService);
+  private readonly glossaryService = inject(GlossaryService);
 
   private get voxtapeApi(): VoxTapeSettingsApi | undefined {
     return (window as Window & { voxtape?: VoxTapeSettingsApi }).voxtape;
@@ -130,6 +144,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.loadModels();
     this.setupProgressListener();
     this.checkSystemAudio();
+    this.glossaryService.entries$.subscribe((entries) => {
+      this.glossaryEntries = entries;
+      this.cdr.markForCheck();
+    });
   }
 
   setLanguage(lang: SupportedLanguage): void {
@@ -289,6 +307,26 @@ export class SettingsComponent implements OnInit, OnDestroy {
     } catch {
       // Permission denied or no devices
     }
+  }
+
+  // ── LLM Context Size ────────────────────────────────────────────
+
+  onContextSizeChange(): void {
+    if (!this.config) return;
+    this.save('llm.contextSize', this.config.llm.contextSize);
+  }
+
+  // ── Glossary ─────────────────────────────────────────────────────
+
+  addGlossaryEntry(): void {
+    if (!this.newGlossaryFrom.trim() || !this.newGlossaryTo.trim()) return;
+    this.glossaryService.addEntry(this.newGlossaryFrom, this.newGlossaryTo);
+    this.newGlossaryFrom = '';
+    this.newGlossaryTo = '';
+  }
+
+  removeGlossaryEntry(index: number): void {
+    this.glossaryService.removeEntry(index);
   }
 
   goBack(): void {

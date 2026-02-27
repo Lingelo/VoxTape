@@ -1,29 +1,48 @@
 <div class="control-wrapper">
+  <!-- Generate/Regenerate bar (full width, above bottom bar) -->
+  @if (showGenerateBtn && !transcriptOpen && !chatOpen) {
+    <div class="generate-bar">
+      @if (showDirectiveInput) {
+        <div class="directive-container">
+          <label class="directive-label">INSTRUCTIONS POUR LA REGENERATION :</label>
+          <textarea
+            class="directive-input"
+            [(ngModel)]="regenerateDirective"
+            (keydown.escape)="showDirectiveInput = false; regenerateDirective = ''"
+            rows="3"
+            placeholder="Ex: Remplacer 'Jean' par 'Jean-Marc', se concentrer sur les actions et decisions, ajouter une section participants..."
+            autofocus
+          ></textarea>
+          <div class="directive-actions">
+            <button class="directive-cancel-btn" (click)="showDirectiveInput = false; regenerateDirective = ''">ANNULER</button>
+            <button class="directive-submit-btn" (click)="onEnhanceWithDirective()">REGENERER</button>
+          </div>
+        </div>
+      }
+      <button
+        class="generate-btn"
+        [class.processing]="status === 'processing'"
+        [disabled]="status === 'processing'"
+        (click)="onEnhanceClick()"
+      >
+        @if (status === 'processing') {
+          <sdn-glitch-loader
+            [messages]="['EN COURS...']"
+            [typingSpeed]="60"
+            [glitchDuration]="99999"
+            [showCursor]="false"
+          ></sdn-glitch-loader>
+        } @else {
+          <span>{{ hasAiSummary ? 'REGENERER' : 'RESUMER' }}</span>
+        }
+      </button>
+    </div>
+  }
+
   <!-- Bottom bar (audio pill + main pill side by side) -->
   <div class="bottom-bar" [class.expanded]="chatOpen || transcriptOpen">
-    <!-- Left column: Generate button + Audio pill -->
+    <!-- Audio pill (detached) -->
     <div class="audio-column">
-      <!-- Generate notes button (above audio pill) -->
-      @if (showGenerateBtn && !transcriptOpen && !chatOpen) {
-        <button
-          class="generate-btn"
-          [class.processing]="status === 'processing'"
-          [disabled]="status === 'processing'"
-          (click)="onEnhance()"
-        >
-          @if (status === 'processing') {
-            <sdn-glitch-loader
-              [messages]="['EN COURS...']"
-              [typingSpeed]="60"
-              [glitchDuration]="99999"
-              [showCursor]="false"
-            ></sdn-glitch-loader>
-          } @else {
-            <span>RESUMER</span>
-          }
-        </button>
-      }
-
       <!-- Audio pill (detached) -->
       <div class="audio-pill" [class.active]="isRecording" [class.disabled]="isRecordingElsewhere">
       <div class="vu-wrapper">
