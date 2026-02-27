@@ -58,7 +58,7 @@ interface VoxTapeSessionApi {
     list: () => Promise<SessionListItem[]>;
   };
   summaryHistory?: {
-    save: (sessionId: string, summary: string, directive?: string) => Promise<any>;
+    save: (sessionId: string, summary: string, directive?: string) => Promise<unknown>;
     list: (sessionId: string) => Promise<SummaryHistoryItem[]>;
   };
 }

@@ -9,7 +9,7 @@ export interface GlossaryEntry {
 interface VoxTapeConfigApi {
   config?: {
     get: () => Promise<{ glossary?: { entries: GlossaryEntry[] } }>;
-    set: (key: string, value: any) => Promise<void>;
+    set: (key: string, value: unknown) => Promise<void>;
   };
 }
 

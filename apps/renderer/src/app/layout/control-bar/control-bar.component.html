@@ -4,14 +4,14 @@
     <div class="generate-bar">
       @if (showDirectiveInput) {
         <div class="directive-container">
-          <label class="directive-label">INSTRUCTIONS POUR LA REGENERATION :</label>
+          <span class="directive-label">INSTRUCTIONS POUR LA REGENERATION :</span>
           <textarea
             class="directive-input"
+            id="directive-textarea"
             [(ngModel)]="regenerateDirective"
             (keydown.escape)="showDirectiveInput = false; regenerateDirective = ''"
             rows="3"
             placeholder="Ex: Remplacer 'Jean' par 'Jean-Marc', se concentrer sur les actions et decisions, ajouter une section participants..."
-            autofocus
           ></textarea>
           <div class="directive-actions">
             <button class="directive-cancel-btn" (click)="showDirectiveInput = false; regenerateDirective = ''">ANNULER</button>
