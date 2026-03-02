@@ -22,9 +22,10 @@ Application macOS pour la transcription en temps réel de vos réunions (Teams, 
 
 ## Fonctionnalités
 
-- **Transcription temps réel** — Capture simultanée micro + audio système
+- **Transcription temps réel** — Capture simultanée micro + audio système (Whisper Turbo)
 - **IA locale** — Résumé, points clés, actions via Ministral 3B
 - **Chat contextuel** — Questions sur vos réunions passées
+- **Langue configurable** — Français, anglais ou détection automatique
 - **Recherche full-text** — SQLite FTS5
 - **Export** — Markdown ou texte brut
 - **100% hors-ligne** — Aucune connexion requise après téléchargement des modèles
@@ -78,8 +79,8 @@ cd VoxTape
 npm install
 
 # Télécharger les modèles IA
-npm run download-model       # STT (~640 Mo)
-npm run download-llm-model   # LLM (~4.4 Go)
+npm run download-model       # STT: Silero VAD + Whisper Turbo (~540 Mo)
+npm run download-llm-model   # LLM: Ministral 3B Q4_K_M (~2.1 Go)
 
 # Lancer en mode dev (hot-reload)
 npm run dev
@@ -133,7 +134,7 @@ L'application s'ouvre automatiquement. Angular tourne sur `http://localhost:4200
 | Modèle | Taille | Usage |
 |--------|--------|-------|
 | Silero VAD | 2 Mo | Détection de voix |
-| Whisper small (int8) | 460 Mo | Transcription (STT) |
+| Whisper Turbo (int8) | 538 Mo | Transcription (STT) — large-v3-turbo distillé |
 | Ministral 3B Q4_K_M | 2.1 Go | Résumé et chat |
 
 ## Contribuer
