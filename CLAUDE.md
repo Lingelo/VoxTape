@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VoxTape** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper small + Silero VAD) and node-llama-cpp for LLM features (Ministral 3B).
+**VoxTape** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper Turbo + Silero VAD, dual instances for mic/system) and node-llama-cpp for LLM features (Ministral 3B). STT language is configurable (fr/en/auto) via settings with hot-reload.
 
 ## Commands
 
@@ -47,7 +47,7 @@ npx nx build renderer    # Angular prod build only
 node apps/electron-shell/build.mjs
 
 # Model downloads (required for first run)
-npm run download-model       # STT: Silero VAD (2MB) + Whisper small int8 (460MB)
+npm run download-model       # STT: Silero VAD (2MB) + Whisper Turbo int8 (538MB)
 npm run download-llm-model   # LLM: Ministral 3B Q4_K_M (2.1GB)
 
 # Icon generation
@@ -107,11 +107,11 @@ npm run generate-icon
 ### Data Flow: Recording → Transcription
 
 ```
-Renderer AudioWorklet (48kHz → 16kHz Int16 PCM, 100ms chunks)
+Renderer AudioWorklet (48kHz → 16kHz via FIR decimation, Int16 PCM, 100ms chunks)
   → IPC audio:chunk
-  → Main SttService → stt-worker (Silero VAD → Whisper small)
-  → process.send({ type: 'segment' })
-  → Main emits transcript:segment → Renderer SessionService
+  → Main SttService → stt-worker (dual Silero VAD: mic + system → Whisper Turbo)
+  → process.send({ type: 'segment', data: { source: 'mic'|'system' } })
+  → Main emits transcript:segment → Renderer SessionService (dedup via Jaccard similarity)
   → Auto-save to SQLite (debounced 2s)
 ```
 
@@ -157,9 +157,11 @@ On startup, main.ts migrates models from legacy paths to `~/Library/Application 
 
 - **State management**: Pure RxJS BehaviorSubjects, no NgRx. Debounced auto-save via `_saveRequested$` Subject.
 - **Angular**: Standalone components, signals, `providedIn: 'root'` singletons. NgZone-aware IPC callbacks.
-- **Audio pipeline**: AudioWorklet resamples + converts to Int16, uses transferable ArrayBuffers (zero-copy).
+- **Audio pipeline**: AudioWorklet resamples via FIR 15-tap Hamming decimation filter (48→16kHz), converts to Int16, uses transferable ArrayBuffers (zero-copy). Explicit AEC + noise suppression via getUserMedia constraints.
 - **LLM lazy init**: Model loads only on first prompt request (saves startup time).
 - **Worker isolation**: STT and LLM run as `ELECTRON_RUN_AS_NODE=1` child processes — crash-safe, main survives worker failures.
+- **STT model auto-detection**: stt-worker searches for Whisper Turbo first, falls back to Whisper Small. VAD threshold 0.45, minSpeechDuration 0.4s. Enriched hallucination filter (repetitions, YouTube phrases, punctuation-only).
+- **STT language hot-reload**: Config `stt.language` change triggers worker restart via `process.env.VOXTAPE_STT_LANGUAGE`.
 - **Security**: Context isolation on, node integration off, minimal preload API via contextBridge, sandbox disabled (required for preload Node access).
 
 ## Native Dependencies (ASAR-unpacked)
