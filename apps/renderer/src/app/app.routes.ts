@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { onboardingGuard } from './guards/onboarding.guard';
+import { onboardingGuard, onboardingDoneGuard } from './guards/onboarding.guard';
 
 export const appRoutes: Route[] = [
   {
@@ -15,6 +15,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'onboarding',
+    canActivate: [onboardingDoneGuard],
     loadComponent: () =>
       import('./layout/onboarding/onboarding.component').then((m) => m.OnboardingComponent),
   },

@@ -39,8 +39,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   hasSegments = false;
   elapsed = 0;
   isRecordingElsewhere = false;
-  showDirectiveInput = false;
-  regenerateDirective = '';
+  directiveMode = false;
 
   vuBars = [0, 1, 2];  // 3 barres comme le voice modulator de KITT
 
@@ -166,31 +165,41 @@ export class ControlBarComponent implements OnInit, OnDestroy {
 
   onEnhanceClick(): void {
     if (this.hasAiSummary) {
-      this.showDirectiveInput = !this.showDirectiveInput;
-      if (!this.showDirectiveInput) {
-        this.regenerateDirective = '';
-      }
+      // Toggle directive mode — focus the existing input for instructions
+      this.directiveMode = true;
+      this.chatInput = '';
+      this.cdr.markForCheck();
     } else {
       this.session.enhanceNotes();
     }
   }
 
-  onEnhanceWithDirective(): void {
-    const directive = this.regenerateDirective.trim();
-    this.session.enhanceNotes(directive || undefined);
-    this.showDirectiveInput = false;
-    this.regenerateDirective = '';
+  exitDirectiveMode(): void {
+    this.directiveMode = false;
+    this.chatInput = '';
+    this.cdr.markForCheck();
   }
 
   onInputFocus(): void {
-    this.openChat.emit('');
+    if (!this.directiveMode) {
+      this.openChat.emit('');
+    }
   }
 
   onChatSubmit(): void {
-    const question = this.chatInput.trim();
-    if (!question) return;
-    this.chatInput = '';
-    this.openChat.emit(question);
+    const text = this.chatInput.trim();
+    if (!text) return;
+
+    if (this.directiveMode) {
+      // Submit as regeneration directive
+      this.session.enhanceNotes(text);
+      this.directiveMode = false;
+      this.chatInput = '';
+      this.cdr.markForCheck();
+    } else {
+      this.chatInput = '';
+      this.openChat.emit(text);
+    }
   }
 
   // First-launch tooltip handlers

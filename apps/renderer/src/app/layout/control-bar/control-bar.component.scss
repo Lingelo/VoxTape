@@ -11,38 +11,27 @@
   flex-shrink: 0;
 }
 
-// Generate bar (full width above bottom bar)
-.generate-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-// Generate notes button
-.generate-btn {
-  width: 100%;
+// Generate button inline (right of main pill)
+.generate-btn-inline {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: 0 14px;
+  height: 36px;
   border-radius: 0;
   border: 3px solid;
   border-color: #6fe8a8 #1a5c34 #1a5c34 #6fe8a8;
   background: var(--accent-primary);
   color: #1a1a1a;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.1s;
   white-space: nowrap;
-  box-shadow: 0 0 15px rgba(74, 222, 128, 0.4);
-  min-width: 120px;
+  flex-shrink: 0;
 
   &:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 0 20px rgba(74, 222, 128, 0.6);
   }
 
   &:active:not(:disabled) {
@@ -60,93 +49,6 @@
   }
 }
 
-// Directive container for regeneration
-.directive-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  min-width: 280px;
-}
-
-.directive-label {
-  font-family: var(--font-pixel);
-  font-size: 12px;
-  color: var(--accent-primary);
-  letter-spacing: 0.5px;
-  text-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
-}
-
-.directive-input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 3px solid;
-  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
-  border-radius: 0;
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  font-size: 13px;
-  line-height: 1.4;
-  outline: none;
-  resize: vertical;
-  font-family: inherit;
-
-  &::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.6;
-  }
-
-  &:focus {
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 8px rgba(74, 222, 128, 0.2);
-  }
-}
-
-.directive-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
-.directive-cancel-btn,
-.directive-submit-btn {
-  padding: 4px 12px;
-  border: 3px solid;
-  border-radius: 0;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.1s;
-}
-
-.directive-cancel-btn {
-  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-
-  &:hover {
-    color: var(--text-primary);
-  }
-
-  &:active {
-    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
-  }
-}
-
-.directive-submit-btn {
-  border-color: #6fe8a8 #1a5c34 #1a5c34 #6fe8a8;
-  background: var(--accent-primary);
-  color: #1a1a1a;
-
-  &:hover {
-    filter: brightness(1.1);
-    box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
-  }
-
-  &:active {
-    border-color: #1a5c34 #6fe8a8 #6fe8a8 #1a5c34;
-  }
-}
 
 @keyframes pixelPulse {
   0%, 100% { opacity: 0.8; }
@@ -156,7 +58,7 @@
 // Bottom bar (two pills side by side)
 .bottom-bar {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 8px;
   width: 100%;
   position: relative;
@@ -169,23 +71,25 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-end;
   gap: 8px;
   flex-shrink: 0;
+  align-self: flex-end;
 }
 
 // Audio pill (detached mini-pill) - DOS/Win3.1 bevel style
 .audio-pill {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 0 var(--space-3);
+  gap: 2px;
+  padding: 0 6px;
   border-radius: 0;
   background: var(--bg-pill);
   border: 3px solid;
   border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
   flex-shrink: 0;
   transition: border-color 0.1s, opacity 0.1s;
-  height: 56px;
+  height: 40px;
 
   &.active {
     border-color: var(--pixel-red);
@@ -232,6 +136,37 @@
   padding: 0 10px;
   height: 38px;
   flex-shrink: 0;
+
+  &.directive-mode {
+    border-top: 2px solid var(--accent-primary);
+    background: rgba(74, 222, 128, 0.05);
+  }
+}
+
+.directive-exit-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 1;
+    color: var(--accent-primary);
+  }
+}
+
+.chat-input.directive-mode {
+  color: var(--accent-primary);
+
+  &::placeholder {
+    color: var(--accent-primary);
+    opacity: 0.4;
+  }
 }
 
 // Pill body (expanded content)
@@ -281,6 +216,43 @@
   text-shadow:
     0 0 5px rgba(74, 222, 128, 0.8),
     0 0 10px rgba(74, 222, 128, 0.5);
+}
+
+.pill-generate-btn {
+  padding: 3px 10px;
+  border: 2px solid;
+  border-color: #6fe8a8 #1a5c34 #1a5c34 #6fe8a8;
+  border-radius: 0;
+  background: var(--accent-primary);
+  color: #1a1a1a;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.1s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  line-height: 1;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
+  }
+
+  &:active:not(:disabled) {
+    border-color: #1a5c34 #6fe8a8 #6fe8a8 #1a5c34;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  &.processing {
+    background: var(--bg-surface);
+    border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+  }
 }
 
 .pill-header-btn {
@@ -351,8 +323,8 @@
 }
 
 .chevron-btn {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;
@@ -381,8 +353,8 @@
 
 // Bouton REC (pixel square)
 .rec-btn {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-sm);
   border: none;
   background: transparent;
@@ -408,8 +380,8 @@
 }
 
 .rec-dot {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--pixel-red);
   transition: transform 0.1s;
@@ -421,8 +393,8 @@
 
 // Bouton Stop (pixel square)
 .stop-btn {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-sm);
   border: none;
   background: transparent;
@@ -443,8 +415,8 @@
 }
 
 .stop-square {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 0;
   background: var(--pixel-red);
   transition: transform 0.1s;
@@ -503,15 +475,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  height: 44px;
-  padding: 0 4px;
+  gap: 2px;
+  height: 30px;
+  padding: 0 2px;
 }
 
 .vu-column {
   display: flex;
   flex-direction: column-reverse; // Bottom to top
-  gap: 2px;
+  gap: 1px;
 }
 
 .vu-column-side {
@@ -525,8 +497,8 @@
 }
 
 .vu-segment {
-  width: 10px;
-  height: 3px;
+  width: 8px;
+  height: 2px;
   background: #333;
   border-radius: 0;
   transition: background 0.08s, box-shadow 0.08s;

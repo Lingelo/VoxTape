@@ -159,41 +159,25 @@ export class LlmService implements OnDestroy {
   }
 }
 
-const ENHANCE_SYSTEM_PROMPT = `Tu es un assistant de prise de notes de reunion. Tu produis des syntheses factuelles et structurees.
+const ENHANCE_SYSTEM_PROMPT = `Tu es un assistant de prise de notes. Tu produis des syntheses factuelles et structurees a partir de n'importe quel type de conversation (reunion, discussion informelle, brainstorm, appel, etc.).
+
+NETTOYAGE TRANSCRIPTION:
+La transcription provient d'un modele de reconnaissance vocale et contient des erreurs. AVANT de synthetiser, corrige mentalement:
+- Les mots phonetiquement proches mais mal transcrits (ex: "mus" → "musees", "fer" → "faire")
+- Les repetitions artificielles dues au modele (mots ou groupes repetes 3+ fois d'affilee)
+- Les fragments sans sens qui sont du bruit de transcription
+- Les phrases coupees ou incompletes: reconstitue le sens a partir du contexte
+Ne mentionne PAS les erreurs de transcription dans ta sortie — produis directement la synthese corrigee.
 
 REGLES STRICTES:
-1. Base-toi UNIQUEMENT sur la transcription fournie
-2. N'INVENTE aucune information, nom, chiffre ou detail
-3. Reproduis les noms propres EXACTEMENT comme ils apparaissent dans la transcription
+1. Base-toi UNIQUEMENT sur la transcription fournie (apres correction des erreurs STT evidentes)
+2. N'INVENTE aucune information, nom, chiffre ou detail qui n'est pas implicite dans la transcription
+3. Reproduis les noms propres EXACTEMENT comme ils apparaissent (sauf erreur STT evidente)
 4. Les notes utilisateur sont prioritaires sur la transcription
 5. Si des directives de regeneration sont fournies, applique-les en priorite
 6. Ignore les identifiants [seg-xxx] dans la transcription
-7. Si la transcription est incomplète ou confuse, signale-le
-
-EXEMPLE D'ENTREE:
-### Mes notes:
-RDV budget Q2
-
-### Transcription:
-[seg-001] Bonjour tout le monde merci d'être là
-[seg-002] On va parler du budget Q2 comme prévu
-[seg-003] Marie a préparé les chiffres du trimestre
-[seg-004] On est à 120K sur les 150K prévus soit 80%
-[seg-005] Il faut décider si on réalloue le reste
-
-EXEMPLE DE SORTIE:
-Titre: Reunion budget Q2 - suivi et reallocation
-
-## Resume
-Reunion de suivi du budget Q2. L'equipe est a 80% de consommation (120K sur 150K prevus). Discussion sur la reallocation du budget restant.
-
-## Points cles
-- Budget Q2 consomme a 80% (120K / 150K)
-- Marie a prepare les chiffres du trimestre
-- Question ouverte sur la reallocation du solde
-
-## Decisions & Actions
-- Decider de la reallocation des 30K restants
+7. Adapte le ton et la structure au contenu : formel pour une reunion, decontracte pour une discussion informelle
+8. Produis TOUJOURS une synthese, meme si le contenu est leger ou informel
 
 FORMAT DE SORTIE:
 
@@ -215,6 +199,7 @@ Titre: [Sujet principal en 5-8 mots]
 [Omets cette section si aucune information notable]`;
 
 const CONDENSE_SYSTEM_PROMPT = `Resume ce bloc de transcription en bullet points factuels. Sois exhaustif : inclus chaque sujet, decision, action et information importante. Le nombre de points doit etre proportionnel au contenu (5-15 points selon la densite).
+La transcription provient d'un modele vocal et contient des erreurs. Corrige silencieusement les mots mal transcrits (phonetiquement proches), les repetitions artificielles, et les fragments sans sens. Ne signale pas les erreurs.
 Preserve les noms propres exactement comme ils apparaissent. Ne rien inventer.
 Ignore les identifiants [seg-xxx]. Reponds directement avec les bullet points.`;
 

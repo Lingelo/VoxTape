@@ -56,6 +56,7 @@ export const CONFIG_WHITELIST: Record<string, 'string' | 'number' | 'boolean' | 
   'llm.contextSize': 'number',
   'llm.temperature': 'number',
   'stt.modelPath': 'string|null',
+  'stt.language': 'string',
   'onboardingComplete': 'boolean',
 };
 
