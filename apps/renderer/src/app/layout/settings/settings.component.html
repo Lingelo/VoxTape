@@ -79,6 +79,20 @@
             <span class="setting-hint">{{ 'settings.systemAudioUnsupported' | translate }}</span>
           </div>
         }
+        <div class="setting-row">
+          <div class="setting-label-group">
+            <span class="label-text">Langue de transcription</span>
+            <span class="setting-hint">Langue utilisee par le moteur STT. "Auto-detect" laisse Whisper deviner la langue.</span>
+          </div>
+          <select
+            [(ngModel)]="config.stt.language"
+            (change)="onSttLanguageChange()"
+          >
+            @for (lang of sttLanguages; track lang.value) {
+              <option [ngValue]="lang.value">{{ lang.label }}</option>
+            }
+          </select>
+        </div>
       </section>
 
       <!-- Meeting Detection -->

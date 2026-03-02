@@ -120,6 +120,10 @@ async function bootstrapNest(): Promise<void> {
   modelManager.setModelsDir(modelsDir);
   // Pass models dir to workers via env so they can find downloaded models
   process.env.VOXTAPE_MODELS_DIR = modelsDir;
+
+  // Pass STT language to worker via env
+  const sttCfg = configService.get('stt');
+  process.env.VOXTAPE_STT_LANGUAGE = sttCfg?.language || 'fr';
 }
 
 // ── Dock Icon ─────────────────────────────────────────────────────────────
@@ -498,6 +502,7 @@ function setupIpc(): void {
     'llm.contextSize': 'number',
     'llm.temperature': 'number',
     'stt.modelPath': 'string|null',
+    'stt.language': 'string',
     'meetingDetection.enabled': 'boolean',
     'meetingDetection.detectWebMeetings': 'boolean',
     'meetingDetection.showNotification': 'boolean',
@@ -542,6 +547,14 @@ function setupIpc(): void {
         contextSize: llmCfg.contextSize,
         temperature: llmCfg.temperature,
         modelPath: llmCfg.modelPath,
+      });
+    }
+    // Live-update STT config (language) when relevant keys change
+    if (key.startsWith('stt.')) {
+      const sttCfg = configService.get('stt');
+      process.env.VOXTAPE_STT_LANGUAGE = sttCfg?.language || 'fr';
+      sttService.restart().catch((err: Error) => {
+        console.error('[Main] STT restart after config change failed:', err.message);
       });
     }
     // Live-update meeting detection config when relevant keys change
@@ -615,13 +628,12 @@ function setupIpc(): void {
 
     // Auto-restart STT when required models finish downloading
     const isDone = payload.progress >= payload.total && payload.total > 0;
-    if (isDone && (payload.modelId === 'silero-vad' || payload.modelId === 'parakeet-tdt-v3')) {
-      if (sttService.status !== 'ready') {
-        console.log(`[Main] Model ${payload.modelId} downloaded, restarting STT...`);
-        sttService.restart().catch((err) => {
-          console.error('[Main] STT restart after model download failed:', err.message);
-        });
-      }
+    const sttModels = ['silero-vad', 'whisper-turbo'];
+    if (isDone && sttModels.includes(payload.modelId)) {
+      console.log(`[Main] Model ${payload.modelId} downloaded, restarting STT...`);
+      sttService.restart().catch((err) => {
+        console.error('[Main] STT restart after model download failed:', err.message);
+      });
     }
   });
 

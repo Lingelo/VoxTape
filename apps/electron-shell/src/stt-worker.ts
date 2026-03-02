@@ -1,7 +1,7 @@
 /**
  * STT Worker — runs as a child process with ELECTRON_RUN_AS_NODE=1
  *
- * Loads Silero VAD + Whisper small via sherpa-onnx-node (native bindings).
+ * Loads Silero VAD + Whisper (turbo > small auto-detection) via sherpa-onnx-node.
  * Supports two independent audio channels (mic + system), each with its own
  * VAD instance, sharing a single recognizer. This prevents audio source
  * interleaving from confusing the VAD speech detection.
@@ -40,17 +40,17 @@ function findModel(relativePath: string): string | null {
 }
 
 function createVad(sherpaOnnx: any, vadModelPath: string): any {
-  // Optimized VAD settings for French speech detection
-  // - Lower threshold (0.35) for better sensitivity to soft speech
-  // - Longer minSilenceDuration (0.4s) to avoid cutting mid-sentence
-  // - Short minSpeechDuration (0.2s) to capture quick responses
+  // Tuned VAD for meeting transcription
+  // - threshold 0.45: balanced sensitivity, rejects ambient noise/keyboard/fan
+  // - minSpeechDuration 0.4s: filters clicks, breaths, coughs
+  // - minSilenceDuration 0.4s: avoids cutting mid-sentence
   return new sherpaOnnx.Vad(
     {
       sileroVad: {
         model: vadModelPath,
-        threshold: 0.35,           // Lower = more sensitive (default 0.5)
+        threshold: 0.45,           // Balanced: rejects noise, catches speech (default 0.5)
         minSilenceDuration: 0.4,   // Wait longer before ending segment
-        minSpeechDuration: 0.2,    // Capture shorter utterances
+        minSpeechDuration: 0.4,    // Filter short non-speech sounds
         windowSize: 512,
         maxSpeechDuration: 20,     // Allow longer segments (meetings)
       },
@@ -61,6 +61,35 @@ function createVad(sherpaOnnx: any, vadModelPath: string): any {
     },
     30 // bufferSizeInSeconds
   );
+}
+
+interface WhisperModelPaths {
+  name: string;
+  encoder: string;
+  decoder: string;
+  tokens: string;
+}
+
+/** Search for the best available Whisper model: turbo > small */
+function findWhisperModel(): WhisperModelPaths | null {
+  const candidates = [
+    {
+      name: 'Whisper turbo int8',
+      encoder: join('stt', 'turbo-encoder.int8.onnx'),
+      decoder: join('stt', 'turbo-decoder.int8.onnx'),
+      tokens: join('stt', 'turbo-tokens.txt'),
+    },
+  ];
+
+  for (const c of candidates) {
+    const encoder = findModel(c.encoder);
+    const decoder = findModel(c.decoder);
+    const tokens = findModel(c.tokens);
+    if (encoder && decoder && tokens) {
+      return { name: c.name, encoder, decoder, tokens };
+    }
+  }
+  return null;
 }
 
 async function initialize(): Promise<void> {
@@ -77,18 +106,15 @@ async function initialize(): Promise<void> {
     }
     console.log('[stt-worker] VAD model:', vadModelPath);
 
-    // Whisper small int8 model files
-    const whisperEncoder = findModel(join('stt', 'small-encoder.int8.onnx'));
-    const whisperDecoder = findModel(join('stt', 'small-decoder.int8.onnx'));
-    const whisperTokens = findModel(join('stt', 'small-tokens.txt'));
-
-    if (!whisperEncoder || !whisperDecoder || !whisperTokens) {
+    // Auto-detect best available Whisper model (turbo > small)
+    const whisperModel = findWhisperModel();
+    if (!whisperModel) {
       throw new Error(
         'STT model files not found. Run "npm run download-model" first.'
       );
     }
-    console.log('[stt-worker] STT model: Whisper small int8');
-    console.log('[stt-worker] Encoder:', whisperEncoder);
+    console.log(`[stt-worker] STT model: ${whisperModel.name}`);
+    console.log('[stt-worker] Encoder:', whisperModel.encoder);
 
     // Create two VAD instances — one per audio source
     console.log('[stt-worker] Creating VAD (mic)...');
@@ -113,8 +139,11 @@ async function initialize(): Promise<void> {
       source: 'system',
     };
 
-    // Single shared recognizer (Whisper small ~245MB)
-    // Optimized for French transcription
+    // STT language from config (empty string = auto-detect in sherpa-onnx)
+    const sttLanguage = process.env.VOXTAPE_STT_LANGUAGE || 'fr';
+    const whisperLanguage = sttLanguage === 'auto' ? '' : sttLanguage;
+
+    // Single shared recognizer
     console.log('[stt-worker] Creating offline recognizer (Whisper)...');
     recognizer = new sherpaOnnx.OfflineRecognizer({
       featConfig: {
@@ -123,18 +152,18 @@ async function initialize(): Promise<void> {
       },
       modelConfig: {
         whisper: {
-          encoder: whisperEncoder,
-          decoder: whisperDecoder,
-          language: 'fr',          // Force French for better accuracy
-          task: 'transcribe',      // Transcription (not translation)
+          encoder: whisperModel.encoder,
+          decoder: whisperModel.decoder,
+          language: whisperLanguage,
+          task: 'transcribe',
         },
-        tokens: whisperTokens,
+        tokens: whisperModel.tokens,
         numThreads: 2,
         debug: 0,
         provider: 'cpu',
       },
     });
-    console.log('[stt-worker] Offline recognizer created (language: fr)');
+    console.log(`[stt-worker] Offline recognizer created (language: ${sttLanguage})`);
 
     process.send?.({ type: 'ready' });
   } catch (err: any) {
@@ -189,9 +218,35 @@ function isHallucination(text: string): boolean {
   // Too short to be meaningful (less than 3 chars)
   if (normalized.length < 3) return true;
 
+  // Punctuation-only output
+  if (/^[\s.,;:!?\-\u2026]+$/.test(normalized)) return true;
+
+  // URLs
+  if (/^https?:\/\/|^www\./.test(normalized)) return true;
+
   // Sound/music descriptions (common Whisper hallucinations)
   const soundPatterns = /^\[.*\]$|^\(.*\)$|^♪|musique|applaudissements|rires|silence|bruit/i;
   if (soundPatterns.test(normalized)) return true;
+
+  // YouTube-style hallucinations (FR)
+  const youtubeFr = [
+    "merci d'avoir regard",
+    'sous-titres realises',
+    'abonnez-vous',
+    "n'oubliez pas de vous abonner",
+    'merci pour votre ecoute',
+    'likez et partagez',
+  ];
+  if (youtubeFr.some((p) => normalized.includes(p))) return true;
+
+  // YouTube-style hallucinations (EN)
+  const youtubeEn = [
+    'thanks for watching',
+    'please subscribe',
+    'like and subscribe',
+    'subtitles by',
+  ];
+  if (youtubeEn.some((p) => normalized.includes(p))) return true;
 
   // Repeated single word/phrase patterns (e.g., "merci merci merci")
   const words = normalized.split(/\s+/);
@@ -200,6 +255,9 @@ function isHallucination(text: string): boolean {
     if (uniqueWords.size === 1) return true; // All same word
     if (uniqueWords.size <= 2 && words.length >= 5) return true; // 1-2 words repeated 5+ times
   }
+
+  // Repeated short phrase (2-3 word group repeated 3+ times)
+  if (/\b(\w+(?:\s+\w+){1,2})\s+(?:\1\s*){2,}/i.test(normalized)) return true;
 
   // Single repeated character patterns
   if (/^(.)\1{3,}$/.test(normalized)) return true;
@@ -246,7 +304,7 @@ function startChannel(channel: string): void {
   if (!ch) return;
   ch.isRecording = true;
   ch.wasSpeaking = false;
-  ch.segmentCounter = 0;
+  // Don't reset segmentCounter — IDs must stay unique across start/stop cycles
   ch.vad?.reset();
 }
 

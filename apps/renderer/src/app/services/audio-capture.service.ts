@@ -101,12 +101,16 @@ export class AudioCaptureService implements OnDestroy {
         }
       }
 
-      // Build audio constraints - use 'exact' to ensure correct device selection
-      let constraints: MediaStreamConstraints = {
-        audio: deviceId && deviceId !== 'default'
-          ? { deviceId: { exact: deviceId } }
-          : true,
+      // Build audio constraints - explicit AEC + noise suppression for clean STT input
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
       };
+      if (deviceId && deviceId !== 'default') {
+        audioConstraints.deviceId = { exact: deviceId };
+      }
+      let constraints: MediaStreamConstraints = { audio: audioConstraints };
 
       try {
         this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -114,7 +118,7 @@ export class AudioCaptureService implements OnDestroy {
         // If deviceId constraint failed (device no longer exists), retry with default
         if (err instanceof Error && err.name === 'OverconstrainedError') {
           console.warn('[AudioCaptureService] Requested device not available, falling back to default');
-          constraints = { audio: true };
+          constraints = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
           this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         } else {
           throw err;

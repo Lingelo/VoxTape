@@ -30,6 +30,13 @@ export class GlossaryService {
     return this._entries$.value;
   }
 
+  /** Clear all in-memory entries (call on app reset) */
+  clear(): void {
+    this._entries$.next([]);
+    this.compiledRegex = null;
+    this.replacementMap.clear();
+  }
+
   applyReplacements(text: string): string {
     if (!this.compiledRegex || this._entries$.value.length === 0) return text;
     return text.replace(this.compiledRegex, (match) => {

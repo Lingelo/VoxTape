@@ -18,6 +18,7 @@ export interface VoxTapeConfig {
   };
   stt: {
     modelPath: string | null;
+    language: string;
   };
   meetingDetection: MeetingDetectionConfig;
   onboardingComplete: boolean;
@@ -29,7 +30,7 @@ const DEFAULT_CONFIG: VoxTapeConfig = {
   theme: 'dark',
   audio: { defaultDeviceId: null },
   llm: { modelPath: null, contextSize: 8192, temperature: 0.7 },
-  stt: { modelPath: null },
+  stt: { modelPath: null, language: 'fr' },
   meetingDetection: { ...DEFAULT_MEETING_DETECTION_CONFIG },
   onboardingComplete: false,
   firstLaunchComplete: false,
@@ -49,7 +50,15 @@ export class ConfigService {
     if (existsSync(this.configPath)) {
       try {
         const raw = readFileSync(this.configPath, 'utf-8');
-        this.config = { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+        const parsed = JSON.parse(raw);
+        this.config = {
+          ...DEFAULT_CONFIG,
+          ...parsed,
+          audio: { ...DEFAULT_CONFIG.audio, ...parsed.audio },
+          llm: { ...DEFAULT_CONFIG.llm, ...parsed.llm },
+          stt: { ...DEFAULT_CONFIG.stt, ...parsed.stt },
+          meetingDetection: { ...DEFAULT_CONFIG.meetingDetection, ...parsed.meetingDetection },
+        };
       } catch {
         this.config = { ...DEFAULT_CONFIG };
       }

@@ -51,7 +51,7 @@ interface Config {
   theme: 'dark' | 'light' | 'system';
   audio: { defaultDeviceId: string | null; systemAudioEnabled?: boolean };
   llm: { modelPath: string | null; contextSize: number; temperature: number };
-  stt: { modelPath: string | null };
+  stt: { modelPath: string | null; language: string };
   meetingDetection?: MeetingDetectionConfig;
   onboardingComplete: boolean;
 }
@@ -84,6 +84,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
   glossaryEntries: GlossaryEntry[] = [];
   newGlossaryFrom = '';
   newGlossaryTo = '';
+
+  // STT language options
+  sttLanguages = [
+    { value: 'fr', label: 'Francais' },
+    { value: 'en', label: 'English' },
+    { value: 'auto', label: 'Auto-detect' },
+  ];
 
   // LLM context size options
   contextSizeOptions = [
@@ -309,6 +316,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ── STT Language ──────────────────────────────────────────────────
+
+  onSttLanguageChange(): void {
+    if (!this.config) return;
+    this.save('stt.language', this.config.stt.language);
+  }
+
   // ── LLM Context Size ────────────────────────────────────────────
 
   onContextSizeChange(): void {
@@ -337,8 +351,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const api = this.voxtapeApi?.config;
     if (api) {
       await api.reset();
-      // Clear frontend session state after backend reset
+      // Clear frontend state after backend reset
       this.sessionService.clearAllState();
+      this.glossaryService.clear();
       this.router.navigate(['/onboarding']);
     }
   }

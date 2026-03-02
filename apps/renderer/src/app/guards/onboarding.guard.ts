@@ -18,3 +18,16 @@ export const onboardingGuard: CanActivateFn = async () => {
   }
   return true;
 };
+
+/** Prevents accessing /onboarding when it's already complete. */
+export const onboardingDoneGuard: CanActivateFn = async () => {
+  const router = inject(Router);
+  const api = (window as Window & { voxtape?: VoxTapeConfigApi }).voxtape?.config;
+  if (!api) return true;
+
+  const config = await api.get();
+  if (config.onboardingComplete) {
+    return router.createUrlTree(['/']);
+  }
+  return true;
+};

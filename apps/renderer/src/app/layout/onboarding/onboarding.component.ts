@@ -88,7 +88,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // Required model IDs — without these, core functionality doesn't work
   private readonly REQUIRED_MODELS = [
     'silero-vad',
-    'whisper-small',
+    'whisper-turbo',
     'ministral-3b-instruct-q4',
   ];
 
@@ -317,7 +317,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private getInstallLabel(modelId: string): string {
     const labels: Record<string, string> = {
       'silero-vad': 'onboarding.installVoiceLabel',
-      'whisper-small': 'onboarding.installTranscriptionLabel',
+      'whisper-turbo': 'onboarding.installTranscriptionLabel',
       'ministral-3b-instruct-q4': 'onboarding.installAILabel',
     };
     return this.translate.instant(labels[modelId] ?? 'onboarding.installDownloading');
@@ -409,7 +409,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // Approximate sizes in bytes for weighted progress
   private readonly MODEL_WEIGHTS: Record<string, number> = {
     'silero-vad': 2_000_000,
-    'whisper-small': 460_000_000,
+    'whisper-turbo': 538_000_000,
     'ministral-3b-instruct-q4': 2_100_000_000,
   };
 
