@@ -460,10 +460,10 @@ export class SessionService implements OnDestroy {
         try {
           const { title, body } = this.extractTitleFromSummary(payload.fullText || '');
           if (title) this._title$.next(title);
-          this._aiSummary$.next(body || payload.fullText || '(Resume genere)');
+          this._aiSummary$.next(body || payload.fullText || '');
         } catch (err) {
           console.error('[SessionService] Error parsing enhance result:', err);
-          this._aiSummary$.next(payload.fullText || '(Resume genere)');
+          this._aiSummary$.next(payload.fullText || '');
         }
         this._viewStatus$.next('done');
         this.requestSave();
@@ -720,14 +720,14 @@ export class SessionService implements OnDestroy {
     const lines = text.split('\n');
     const firstLine = lines[0]?.trim() || '';
 
-    // Check for "Titre: ..." pattern (with optional ### ## # prefix)
-    const match = firstLine.match(/^(?:#{1,3}\s*)?Titre\s*:\s*(.+)$/i);
+    // Check for "Titre: ..." or "Title: ..." pattern (with optional ### ## # prefix)
+    const match = firstLine.match(/^(?:#{1,3}\s*)?(?:Titre|Title)\s*:\s*(.+)$/i);
     let body = match ? lines.slice(1).join('\n').trim() : text;
     const title = match ? match[1].trim() : '';
 
-    // Strip "Mes notes" section if the LLM included it
+    // Strip "Mes notes" / "My notes" section if the LLM included it
     body = body.replace(/---+\s*\n/g, '\n');
-    body = body.replace(/#{1,3}\s*Mes notes\s*:?[\s\S]*$/i, '').trim();
+    body = body.replace(/#{1,3}\s*(?:Mes notes|My notes)\s*:?[\s\S]*$/i, '').trim();
 
     return { title, body };
   }
