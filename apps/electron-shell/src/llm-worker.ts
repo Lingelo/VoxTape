@@ -115,7 +115,7 @@ async function handlePrompt(payload: {
         type: 'error',
         data: {
           requestId,
-          error: 'Aucun modèle LLM disponible. Téléchargez un modèle dans les paramètres.',
+          error: 'NO_LLM_MODEL',
         },
       });
       return;

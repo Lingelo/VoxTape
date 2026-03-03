@@ -18,7 +18,6 @@ export interface VoxTapeConfig {
   };
   stt: {
     modelPath: string | null;
-    language: string;
   };
   meetingDetection: MeetingDetectionConfig;
   onboardingComplete: boolean;
@@ -30,7 +29,7 @@ const DEFAULT_CONFIG: VoxTapeConfig = {
   theme: 'dark',
   audio: { defaultDeviceId: null },
   llm: { modelPath: null, contextSize: 8192, temperature: 0.7 },
-  stt: { modelPath: null, language: 'fr' },
+  stt: { modelPath: null },
   meetingDetection: { ...DEFAULT_MEETING_DETECTION_CONFIG },
   onboardingComplete: false,
   firstLaunchComplete: false,

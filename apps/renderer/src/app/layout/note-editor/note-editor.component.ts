@@ -84,7 +84,9 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
         Placeholder.configure({
           placeholder: this.translate.instant('notes.placeholder'),
         }),
-        AiBlock,
+        AiBlock.configure({
+          loupeTitle: this.translate.instant('notes.viewInTranscript'),
+        }),
       ],
       content: '',
       onUpdate: ({ editor }) => {

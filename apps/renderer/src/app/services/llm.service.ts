@@ -6,6 +6,7 @@ import type {
   LlmCompletePayload,
   LlmErrorPayload,
 } from '@voxtape/shared-types';
+import { LanguageService, SupportedLanguage } from './language.service';
 
 interface VoxTapeApi {
   llm: {
@@ -47,6 +48,7 @@ export class LlmService implements OnDestroy {
   readonly initError$: Observable<string | null> = this._initError$.asObservable();
 
   private readonly ngZone = inject(NgZone);
+  private readonly languageService = inject(LanguageService);
 
   constructor() {
     this.api = (window as Window & { voxtape?: { llm?: VoxTapeApi['llm'] } }).voxtape?.llm;
@@ -97,14 +99,16 @@ export class LlmService implements OnDestroy {
 
   enhance(notes: string, transcript: string, directive?: string): string {
     const requestId = `enhance-${++this.requestCounter}`;
+    const lang = this.languageService.currentLang;
+    const prompts = PROMPTS[lang];
     this._streamedText$.next('');
-    let userPrompt = `### Mes notes:\n${notes}\n\n### Transcription:\n${transcript}`;
+    let userPrompt = `### ${prompts.myNotes}:\n${notes}\n\n### ${prompts.transcriptLabel}:\n${transcript}`;
     if (directive) {
-      userPrompt += `\n\n### Directives de regeneration:\n${directive}`;
+      userPrompt += `\n\n### ${prompts.regenerationDirectives}:\n${directive}`;
     }
     this.api?.prompt({
       requestId,
-      systemPrompt: ENHANCE_SYSTEM_PROMPT,
+      systemPrompt: prompts.enhance,
       userPrompt,
       maxTokens: 2048,
       temperature: 0.2,
@@ -114,22 +118,23 @@ export class LlmService implements OnDestroy {
 
   chat(message: string, context: string, recipePrompt?: string): string {
     const requestId = `chat-${++this.requestCounter}`;
+    const lang = this.languageService.currentLang;
+    const prompts = PROMPTS[lang];
     this._streamedText$.next('');
 
     if (recipePrompt) {
-      // Recipe mode: instruction goes in system prompt for stronger compliance
       this.api?.prompt({
         requestId,
-        systemPrompt: `${CHAT_SYSTEM_PROMPT}\n\nINSTRUCTION — Applique EXACTEMENT le format demandé:\n${recipePrompt}`,
-        userPrompt: context || 'Aucun contexte disponible.',
+        systemPrompt: `${prompts.chat}\n\n${prompts.recipeInstruction}:\n${recipePrompt}`,
+        userPrompt: context || prompts.noContext,
         maxTokens: 2048,
         temperature: 0.3,
       });
     } else {
       this.api?.prompt({
         requestId,
-        systemPrompt: CHAT_SYSTEM_PROMPT,
-        userPrompt: `### Contexte de la conversation:\n${context}\n\n### Question:\n${message}`,
+        systemPrompt: prompts.chat,
+        userPrompt: `### ${prompts.conversationContext}:\n${context}\n\n### ${prompts.questionLabel}:\n${message}`,
         maxTokens: 2048,
         temperature: 0.4,
       });
@@ -139,10 +144,11 @@ export class LlmService implements OnDestroy {
 
   condense(transcript: string): string {
     const requestId = `condense-${++this.requestCounter}`;
+    const lang = this.languageService.currentLang;
     this._streamedText$.next('');
     this.api?.prompt({
       requestId,
-      systemPrompt: CONDENSE_SYSTEM_PROMPT,
+      systemPrompt: PROMPTS[lang].condense,
       userPrompt: transcript,
       maxTokens: 1024,
       temperature: 0.15,
@@ -159,7 +165,29 @@ export class LlmService implements OnDestroy {
   }
 }
 
-const ENHANCE_SYSTEM_PROMPT = `Tu es un assistant de prise de notes. Tu produis des syntheses factuelles et structurees a partir de n'importe quel type de conversation (reunion, discussion informelle, brainstorm, appel, etc.).
+interface PromptSet {
+  enhance: string;
+  condense: string;
+  chat: string;
+  myNotes: string;
+  transcriptLabel: string;
+  regenerationDirectives: string;
+  recipeInstruction: string;
+  noContext: string;
+  conversationContext: string;
+  questionLabel: string;
+}
+
+const PROMPTS: Record<SupportedLanguage, PromptSet> = {
+  fr: {
+    myNotes: 'Mes notes',
+    transcriptLabel: 'Transcription',
+    regenerationDirectives: 'Directives de regeneration',
+    recipeInstruction: 'INSTRUCTION — Applique EXACTEMENT le format demande',
+    noContext: 'Aucun contexte disponible.',
+    conversationContext: 'Contexte de la conversation',
+    questionLabel: 'Question',
+    enhance: `Tu es un assistant de prise de notes. Tu produis des syntheses factuelles et structurees a partir de n'importe quel type de conversation (reunion, discussion informelle, brainstorm, appel, etc.).
 
 NETTOYAGE TRANSCRIPTION:
 La transcription provient d'un modele de reconnaissance vocale et contient des erreurs. AVANT de synthetiser, corrige mentalement:
@@ -196,24 +224,94 @@ Titre: [Sujet principal en 5-8 mots]
 
 ## Informations cles
 - [Noms, dates, chiffres, lieux explicitement mentionnes]
-[Omets cette section si aucune information notable]`;
+[Omets cette section si aucune information notable]`,
 
-const CONDENSE_SYSTEM_PROMPT = `Resume ce bloc de transcription en bullet points factuels. Sois exhaustif : inclus chaque sujet, decision, action et information importante. Le nombre de points doit etre proportionnel au contenu (5-15 points selon la densite).
+    condense: `Resume ce bloc de transcription en bullet points factuels. Sois exhaustif : inclus chaque sujet, decision, action et information importante. Le nombre de points doit etre proportionnel au contenu (5-15 points selon la densite).
 La transcription provient d'un modele vocal et contient des erreurs. Corrige silencieusement les mots mal transcrits (phonetiquement proches), les repetitions artificielles, et les fragments sans sens. Ne signale pas les erreurs.
 Preserve les noms propres exactement comme ils apparaissent. Ne rien inventer.
-Ignore les identifiants [seg-xxx]. Reponds directement avec les bullet points.`;
+Ignore les identifiants [seg-xxx]. Reponds directement avec les bullet points.`,
 
-const CHAT_SYSTEM_PROMPT = `Tu es un assistant d'analyse de réunions. Tu réponds aux questions en te basant UNIQUEMENT sur le contexte fourni.
+    chat: `Tu es un assistant d'analyse de reunions. Tu reponds aux questions en te basant UNIQUEMENT sur le contexte fourni.
 
-CAPACITÉS:
-- Résumer, lister actions/décisions, rédiger emails de suivi
-- Répondre aux questions sur le contenu
+CAPACITES:
+- Resumer, lister actions/decisions, rediger emails de suivi
+- Repondre aux questions sur le contenu
 - Identifier participants et contributions
 
-RÈGLES STRICTES:
-1. Base tes réponses UNIQUEMENT sur le contexte fourni
+REGLES STRICTES:
+1. Base tes reponses UNIQUEMENT sur le contexte fourni
 2. N'invente JAMAIS d'informations absentes du contexte
-3. Si l'information demandée n'existe pas, dis-le clairement
-4. Adapte ton format à la demande (liste, email, paragraphe)
+3. Si l'information demandee n'existe pas, dis-le clairement
+4. Adapte ton format a la demande (liste, email, paragraphe)
 
-Réponds en français, de manière concise et factuelle.`;
+Reponds en francais, de maniere concise et factuelle.`,
+  },
+
+  en: {
+    myNotes: 'My notes',
+    transcriptLabel: 'Transcript',
+    regenerationDirectives: 'Regeneration directives',
+    recipeInstruction: 'INSTRUCTION — Apply EXACTLY the requested format',
+    noContext: 'No context available.',
+    conversationContext: 'Conversation context',
+    questionLabel: 'Question',
+    enhance: `You are a note-taking assistant. You produce factual and structured summaries from any type of conversation (meeting, informal discussion, brainstorm, call, etc.).
+
+TRANSCRIPT CLEANUP:
+The transcript comes from a speech recognition model and contains errors. BEFORE summarizing, mentally correct:
+- Phonetically similar but mistranscribed words
+- Artificial repetitions from the model (words or groups repeated 3+ times in a row)
+- Meaningless fragments that are transcription noise
+- Cut or incomplete sentences: reconstruct meaning from context
+Do NOT mention transcription errors in your output — produce the corrected summary directly.
+
+STRICT RULES:
+1. Base yourself ONLY on the provided transcript (after correcting obvious STT errors)
+2. Do NOT invent any information, name, number or detail not implicit in the transcript
+3. Reproduce proper nouns EXACTLY as they appear (except obvious STT errors)
+4. User notes take priority over the transcript
+5. If regeneration directives are provided, apply them first
+6. Ignore [seg-xxx] identifiers in the transcript
+7. Adapt tone and structure to content: formal for a meeting, casual for informal discussion
+8. ALWAYS produce a summary, even if the content is light or informal
+
+OUTPUT FORMAT:
+
+Title: [Main topic in 5-8 words]
+
+## Summary
+[2-4 sentences summarizing the essentials. Be factual and concise.]
+
+## Key Points
+- [Point 1]
+- [Point 2]
+
+## Decisions & Actions
+- [Identified decision or action]
+[Omit this section if no decision/action mentioned]
+
+## Key Information
+- [Names, dates, numbers, locations explicitly mentioned]
+[Omit this section if no notable information]`,
+
+    condense: `Summarize this transcript block into factual bullet points. Be exhaustive: include every topic, decision, action and important information. The number of points should be proportional to the content (5-15 points depending on density).
+The transcript comes from a voice model and contains errors. Silently correct mistranscribed words (phonetically similar), artificial repetitions, and meaningless fragments. Do not flag errors.
+Preserve proper nouns exactly as they appear. Do not invent anything.
+Ignore [seg-xxx] identifiers. Respond directly with bullet points.`,
+
+    chat: `You are a meeting analysis assistant. You answer questions based ONLY on the provided context.
+
+CAPABILITIES:
+- Summarize, list actions/decisions, draft follow-up emails
+- Answer questions about the content
+- Identify participants and contributions
+
+STRICT RULES:
+1. Base your answers ONLY on the provided context
+2. NEVER invent information absent from the context
+3. If the requested information doesn't exist, say so clearly
+4. Adapt your format to the request (list, email, paragraph)
+
+Respond in English, concisely and factually.`,
+  },
+};

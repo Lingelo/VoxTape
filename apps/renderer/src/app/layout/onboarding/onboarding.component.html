@@ -12,11 +12,53 @@
       }
     </div>
 
-    <!-- Step 0: Welcome -->
+    <!-- Step 0: Language -->
     @if (step === 0) {
     <div class="step-content">
       <img src="assets/logo.svg" alt="VoxTape" class="welcome-logo" />
-      <h1>{{ 'app.name' | translate }}</h1>
+      <sdn-glitch-loader
+        [messages]="['VoxTape']"
+        [typingSpeed]="80"
+        [glitchInterval]="800"
+        [glitchDuration]="99999"
+        [showCursor]="false"
+      ></sdn-glitch-loader>
+      <p class="subtitle">{{ 'onboarding.langSubtitle' | translate }}</p>
+
+      <div class="language-options">
+        <button
+          class="lang-btn"
+          [class.selected]="selectedLang === 'fr'"
+          (click)="onLanguageSelect('fr')"
+        >
+          <span class="lang-flag">FR</span>
+          <span class="lang-name">Fran&ccedil;ais</span>
+        </button>
+        <button
+          class="lang-btn"
+          [class.selected]="selectedLang === 'en'"
+          (click)="onLanguageSelect('en')"
+        >
+          <span class="lang-flag">EN</span>
+          <span class="lang-name">English</span>
+        </button>
+      </div>
+
+      <button class="primary-btn" (click)="nextStep()">{{ 'onboarding.continue' | translate }}</button>
+    </div>
+    }
+
+    <!-- Step 1: Welcome -->
+    @if (step === 1) {
+    <div class="step-content">
+      <img src="assets/logo.svg" alt="VoxTape" class="welcome-logo" />
+      <sdn-glitch-loader
+        [messages]="['VoxTape']"
+        [typingSpeed]="80"
+        [glitchInterval]="800"
+        [glitchDuration]="99999"
+        [showCursor]="false"
+      ></sdn-glitch-loader>
       <p class="subtitle">{{ 'onboarding.subtitle' | translate }}</p>
 
       <div class="welcome-features">
@@ -58,12 +100,15 @@
         </div>
       </div>
 
-      <button class="primary-btn" (click)="nextStep()">{{ 'onboarding.start' | translate }}</button>
+      <div class="btn-group">
+        <button class="secondary-btn" (click)="prevStep()">{{ 'onboarding.back' | translate }}</button>
+        <button class="primary-btn" (click)="nextStep()">{{ 'onboarding.start' | translate }}</button>
+      </div>
     </div>
     }
 
-    <!-- Step 1: Microphone -->
-    @if (step === 1) {
+    <!-- Step 2: Microphone -->
+    @if (step === 2) {
     <div class="step-content">
       <h1>{{ 'onboarding.micTitle' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.micSubtitle' | translate }}</p>
@@ -134,8 +179,8 @@
     </div>
     }
 
-    <!-- Step 2: System Audio -->
-    @if (step === 2) {
+    <!-- Step 3: System Audio -->
+    @if (step === 3) {
     <div class="step-content">
       <h1>{{ 'onboarding.sysAudioTitle' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.sysAudioSubtitle' | translate }}</p>
@@ -182,8 +227,8 @@
     </div>
     }
 
-    <!-- Step 3: Install -->
-    @if (step === 3) {
+    <!-- Step 4: Install -->
+    @if (step === 4) {
     <div class="step-content">
       <h1>{{ 'onboarding.installTitle' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.installSubtitle' | translate }}</p>
@@ -238,7 +283,9 @@
       }
 
       <div class="btn-group">
-        <button class="secondary-btn" (click)="prevStep()">{{ 'onboarding.back' | translate }}</button>
+        @if (installState !== 'downloading') {
+          <button class="secondary-btn" (click)="prevStep()">{{ 'onboarding.back' | translate }}</button>
+        }
         @if (installState === 'idle' || installState === 'error') {
           <button
             class="primary-btn"
@@ -260,8 +307,8 @@
     </div>
     }
 
-    <!-- Step 4: Ready -->
-    @if (step === 4) {
+    <!-- Step 5: Ready -->
+    @if (step === 5) {
     <div class="step-content">
       <h1>{{ 'onboarding.readyTitle' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.readySubtitle' | translate }}</p>
@@ -270,4 +317,7 @@
     </div>
     }
   </div>
+  @if (appVersion) {
+    <span class="onboarding-version">v{{ appVersion }}</span>
+  }
 </div>
