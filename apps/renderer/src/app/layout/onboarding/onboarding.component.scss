@@ -77,6 +77,20 @@
   }
 }
 
+// Glitch title in language step — match h1 sizing
+sdn-glitch-loader {
+  display: block;
+  margin-bottom: 12px;
+
+  ::ng-deep .glitch-container {
+    font-size: 24px;
+    text-shadow:
+      0 0 5px rgba(74, 222, 128, 0.8),
+      0 0 10px rgba(74, 222, 128, 0.5),
+      0 0 20px rgba(74, 222, 128, 0.3);
+  }
+}
+
 .subtitle {
   font-size: 13px;
   color: var(--text-secondary);
@@ -123,6 +137,61 @@
       border-color: #6fe8a8 #1a5c34 #1a5c34 #6fe8a8;
       background: var(--accent-primary-tint);
     }
+  }
+}
+
+// Language selection
+.language-options {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.lang-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 24px;
+  border: 3px solid;
+  border-color: var(--bevel-light) var(--bevel-dark) var(--bevel-dark) var(--bevel-light);
+  border-radius: 0;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.1s;
+
+  &:hover {
+    background: var(--accent-hover);
+  }
+
+  &:active {
+    border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  }
+
+  &.selected {
+    border-color: #6fe8a8 #1a5c34 #1a5c34 #6fe8a8;
+    background: var(--accent-primary-tint);
+
+    .lang-flag {
+      color: var(--accent-primary);
+      text-shadow:
+        0 0 5px rgba(74, 222, 128, 0.8),
+        0 0 10px rgba(74, 222, 128, 0.5);
+    }
+  }
+
+  .lang-flag {
+    font-family: var(--font-pixel);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  .lang-name {
+    font-size: 13px;
+    color: var(--text-secondary);
   }
 }
 
@@ -434,51 +503,26 @@
 .install-info {
   text-align: left;
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .install-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  font-family: var(--font-pixel);
-  font-size: 18px;
-  color: var(--accent-primary);
-  text-shadow:
-    0 0 5px rgba(74, 222, 128, 0.8),
-    0 0 10px rgba(74, 222, 128, 0.5);
-  animation: textGlitch 3s infinite;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--bg-main);
+  border: 2px solid;
+  border-color: var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  font-size: 13px;
+  color: var(--text-primary);
 
   svg {
+    flex-shrink: 0;
     stroke: var(--accent-primary);
     filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.6));
-  }
-}
-
-@keyframes textGlitch {
-  0%, 90%, 100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  92% {
-    opacity: 0.8;
-    transform: translateX(-2px);
-    text-shadow:
-      2px 0 rgba(255, 0, 0, 0.5),
-      -2px 0 rgba(0, 255, 255, 0.5),
-      0 0 5px rgba(74, 222, 128, 0.8);
-  }
-  94% {
-    opacity: 1;
-    transform: translateX(2px);
-  }
-  96% {
-    opacity: 0.9;
-    transform: translateX(-1px);
-    text-shadow:
-      -2px 0 rgba(255, 0, 0, 0.5),
-      2px 0 rgba(0, 255, 255, 0.5),
-      0 0 5px rgba(74, 222, 128, 0.8);
   }
 }
 
@@ -621,4 +665,14 @@
 
 .ready-icon {
   margin: 24px 0 32px;
+}
+
+.onboarding-version {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  opacity: 0.5;
+  font-family: monospace;
 }

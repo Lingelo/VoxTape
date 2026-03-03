@@ -146,4 +146,13 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, A
   goToRecordingSession(): void {
     this.session.goToRecordingSession();
   }
+
+  get loaderMessages(): string[] {
+    return [
+      this.translate.instant('transcript.loader1'),
+      this.translate.instant('transcript.loader2'),
+      this.translate.instant('transcript.loader3'),
+      this.translate.instant('transcript.loader4'),
+    ];
+  }
 }

@@ -157,6 +157,10 @@ const voxtapeApi = {
       ipcRenderer.invoke('export:json', sessionId),
   },
 
+  app: {
+    getVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
+  },
+
   config: {
     get: (): Promise<any> => ipcRenderer.invoke('config:get'),
     set: (key: string, value: any): Promise<any> =>

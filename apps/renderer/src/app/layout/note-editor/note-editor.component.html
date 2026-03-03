@@ -13,7 +13,7 @@
       @if (summaryHistory.length > 0) {
         <div class="summary-history-bar">
           <button class="history-toggle-btn" (click)="showHistory = !showHistory">
-            {{ showHistory ? 'Fermer' : 'Historique' }} ({{ summaryHistory.length }})
+            {{ showHistory ? ('notes.close' | translate) : ('notes.history' | translate) }} ({{ summaryHistory.length }})
           </button>
           @if (showHistory) {
             <div class="history-dropdown">

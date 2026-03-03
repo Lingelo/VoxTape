@@ -11,6 +11,19 @@
 
   @if (config) {
     <div class="settings-body">
+      <!-- General -->
+      <section class="settings-section">
+        <h2>{{ 'settings.general' | translate }}</h2>
+        <div class="setting-row">
+          <span class="label-text">{{ 'settings.language' | translate }}</span>
+          <select [(ngModel)]="currentLang" (change)="setLanguage(currentLang)">
+            @for (lang of languages; track lang.value) {
+              <option [ngValue]="lang.value">{{ lang.label }}</option>
+            }
+          </select>
+        </div>
+      </section>
+
       <!-- Audio -->
       <section class="settings-section">
         <h2>{{ 'settings.audio' | translate }}</h2>
@@ -79,20 +92,6 @@
             <span class="setting-hint">{{ 'settings.systemAudioUnsupported' | translate }}</span>
           </div>
         }
-        <div class="setting-row">
-          <div class="setting-label-group">
-            <span class="label-text">Langue de transcription</span>
-            <span class="setting-hint">Langue utilisee par le moteur STT. "Auto-detect" laisse Whisper deviner la langue.</span>
-          </div>
-          <select
-            [(ngModel)]="config.stt.language"
-            (change)="onSttLanguageChange()"
-          >
-            @for (lang of sttLanguages; track lang.value) {
-              <option [ngValue]="lang.value">{{ lang.label }}</option>
-            }
-          </select>
-        </div>
       </section>
 
       <!-- Meeting Detection -->
@@ -210,11 +209,11 @@
 
       <!-- LLM Context Size -->
       <section class="settings-section">
-        <h2>Taille du contexte LLM</h2>
+        <h2>{{ 'settings.llmContextSize' | translate }}</h2>
         <div class="setting-row">
           <div class="setting-label-group">
-            <span class="label-text">Context size</span>
-            <span class="setting-hint">Taille de la fenetre de contexte pour le modele LLM. Plus grand = meilleur pour les longues reunions mais consomme plus de RAM.</span>
+            <span class="label-text">{{ 'settings.contextSize' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.contextSizeHint' | translate }}</span>
           </div>
           <select
             [(ngModel)]="config.llm.contextSize"
@@ -227,15 +226,15 @@
         </div>
         @if (config.llm.contextSize >= 16384) {
           <p class="setting-hint" style="color: #f59e0b; margin-top: 8px;">
-            Attention : 16384 tokens consomme significativement plus de RAM et peut ralentir l'application.
+            {{ 'settings.contextSizeWarning' | translate }}
           </p>
         }
       </section>
 
       <!-- Glossary -->
       <section class="settings-section">
-        <h2>Glossaire / Vocabulaire</h2>
-        <p class="setting-hint" style="margin-bottom: 12px;">Corrections automatiques appliquees a chaque nouveau segment de transcription.</p>
+        <h2>{{ 'settings.glossary' | translate }}</h2>
+        <p class="setting-hint" style="margin-bottom: 12px;">{{ 'settings.glossaryHint' | translate }}</p>
 
         @if (glossaryEntries.length > 0) {
           <div class="glossary-list">
@@ -244,7 +243,7 @@
                 <span class="glossary-from">{{ entry.from }}</span>
                 <span class="glossary-arrow">&rarr;</span>
                 <span class="glossary-to">{{ entry.to }}</span>
-                <button class="glossary-remove-btn" (click)="removeGlossaryEntry($index)" title="Supprimer">&times;</button>
+                <button class="glossary-remove-btn" (click)="removeGlossaryEntry($index)" [title]="'settings.glossaryRemove' | translate">&times;</button>
               </div>
             }
           </div>
@@ -255,7 +254,7 @@
             class="glossary-input"
             type="text"
             [(ngModel)]="newGlossaryFrom"
-            placeholder="Quand STT dit..."
+            [placeholder]="'settings.glossaryFrom' | translate"
             (keydown.enter)="addGlossaryEntry()"
           />
           <span class="glossary-arrow">&rarr;</span>
@@ -263,11 +262,11 @@
             class="glossary-input"
             type="text"
             [(ngModel)]="newGlossaryTo"
-            placeholder="Remplacer par..."
+            [placeholder]="'settings.glossaryTo' | translate"
             (keydown.enter)="addGlossaryEntry()"
           />
           <button class="glossary-add-btn" (click)="addGlossaryEntry()" [disabled]="!newGlossaryFrom.trim() || !newGlossaryTo.trim()">
-            Ajouter
+            {{ 'settings.glossaryAdd' | translate }}
           </button>
         </div>
       </section>
@@ -275,8 +274,12 @@
       <!-- About -->
       <section class="settings-section">
         <h2>{{ 'settings.about' | translate }}</h2>
-        <p class="about-text">{{ 'app.name' | translate }} — {{ 'app.tagline' | translate }}</p>
-        <p class="about-text">{{ 'settings.aboutText' | translate }}</p>
+        <div class="about-header">
+          <span class="about-app-name">{{ 'app.name' | translate }}</span>
+          <span class="about-version">v{{ appVersion }}</span>
+        </div>
+        <p class="about-text">{{ 'settings.aboutDescription' | translate }}</p>
+        <p class="about-credit">{{ 'settings.aboutCredit' | translate }}</p>
       </section>
 
       <!-- Reset -->
