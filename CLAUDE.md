@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**VoxTape** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper Turbo + Silero VAD, dual instances for mic/system) and node-llama-cpp for LLM features (Ministral 3B). STT language is configurable (fr/en/auto) via settings with hot-reload.
+**VoxTape** is a macOS Electron desktop app for real-time meeting transcription and AI-powered note-taking. All AI runs **on-device** (no API keys, fully offline): sherpa-onnx for speech-to-text (Whisper Turbo + Silero VAD, dual instances for mic/system) and node-llama-cpp for LLM features (Ministral 3B). Fully bilingual (FR/EN) — a single `language` config drives UI, STT, and LLM prompts with hot-reload.
 
 ## Commands
 
@@ -161,7 +161,7 @@ On startup, main.ts migrates models from legacy paths to `~/Library/Application 
 - **LLM lazy init**: Model loads only on first prompt request (saves startup time).
 - **Worker isolation**: STT and LLM run as `ELECTRON_RUN_AS_NODE=1` child processes — crash-safe, main survives worker failures.
 - **STT model auto-detection**: stt-worker searches for Whisper Turbo first, falls back to Whisper Small. VAD threshold 0.45, minSpeechDuration 0.4s. Enriched hallucination filter (repetitions, YouTube phrases, punctuation-only).
-- **STT language hot-reload**: Config `stt.language` change triggers worker restart via `process.env.VOXTAPE_STT_LANGUAGE`.
+- **Language hot-reload**: Unified `language` config (fr/en) drives UI (ngx-translate), STT (`process.env.VOXTAPE_STT_LANGUAGE`), and LLM prompts. Changing language restarts the STT worker.
 - **Security**: Context isolation on, node integration off, minimal preload API via contextBridge, sandbox disabled (required for preload Node access).
 
 ## Native Dependencies (ASAR-unpacked)

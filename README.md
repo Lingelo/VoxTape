@@ -5,7 +5,11 @@
 </p>
 
 <p align="center">
-  <strong>🎙️ Transcription de réunions et prise de notes assistée par IA — 100% locale, 100% privée</strong>
+  <strong>Real-time meeting transcription & AI-powered note-taking — 100% local, 100% private</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Lingelo/VoxTape/releases"><img src="https://img.shields.io/badge/Download-Latest%20Release-4ade80?style=for-the-badge&logo=apple" alt="Download"></a>
 </p>
 
 <p align="center">
@@ -18,86 +22,86 @@
 
 ---
 
-Application macOS pour la transcription en temps réel de vos réunions (Teams, Meet, Zoom...) avec génération automatique de résumés et points clés. **Tout fonctionne localement** — aucune API externe, aucune donnée envoyée sur le cloud.
+A macOS desktop app for real-time meeting transcription (Teams, Meet, Zoom...) with automatic summary and key point generation. **Everything runs locally** — no external APIs, no data sent to the cloud.
 
-## Fonctionnalités
+## Features
 
-- **Transcription temps réel** — Capture simultanée micro + audio système (Whisper Turbo)
-- **IA locale** — Résumé, points clés, actions via Ministral 3B
-- **Chat contextuel** — Questions sur vos réunions passées
-- **Langue configurable** — Français, anglais ou détection automatique
-- **Recherche full-text** — SQLite FTS5
-- **Export** — Markdown ou texte brut
-- **100% hors-ligne** — Aucune connexion requise après téléchargement des modèles
+- **Real-time transcription** — Simultaneous mic + system audio capture (Whisper Turbo)
+- **Local AI** — Summaries, key points, action items via Ministral 3B
+- **Contextual chat** — Ask questions about your past meetings
+- **Bilingual** — French and English (UI, transcription, AI prompts)
+- **Full-text search** — SQLite FTS5
+- **Export** — Markdown or plain text
+- **100% offline** — No connection required after model download
 
-## Prérequis
+## Requirements
 
-| Composant | Minimum | Recommandé |
-|-----------|---------|------------|
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
 | **macOS** | 14.2 (Sonoma) | 15+ (Sequoia) |
-| **RAM** | 16 Go | 32 Go |
-| **Stockage** | 10 Go | 20 Go |
-| **Processeur** | Apple Silicon (M1) | M2/M3/M4 |
+| **RAM** | 16 GB | 32 GB |
+| **Storage** | 10 GB | 20 GB |
+| **Processor** | Apple Silicon (M1) | M2/M3/M4 |
 
-> La capture audio système nécessite macOS 14.2+ (ScreenCaptureKit). Les Mac Intel ne sont pas supportés.
+> System audio capture requires macOS 14.2+ (ScreenCaptureKit). Intel Macs are not supported.
 
-## Installation (Utilisateurs)
+## Installation (Users)
 
-1. Télécharger le DMG depuis [Releases](https://github.com/Lingelo/VoxTape/releases)
-2. Glisser VoxTape dans Applications
+1. Download the DMG from [Releases](https://github.com/Lingelo/VoxTape/releases)
+2. Drag VoxTape into Applications
 
-### Contournement Gatekeeper
+### Gatekeeper bypass
 
-L'application n'est pas signée. macOS affichera "application endommagée". Exécutez :
+The app is not notarized. macOS will show "app is damaged". Run:
 
 ```bash
 xattr -cr /Applications/VoxTape.app
 ```
 
-### Premier lancement
+### First launch
 
-1. Lancer VoxTape
-2. L'assistant télécharge les modèles IA (~5 Go)
-3. Autoriser l'accès micro + enregistrement d'écran dans Préférences Système
+1. Open VoxTape
+2. The setup wizard downloads AI models (~5 GB)
+3. Grant microphone + screen recording access in System Settings
 
-## Développement
+## Development
 
-### Prérequis
+### Prerequisites
 
-- **Node.js 20+** (recommandé : [nvm](https://github.com/nvm-sh/nvm))
-- **Rust** (optionnel, pour la capture audio système)
+- **Node.js 20+** (recommended: [nvm](https://github.com/nvm-sh/nvm))
+- **Rust** (optional, for system audio capture)
   ```bash
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   ```
 
-### Démarrage rapide
+### Quick start
 
 ```bash
-# Cloner et installer
+# Clone and install
 git clone https://github.com/Lingelo/VoxTape.git
 cd VoxTape
 npm install
 
-# Télécharger les modèles IA
-npm run download-model       # STT: Silero VAD + Whisper Turbo (~540 Mo)
-npm run download-llm-model   # LLM: Ministral 3B Q4_K_M (~2.1 Go)
+# Download AI models
+npm run download-model       # STT: Silero VAD + Whisper Turbo (~540 MB)
+npm run download-llm-model   # LLM: Ministral 3B Q4_K_M (~2.1 GB)
 
-# Lancer en mode dev (hot-reload)
+# Run in dev mode (hot-reload)
 npm run dev
 ```
 
-L'application s'ouvre automatiquement. Angular tourne sur `http://localhost:4200`.
+The app opens automatically. Angular dev server runs on `http://localhost:4200`.
 
-### Commandes
+### Commands
 
-| Commande | Description |
-|----------|-------------|
-| `npm run dev` | Mode développement avec hot-reload |
-| `npm test` | Lancer les tests (Vitest) |
-| `npm run build` | Build de production |
-| `npm run package` | Créer VoxTape.app |
-| `npm run make` | Créer DMG + ZIP |
-| `npm run build:native` | Compiler le module Rust |
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development mode with hot-reload |
+| `npm test` | Run tests (Vitest) |
+| `npm run build` | Production build |
+| `npm run package` | Create VoxTape.app |
+| `npm run make` | Create DMG + ZIP |
+| `npm run build:native` | Compile Rust native module |
 
 ## Architecture
 
@@ -119,32 +123,32 @@ L'application s'ouvre automatiquement. Angular tourne sur `http://localhost:4200
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Structure Nx
+### Nx monorepo layout
 
-| Projet | Stack | Description |
-|--------|-------|-------------|
-| `apps/electron-shell` | Electron + Vite | Process principal + workers STT/LLM |
-| `apps/renderer` | Angular 21 | Interface utilisateur |
+| Project | Stack | Description |
+|---------|-------|-------------|
+| `apps/electron-shell` | Electron + Vite | Main process + STT/LLM workers |
+| `apps/renderer` | Angular 21 | User interface |
 | `libs/backend` | NestJS 11 | Services (audio, STT, LLM, DB, export) |
-| `libs/shared-types` | TypeScript | Interfaces et constantes IPC |
-| `libs/native-audio-capture` | Rust + napi-rs | Capture audio système (ScreenCaptureKit) |
+| `libs/shared-types` | TypeScript | Interfaces and IPC constants |
+| `libs/native-audio-capture` | Rust + napi-rs | System audio capture (ScreenCaptureKit) |
 
-### Modèles IA
+### AI Models
 
-| Modèle | Taille | Usage |
-|--------|--------|-------|
-| Silero VAD | 2 Mo | Détection de voix |
-| Whisper Turbo (int8) | 538 Mo | Transcription (STT) — large-v3-turbo distillé |
-| Ministral 3B Q4_K_M | 2.1 Go | Résumé et chat |
+| Model | Size | Usage |
+|-------|------|-------|
+| Silero VAD | 2 MB | Voice activity detection |
+| Whisper Turbo (int8) | 538 MB | Speech-to-text — large-v3-turbo distilled |
+| Ministral 3B Q4_K_M | 2.1 GB | Summaries and chat |
 
-## Contribuer
+## Contributing
 
-1. Fork le projet
-2. Créer une branche (`git checkout -b feature/ma-feature`)
-3. Commit (`git commit -m 'feat: ajout de ma feature'`)
-4. Push (`git push origin feature/ma-feature`)
-5. Ouvrir une Pull Request
+1. Fork the project
+2. Create a branch (`git checkout -b feature/my-feature`)
+3. Commit (`git commit -m 'feat: add my feature'`)
+4. Push (`git push origin feature/my-feature`)
+5. Open a Pull Request
 
-## Licence
+## License
 
-MIT — Voir [LICENSE](LICENSE)
+MIT — See [LICENSE](LICENSE)
