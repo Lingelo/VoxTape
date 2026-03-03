@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrateg
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SessionService } from '../../services/session.service';
 import { LanguageService, SupportedLanguage } from '../../services/language.service';
 import { GlossaryService, GlossaryEntry } from '../../services/glossary.service';
@@ -12,6 +12,9 @@ interface DownloadedModel {
 }
 
 interface VoxTapeSettingsApi {
+  app?: {
+    getVersion: () => Promise<string>;
+  };
   config?: {
     get: () => Promise<Config>;
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
@@ -51,7 +54,7 @@ interface Config {
   theme: 'dark' | 'light' | 'system';
   audio: { defaultDeviceId: string | null; systemAudioEnabled?: boolean };
   llm: { modelPath: string | null; contextSize: number; temperature: number };
-  stt: { modelPath: string | null; language: string };
+  stt: { modelPath: string | null };
   meetingDetection?: MeetingDetectionConfig;
   onboardingComplete: boolean;
 }
@@ -80,24 +83,21 @@ export class SettingsComponent implements OnInit, OnDestroy {
   detectWebMeetings = false;
   showMeetingNotification = true;
 
+  // App version (from Electron)
+  appVersion = '';
+
   // Glossary
   glossaryEntries: GlossaryEntry[] = [];
   newGlossaryFrom = '';
   newGlossaryTo = '';
 
-  // STT language options
-  sttLanguages = [
-    { value: 'fr', label: 'Francais' },
-    { value: 'en', label: 'English' },
-    { value: 'auto', label: 'Auto-detect' },
-  ];
-
-  // LLM context size options
-  contextSizeOptions = [
-    { value: 4096, label: '4096' },
-    { value: 8192, label: '8192 (Recommande)' },
-    { value: 16384, label: '16384 (Avance)' },
-  ];
+  get contextSizeOptions(): { value: number; label: string }[] {
+    return [
+      { value: 4096, label: '4096' },
+      { value: 8192, label: `8192 ${this.translate.instant('settings.contextSizeRecommended')}` },
+      { value: 16384, label: `16384 ${this.translate.instant('settings.contextSizeAdvanced')}` },
+    ];
+  }
 
   private progressCleanup: (() => void) | null = null;
   private systemAudioLevelCleanup: (() => void) | null = null;
@@ -129,6 +129,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly sessionService = inject(SessionService);
   private readonly languageService = inject(LanguageService);
   private readonly glossaryService = inject(GlossaryService);
+  private readonly translate = inject(TranslateService);
 
   private get voxtapeApi(): VoxTapeSettingsApi | undefined {
     return (window as Window & { voxtape?: VoxTapeSettingsApi }).voxtape;
@@ -147,6 +148,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       });
     }
     this.currentLang = this.languageService.currentLang;
+    this.loadVersion();
     this.loadMicrophones();
     this.loadModels();
     this.setupProgressListener();
@@ -155,6 +157,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.glossaryEntries = entries;
       this.cdr.markForCheck();
     });
+  }
+
+  private async loadVersion(): Promise<void> {
+    const version = await this.voxtapeApi?.app?.getVersion();
+    if (version) {
+      this.appVersion = version;
+      this.cdr.markForCheck();
+    }
   }
 
   setLanguage(lang: SupportedLanguage): void {
@@ -314,13 +324,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
     } catch {
       // Permission denied or no devices
     }
-  }
-
-  // ── STT Language ──────────────────────────────────────────────────
-
-  onSttLanguageChange(): void {
-    if (!this.config) return;
-    this.save('stt.language', this.config.stt.language);
   }
 
   // ── LLM Context Size ────────────────────────────────────────────

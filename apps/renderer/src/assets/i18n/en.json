@@ -17,7 +17,15 @@
   "recording": {
     "start": "Start",
     "stop": "Stop",
-    "resume": "Resume"
+    "resume": "Resume",
+    "inProgress": "IN PROGRESS...",
+    "regenerate": "REGENERATE",
+    "summarize": "SUMMARIZE",
+    "cancel": "Cancel",
+    "directivePlaceholder": "E.g.: Focus on actions, replace John with John-Marc...",
+    "tooltipRecord": "Click here to start an audio recording.",
+    "tooltipTranscript": "The transcript appears here in real time.",
+    "tooltipGenerate": "Generate a smart summary of your meeting."
   },
   "transcript": {
     "title": "Transcript",
@@ -29,21 +37,32 @@
     "retry": "Retry",
     "speaker": "Person {{num}}",
     "identifyingSpeakers": "Identifying speakers...",
-    "recordingElsewhere": "Recording in progress - click to go back"
+    "recordingElsewhere": "Recording in progress - click to go back",
+    "loader1": "LISTENING...",
+    "loader2": "TRANSCRIBING...",
+    "loader3": "DECODING AUDIO...",
+    "loader4": "VOICE ANALYSIS..."
   },
   "notes": {
     "title": "Notes",
     "placeholder": "Take your notes here during recording...",
     "titlePlaceholder": "Session title...",
     "generate": "Generate AI notes",
-    "generating": "Generating..."
+    "generating": "Generating...",
+    "close": "Close",
+    "history": "History",
+    "viewInTranscript": "View in transcript"
   },
   "chat": {
     "title": "Chat",
     "placeholder": "Ask a question... (/ for commands)",
     "empty": "Ask a question about this meeting.",
     "send": "Send",
-    "error": "Error"
+    "error": "Error",
+    "loader1": "ANALYZING...",
+    "loader2": "GENERATING...",
+    "loader3": "PROCESSING...",
+    "loader4": "THINKING..."
   },
   "settings": {
     "title": "Settings",
@@ -81,8 +100,22 @@
     "shortcutClosePanel": "Close panels",
     "shortcutSendChat": "Send message (chat)",
     "shortcutCommands": "Quick commands (chat)",
+    "llmContextSize": "LLM Context Size",
+    "contextSize": "Context size",
+    "contextSizeHint": "Context window size for the LLM model. Larger = better for long meetings but uses more RAM.",
+    "contextSizeWarning": "Warning: 16384 tokens uses significantly more RAM and may slow down the application.",
+    "contextSizeRecommended": "(Recommended)",
+    "contextSizeAdvanced": "(Advanced)",
+    "glossary": "Glossary / Vocabulary",
+    "glossaryHint": "Automatic corrections applied to each new transcription segment.",
+    "glossaryFrom": "When STT says...",
+    "glossaryTo": "Replace with...",
+    "glossaryAdd": "Add",
+    "glossaryRemove": "Remove",
     "about": "About",
     "aboutText": "100% local, zero cloud",
+    "aboutDescription": "VoxTape transcribes your meetings in real time and generates smart summaries using Whisper Turbo and Ministral 3B, entirely on your machine. No data ever leaves your computer, no remote server is involved.",
+    "aboutCredit": "Built by Angelo Lima",
     "reset": "Reset application",
     "resetWarning": "Deletes all your sessions, transcripts and downloaded models.",
     "back": "Back"
@@ -135,6 +168,8 @@
     "installDownloading": "Downloading...",
     "installDone": "Installation complete",
     "installError": "An error occurred. Check your connection and try again.",
+    "langTitle": "Choose your language",
+    "langSubtitle": "This language will be used for the UI, transcription and AI summaries.",
     "readyTitle": "Ready!",
     "readySubtitle": "VoxTape is configured. Start your first session."
   },
@@ -162,6 +197,7 @@
   "errors": {
     "micDenied": "Microphone access denied",
     "modelLoadFailed": "Failed to load model",
-    "saveFailed": "Failed to save"
+    "saveFailed": "Failed to save",
+    "noLlmModel": "No LLM model available. Download a model in settings."
   }
 }

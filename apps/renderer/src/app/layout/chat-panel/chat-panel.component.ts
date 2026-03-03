@@ -17,7 +17,8 @@ import { Subscription } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LlmService } from '../../services/llm.service';
 import { SessionService } from '../../services/session.service';
-import { RECIPES, Recipe } from '../../services/recipes';
+import { LanguageService } from '../../services/language.service';
+import { Recipe, getRecipes } from '../../services/recipes';
 import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.component';
 import type { ChatMessage } from '@voxtape/shared-types';
 
@@ -53,6 +54,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   private readonly session = inject(SessionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
+  private readonly languageService = inject(LanguageService);
   private subs: Subscription[] = [];
   private chatSubs: Subscription[] = [];
 
@@ -76,7 +78,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       if (this.initialPrompt) {
         // Resolve slash command to recipe prompt if applicable
-        const recipe = RECIPES.find((r) => this.initialPrompt.trim() === r.command);
+        const recipes = getRecipes(this.languageService.currentLang);
+        const recipe = recipes.find((r) => this.initialPrompt.trim() === r.command);
         if (recipe) {
           this.pendingCommandDisplay = recipe.command;
           this.pendingRecipePrompt = recipe.prompt;
@@ -107,7 +110,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   onInputChange(): void {
     if (this.input.startsWith('/')) {
       const filter = this.input.slice(1).toLowerCase();
-      this.filteredRecipes = RECIPES.filter((r) =>
+      const recipes = getRecipes(this.languageService.currentLang);
+      this.filteredRecipes = recipes.filter((r) =>
         r.command.slice(1).startsWith(filter) || r.label.toLowerCase().includes(filter)
       );
       this.showRecipes = this.filteredRecipes.length > 0;
@@ -218,7 +222,10 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
         setTimeout(() => {
           this.messages = this.messages.filter((m) => m.id !== streamMsgId);
           const errorLabel = this.translate.instant('chat.error');
-          this.session.addChatMessage({ role: 'assistant', content: `${errorLabel}: ${payload.error}` });
+          const errorMsg = payload.error === 'NO_LLM_MODEL'
+            ? this.translate.instant('errors.noLlmModel')
+            : payload.error;
+          this.session.addChatMessage({ role: 'assistant', content: `${errorLabel}: ${errorMsg}` });
           this.isGenerating = false;
           this.cdr.markForCheck();
           this.scrollToBottom();
@@ -244,9 +251,16 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       transcript = segs.map((s) => s.text).join('\n');
     }).unsubscribe();
 
-    if (summary) parts.push(`### Résumé de la réunion:\n${summary}`);
-    if (notes) parts.push(`### Notes de l'utilisateur:\n${notes}`);
-    if (transcript) parts.push(`### Transcription:\n${transcript}`);
+    const lang = this.languageService.currentLang;
+    if (lang === 'en') {
+      if (summary) parts.push(`### Meeting summary:\n${summary}`);
+      if (notes) parts.push(`### User notes:\n${notes}`);
+      if (transcript) parts.push(`### Transcript:\n${transcript}`);
+    } else {
+      if (summary) parts.push(`### Résumé de la réunion:\n${summary}`);
+      if (notes) parts.push(`### Notes de l'utilisateur:\n${notes}`);
+      if (transcript) parts.push(`### Transcription:\n${transcript}`);
+    }
 
     return parts.join('\n\n');
   }
@@ -282,6 +296,15 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     return escaped
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  }
+
+  get loaderMessages(): string[] {
+    return [
+      this.translate.instant('chat.loader1'),
+      this.translate.instant('chat.loader2'),
+      this.translate.instant('chat.loader3'),
+      this.translate.instant('chat.loader4'),
+    ];
   }
 
   private escapeHtml(text: string): string {

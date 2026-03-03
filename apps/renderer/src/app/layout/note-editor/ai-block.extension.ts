@@ -12,7 +12,11 @@ export interface AiBlockAttributes {
   source: 'ai' | 'user'; // starts as 'ai', becomes 'user' on edit
 }
 
-export const AiBlock = Node.create({
+export interface AiBlockOptions {
+  loupeTitle: string;
+}
+
+export const AiBlock = Node.create<AiBlockOptions>({
   name: 'aiBlock',
 
   group: 'block',
@@ -20,6 +24,12 @@ export const AiBlock = Node.create({
   content: 'inline*',
 
   defining: true,
+
+  addOptions() {
+    return {
+      loupeTitle: 'View in transcript',
+    };
+  },
 
   addAttributes() {
     return {
@@ -56,7 +66,7 @@ export const AiBlock = Node.create({
     return ['div', attrs, ['span', { class: 'ai-block-content' }, 0], ['button', {
       class: 'ai-block-loupe',
       contenteditable: 'false',
-      title: 'Voir dans la transcription',
+      title: this.options.loupeTitle,
     }, '\u{1F50D}']];
   },
 
@@ -68,10 +78,25 @@ export const AiBlock = Node.create({
   },
 });
 
-/** Type label mapping for display */
-export const AI_BLOCK_LABELS: Record<string, string> = {
-  summary: 'Résumé',
-  decision: 'Décision',
-  'action-item': 'Action',
-  'key-point': 'Point clé',
+/** Bilingual type label mapping for display */
+const AI_BLOCK_LABELS_I18N: Record<string, Record<string, string>> = {
+  fr: {
+    summary: 'Résumé',
+    decision: 'Décision',
+    'action-item': 'Action',
+    'key-point': 'Point clé',
+  },
+  en: {
+    summary: 'Summary',
+    decision: 'Decision',
+    'action-item': 'Action',
+    'key-point': 'Key point',
+  },
 };
+
+/** @deprecated Use getAiBlockLabels(lang) instead */
+export const AI_BLOCK_LABELS: Record<string, string> = AI_BLOCK_LABELS_I18N['fr'];
+
+export function getAiBlockLabels(lang: string): Record<string, string> {
+  return AI_BLOCK_LABELS_I18N[lang] || AI_BLOCK_LABELS_I18N['fr'];
+}

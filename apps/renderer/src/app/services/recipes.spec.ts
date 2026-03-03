@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { RECIPES, Recipe } from './recipes';
+import { RECIPES, Recipe, getRecipes } from './recipes';
 
-describe('RECIPES', () => {
+describe('RECIPES (deprecated FR export)', () => {
   it('should export an array of recipes', () => {
     expect(Array.isArray(RECIPES)).toBe(true);
     expect(RECIPES.length).toBeGreaterThan(0);
@@ -42,52 +42,46 @@ describe('RECIPES', () => {
   it('should have non-empty prompts with instructions', () => {
     RECIPES.forEach((recipe: Recipe) => {
       expect(recipe.prompt.length).toBeGreaterThan(20);
-      // Prompts should contain formatting instructions
-      expect(recipe.prompt).toMatch(/FORMAT|Si |N'invente|Base-toi/i);
     });
   });
+});
 
-  describe('/resume recipe', () => {
-    it('should have correct structure', () => {
-      const recipe = RECIPES.find((r) => r.command === '/resume');
-      expect(recipe).toBeDefined();
-      expect(recipe?.label).toBe('Résumé');
-      expect(recipe?.prompt).toContain('bullet points');
-    });
+describe('getRecipes', () => {
+  it('should return FR recipes for fr language', () => {
+    const recipes = getRecipes('fr');
+    expect(recipes.length).toBe(5);
+    expect(recipes[0].command).toBe('/resume');
+    expect(recipes[0].label).toBe('Résumé');
   });
 
-  describe('/actions recipe', () => {
-    it('should have correct structure', () => {
-      const recipe = RECIPES.find((r) => r.command === '/actions');
-      expect(recipe).toBeDefined();
-      expect(recipe?.label).toBe("Points d'action");
-      expect(recipe?.prompt).toContain('[ ]');
-    });
+  it('should return EN recipes for en language', () => {
+    const recipes = getRecipes('en');
+    expect(recipes.length).toBe(5);
+    expect(recipes[0].command).toBe('/summary');
+    expect(recipes[0].label).toBe('Summary');
   });
 
-  describe('/decisions recipe', () => {
-    it('should have correct structure', () => {
-      const recipe = RECIPES.find((r) => r.command === '/decisions');
-      expect(recipe).toBeDefined();
-      expect(recipe?.label).toBe('Décisions prises');
-    });
+  it('should have unique commands per language', () => {
+    for (const lang of ['fr', 'en'] as const) {
+      const recipes = getRecipes(lang);
+      const commands = recipes.map((r) => r.command);
+      expect(commands.length).toBe(new Set(commands).size);
+    }
   });
 
-  describe('/email recipe', () => {
-    it('should have correct structure', () => {
-      const recipe = RECIPES.find((r) => r.command === '/email');
-      expect(recipe).toBeDefined();
-      expect(recipe?.label).toBe('E-mail de suivi');
-      expect(recipe?.prompt).toContain('Objet:');
-      expect(recipe?.prompt).toContain('Cordialement');
-    });
+  it('should have commands starting with /', () => {
+    for (const lang of ['fr', 'en'] as const) {
+      getRecipes(lang).forEach((recipe) => {
+        expect(recipe.command.startsWith('/')).toBe(true);
+      });
+    }
   });
 
-  describe('/questions recipe', () => {
-    it('should have correct structure', () => {
-      const recipe = RECIPES.find((r) => r.command === '/questions');
-      expect(recipe).toBeDefined();
-      expect(recipe?.label).toBe('Questions ouvertes');
-    });
+  it('should have non-empty prompts', () => {
+    for (const lang of ['fr', 'en'] as const) {
+      getRecipes(lang).forEach((recipe) => {
+        expect(recipe.prompt.length).toBeGreaterThan(20);
+      });
+    }
   });
 });

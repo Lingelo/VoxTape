@@ -63,7 +63,7 @@ export class SystemAudioService extends EventEmitter implements OnModuleDestroy 
             sum += samples[i] * samples[i];
           }
           const rms = Math.sqrt(sum / samples.length);
-          const level = Math.min(1, rms / 10000); // Normalize to 0-1
+          const level = Math.min(1, rms / 4000); // Normalize to 0-1 (boosted for typical system audio levels)
           self.emit('level', level);
         }
 

@@ -2,7 +2,7 @@ import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, ChangeDetect
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SessionService, SessionStatus } from '../../services/session.service';
 import { AudioCaptureService } from '../../services/audio-capture.service';
 import { LlmService } from '../../services/llm.service';
@@ -51,6 +51,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   private readonly llm = inject(LlmService);
   private readonly firstLaunch = inject(FirstLaunchService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translate = inject(TranslateService);
   private subs: Subscription[] = [];
   private selectedDeviceId = '';
 
@@ -214,11 +215,11 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   getTooltipText(): string {
     switch (this.tooltipStep) {
       case 'record':
-        return 'Cliquez ici pour démarrer un enregistrement audio.';
+        return this.translate.instant('recording.tooltipRecord');
       case 'transcript':
-        return 'La transcription apparaît ici en temps réel.';
+        return this.translate.instant('recording.tooltipTranscript');
       case 'generate':
-        return 'Générez un résumé intelligent de votre réunion.';
+        return this.translate.instant('recording.tooltipGenerate');
       default:
         return '';
     }
