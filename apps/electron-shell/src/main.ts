@@ -50,7 +50,26 @@ let meetingNotificationDismissed = false;
 let lastDetectedMeetingName: string | null = null;
 
 app.setName('VoxTape');
+
+// Read version from project package.json (app.getVersion() returns Electron's version in dev mode)
+try {
+  const fs = require('fs');
+  const pkgPath = join(__dirname, '..', '..', '..', 'package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  if (pkg.version) app.setVersion(pkg.version);
+} catch {
+  // In packaged app, version is already set correctly from app's package.json
+}
+
 const isDev = !app.isPackaged;
+
+// macOS native About panel (icon comes from the .app bundle, not iconPath)
+app.setAboutPanelOptions({
+  applicationName: 'VoxTape',
+  applicationVersion: app.getVersion(),
+  copyright: 'Angelo Lima',
+  credits: 'Real-time meeting transcription & smart summaries, 100% on-device.\nWhisper Turbo + Ministral 3B, no data sent online.',
+});
 const preloadPath = join(__dirname, 'preload.js');
 const rendererUrl = isDev
   ? 'http://localhost:4200'
@@ -121,9 +140,8 @@ async function bootstrapNest(): Promise<void> {
   // Pass models dir to workers via env so they can find downloaded models
   process.env.VOXTAPE_MODELS_DIR = modelsDir;
 
-  // Pass STT language to worker via env
-  const sttCfg = configService.get('stt');
-  process.env.VOXTAPE_STT_LANGUAGE = sttCfg?.language || 'fr';
+  // Pass STT language to worker via env (unified from top-level 'language')
+  process.env.VOXTAPE_STT_LANGUAGE = (configService.get('language') as string) || 'fr';
 }
 
 // ── Dock Icon ─────────────────────────────────────────────────────────────
@@ -502,7 +520,6 @@ function setupIpc(): void {
     'llm.contextSize': 'number',
     'llm.temperature': 'number',
     'stt.modelPath': 'string|null',
-    'stt.language': 'string',
     'meetingDetection.enabled': 'boolean',
     'meetingDetection.detectWebMeetings': 'boolean',
     'meetingDetection.showNotification': 'boolean',
@@ -521,6 +538,10 @@ function setupIpc(): void {
     }
     return typeof value === expectedType;
   }
+
+  ipcMain.handle('app:version', () => {
+    return app.getVersion();
+  });
 
   ipcMain.handle('config:get', () => {
     return configService.getAll();
@@ -549,12 +570,11 @@ function setupIpc(): void {
         modelPath: llmCfg.modelPath,
       });
     }
-    // Live-update STT config (language) when relevant keys change
-    if (key.startsWith('stt.')) {
-      const sttCfg = configService.get('stt');
-      process.env.VOXTAPE_STT_LANGUAGE = sttCfg?.language || 'fr';
+    // Live-update STT language when app language changes
+    if (key === 'language') {
+      process.env.VOXTAPE_STT_LANGUAGE = (value as string) || 'fr';
       sttService.restart().catch((err: Error) => {
-        console.error('[Main] STT restart after config change failed:', err.message);
+        console.error('[Main] STT restart after language change failed:', err.message);
       });
     }
     // Live-update meeting detection config when relevant keys change

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.component';
+import { LanguageService, SupportedLanguage } from '../../services/language.service';
 
 interface ModelInfo {
   id: string;
@@ -27,6 +28,9 @@ interface AudioDevice {
 }
 
 interface VoxTapeOnboardingApi {
+  app?: {
+    getVersion: () => Promise<string>;
+  };
   config?: {
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
   };
@@ -58,7 +62,9 @@ interface VoxTapeOnboardingApi {
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
   step = 0;
-  steps = [0, 1, 2, 3, 4];
+  steps = [0, 1, 2, 3, 4, 5];
+  selectedLang: SupportedLanguage = 'fr';
+  appVersion = '';
 
   // Mic
   audioLevel = 0;
@@ -96,12 +102,17 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private readonly zone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
+  private readonly languageService = inject(LanguageService);
 
   private get voxtapeApi(): VoxTapeOnboardingApi | undefined {
     return (window as Window & { voxtape?: VoxTapeOnboardingApi }).voxtape;
   }
 
   async ngOnInit(): Promise<void> {
+    this.voxtapeApi?.app?.getVersion().then((v) => {
+      this.appVersion = v;
+      this.cdr.markForCheck();
+    });
     await this.loadModels();
     this.setupProgressListener();
     this.checkSystemAudioSupport();
@@ -127,34 +138,39 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     return this.REQUIRED_MODELS.includes(modelId);
   }
 
+  onLanguageSelect(lang: SupportedLanguage): void {
+    this.selectedLang = lang;
+    this.languageService.setLanguage(lang, true);
+  }
+
   nextStep(): void {
-    if (this.step === 1) {
+    if (this.step === 2) {
       if (this.selectedDeviceId) {
         this.saveConfig('audio.defaultDeviceId', this.selectedDeviceId);
       }
       this.stopMicTest();
     }
-    if (this.step === 2) {
+    if (this.step === 3) {
       this.stopSystemAudioTest();
     }
     // Block progression from Install step until done
-    if (this.step === 3 && this.installState !== 'done') {
+    if (this.step === 4 && this.installState !== 'done') {
       return;
     }
     this.step = Math.min(this.step + 1, this.steps.length - 1);
 
-    if (this.step === 1) {
+    if (this.step === 2) {
       this.startMicTest();
     }
   }
 
   prevStep(): void {
-    if (this.step === 1) {
+    if (this.step === 2) {
       this.stopMicTest();
     }
     this.step = Math.max(this.step - 1, 0);
 
-    if (this.step === 1) {
+    if (this.step === 2) {
       this.startMicTest();
     }
   }

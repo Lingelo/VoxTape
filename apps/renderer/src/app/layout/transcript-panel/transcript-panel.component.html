@@ -37,7 +37,7 @@
 
     @if (isSpeechActive) {
       <sdn-glitch-loader
-        [messages]="['ECOUTE EN COURS...', 'TRANSCRIPTION...', 'DECODAGE AUDIO...', 'ANALYSE VOCALE...']"
+        [messages]="loaderMessages"
         [typingSpeed]="40"
       ></sdn-glitch-loader>
     }

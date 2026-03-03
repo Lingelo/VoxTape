@@ -23,6 +23,10 @@ export class FirstLaunchService {
   }
 
   async checkFirstLaunch(): Promise<void> {
+    // Already shown or completed — don't restart
+    if (this._currentStep$.value !== null) {
+      return;
+    }
     try {
       // If API is not available, don't show tooltips (could be dev mode or error)
       if (!this.api) {
@@ -48,6 +52,7 @@ export class FirstLaunchService {
     switch (current) {
       case 'record':
         this._currentStep$.next('transcript');
+        this.saveComplete();
         break;
       case 'transcript':
         this._currentStep$.next('generate');
@@ -65,14 +70,16 @@ export class FirstLaunchService {
   private async complete(): Promise<void> {
     this._currentStep$.next('done');
     this._isFirstLaunch$.next(false);
+    await this.saveComplete();
+  }
+
+  private async saveComplete(): Promise<void> {
     try {
       if (this.api) {
         await this.api.set('firstLaunchComplete', true);
-      } else {
-        console.warn('[FirstLaunchService] API not available, cannot save completion state');
       }
-    } catch (err) {
-      console.warn('[FirstLaunchService] Failed to save completion state:', err);
+    } catch {
+      // Best-effort save
     }
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, Subscription, debounceTime, takeUntil } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 import { ElectronIpcService, DiarizationSegment } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
 import { LlmService } from './llm.service';
@@ -69,7 +70,8 @@ export class SessionService implements OnDestroy {
   private readonly _viewStatus$ = new BehaviorSubject<SessionStatus>('idle');
   private readonly _loadedSegments$ = new BehaviorSubject<TranscriptSegment[]>([]);
   private readonly _userNotes$ = new BehaviorSubject<string>('');
-  private readonly _title$ = new BehaviorSubject<string>('Nouvelle session');
+  private readonly translate = inject(TranslateService);
+  private readonly _title$ = new BehaviorSubject<string>(this.translate.instant('session.new'));
   private readonly _viewElapsed$ = new BehaviorSubject<number>(0);
   private readonly _aiNotes$ = new BehaviorSubject<EnhancedNote[]>([]);
   private readonly _aiSummary$ = new BehaviorSubject<string>('');
@@ -560,7 +562,7 @@ export class SessionService implements OnDestroy {
     this._viewStatus$.next('idle');
     this._loadedSegments$.next([]);
     this._userNotes$.next('');
-    this._title$.next('Nouvelle session');
+    this._title$.next(this.translate.instant('session.new'));
     this._viewElapsed$.next(0);
     this._aiNotes$.next([]);
     this._aiSummary$.next('');
@@ -580,7 +582,7 @@ export class SessionService implements OnDestroy {
     if (!data) return;
 
     this._id$.next(data.id);
-    this._title$.next(data.title || 'Sans titre');
+    this._title$.next(data.title || this.translate.instant('session.untitled'));
     this._userNotes$.next(data.userNotes || '');
     this._loadedSegments$.next(data.segments || []);
     this._aiNotes$.next(data.aiNotes || []);
@@ -879,7 +881,7 @@ export class SessionService implements OnDestroy {
       this._id$.next(recordingId);
       // Clear loaded segments since we're returning to live recording
       this._loadedSegments$.next([]);
-      this._title$.next('Nouvelle session');
+      this._title$.next(this.translate.instant('session.new'));
       this._userNotes$.next('');
       this._aiNotes$.next([]);
       this._aiSummary$.next('');

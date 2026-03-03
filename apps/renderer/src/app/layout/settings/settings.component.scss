@@ -153,10 +153,35 @@
   }
 }
 
+.about-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.about-app-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.about-version {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: monospace;
+}
+
 .about-text {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.about-credit {
+  font-size: 11px;
+  color: var(--text-tertiary);
 }
 
 .subsection-title {
