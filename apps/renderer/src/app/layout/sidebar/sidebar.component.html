@@ -68,6 +68,9 @@
                   @if (s.id === recordingSessionId) {
                     <span class="recording-indicator"></span>
                   }
+                  @if (s.id === enhancingSessionId) {
+                    <span class="enhancing-indicator" [title]="'recording.inProgress' | translate"></span>
+                  }
                   <span class="session-title">{{ s.title }}</span>
                   <button
                     class="action-btn export-btn"

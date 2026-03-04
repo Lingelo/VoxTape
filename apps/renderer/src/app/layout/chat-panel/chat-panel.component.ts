@@ -44,6 +44,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   input = '';
   messages: ChatMessageWithHtml[] = [];
   isGenerating = false;
+  isEnhancing = false;
   showRecipes = false;
   filteredRecipes: Recipe[] = [];
   recipeIndex = 0;
@@ -71,6 +72,10 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
         }));
         this.cdr.markForCheck();
         this.scrollToBottom();
+      }),
+      this.session.isEnhancing$.subscribe((e) => {
+        this.isEnhancing = e;
+        this.cdr.markForCheck();
       })
     );
 

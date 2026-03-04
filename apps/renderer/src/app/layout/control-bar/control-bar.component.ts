@@ -39,6 +39,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
   hasSegments = false;
   elapsed = 0;
   isRecordingElsewhere = false;
+  isEnhancing = false;
   directiveMode = false;
 
   vuBars = [0, 1, 2];  // 3 barres comme le voice modulator de KITT
@@ -76,6 +77,7 @@ export class ControlBarComponent implements OnInit, OnDestroy {
       this.session.segments$.subscribe((segs) => { this.hasSegments = segs.length > 0; this.cdr.markForCheck(); }),
       this.session.elapsed$.subscribe((e) => { this.elapsed = e; this.cdr.markForCheck(); }),
       this.session.isRecordingElsewhere$.subscribe((e) => { this.isRecordingElsewhere = e; this.cdr.markForCheck(); }),
+      this.session.isEnhancing$.subscribe((e) => { this.isEnhancing = e; this.cdr.markForCheck(); }),
       this.llm.status$.subscribe((s) => { this.llmStatus = s; this.cdr.markForCheck(); }),
       this.firstLaunch.currentStep$.subscribe((s) => { this.tooltipStep = s; this.cdr.markForCheck(); })
     );
@@ -164,7 +166,13 @@ export class ControlBarComponent implements OnInit, OnDestroy {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   }
 
+  /** True if enhance/chat buttons should be disabled (LLM busy on another session) */
+  get isLlmBusy(): boolean {
+    return this.isEnhancing && this.status !== 'processing';
+  }
+
   onEnhanceClick(): void {
+    if (this.isLlmBusy) return;
     if (this.hasAiSummary) {
       // Toggle directive mode — focus the existing input for instructions
       this.directiveMode = true;

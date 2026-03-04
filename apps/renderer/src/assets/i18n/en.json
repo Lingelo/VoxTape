@@ -21,6 +21,7 @@
     "inProgress": "IN PROGRESS...",
     "regenerate": "REGENERATE",
     "summarize": "SUMMARIZE",
+    "llmBusy": "Generation in progress on another session",
     "cancel": "Cancel",
     "directivePlaceholder": "E.g.: Focus on actions, replace John with John-Marc...",
     "tooltipRecord": "Click here to start an audio recording.",
