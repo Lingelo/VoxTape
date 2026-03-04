@@ -143,6 +143,12 @@ async function handlePrompt(payload: {
     const response = await session.prompt(userPrompt, {
       maxTokens,
       temperature,
+      repeatPenalty: {
+        penalty: 1.15,
+        frequencyPenalty: 0.1,
+        presencePenalty: 0.1,
+        lastTokens: 128,
+      },
       signal: abortController.signal,
       onTextChunk: (token: string) => {
         fullText += token;

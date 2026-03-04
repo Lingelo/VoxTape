@@ -38,6 +38,7 @@ interface SearchResult {
 export class SidebarComponent implements OnInit, OnDestroy {
   activeSessionId = '';
   recordingSessionId: string | null = null;
+  enhancingSessionId: string | null = null;
   sessionGroups: SessionGroup[] = [];
   searchQuery = '';
   searchResults: SearchResult[] = [];
@@ -54,6 +55,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.subs.push(
       this.session.id$.subscribe((id) => { this.activeSessionId = id; this.cdr.markForCheck(); }),
       this.session.recordingSessionId$.subscribe((id) => { this.recordingSessionId = id; this.cdr.markForCheck(); }),
+      this.session.enhancingSessionId$.subscribe((id) => { this.enhancingSessionId = id; this.cdr.markForCheck(); }),
       this.session.sessions$.subscribe((sessions) => {
         this.sessionGroups = this.groupByDate(sessions);
         this.cdr.markForCheck();

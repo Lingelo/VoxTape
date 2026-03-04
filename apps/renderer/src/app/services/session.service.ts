@@ -1,5 +1,5 @@
 import { Injectable, OnDestroy, inject } from '@angular/core';
-import { BehaviorSubject, Observable, Subject, Subscription, debounceTime, takeUntil } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, Subscription, combineLatest, debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { ElectronIpcService, DiarizationSegment } from './electron-ipc.service';
 import { AudioCaptureService } from './audio-capture.service';
@@ -85,6 +85,9 @@ export class SessionService implements OnDestroy {
   private readonly _sessions$ = new BehaviorSubject<SessionListItem[]>([]);
   private readonly _enhanceProgress$ = new BehaviorSubject<EnhanceProgress | null>(null);
 
+  // Enhancement state (persists across session navigation)
+  private readonly _enhancingSessionId$ = new BehaviorSubject<string | null>(null);
+
   // Recording state (persists across session navigation)
   private readonly _recordingSessionId$ = new BehaviorSubject<string | null>(null);
   private readonly _recordingStatus$ = new BehaviorSubject<SessionStatus>('idle');
@@ -123,7 +126,22 @@ export class SessionService implements OnDestroy {
   private readonly _summaryHistory$ = new BehaviorSubject<SummaryHistoryItem[]>([]);
   readonly summaryHistory$: Observable<SummaryHistoryItem[]> = this._summaryHistory$.asObservable();
   readonly sessions$: Observable<SessionListItem[]> = this._sessions$.asObservable();
-  readonly enhanceProgress$: Observable<EnhanceProgress | null> = this._enhanceProgress$.asObservable();
+  readonly enhancingSessionId$: Observable<string | null> = this._enhancingSessionId$.asObservable();
+  /** True when the LLM is enhancing ANY session (use to disable enhance buttons) */
+  readonly isEnhancing$: Observable<boolean> = this._enhancingSessionId$.pipe(
+    map((id) => id !== null),
+  );
+  // Only emit progress when viewing the session being enhanced
+  readonly enhanceProgress$: Observable<EnhanceProgress | null> = combineLatest([
+    this._enhanceProgress$,
+    this._enhancingSessionId$,
+    this._id$,
+  ]).pipe(
+    map(([progress, enhancingId, viewingId]) =>
+      enhancingId && viewingId === enhancingId ? progress : null
+    ),
+    distinctUntilChanged(),
+  );
   readonly segments$: Observable<TranscriptSegment[]> = this._segments$.asObservable();
   readonly status$: Observable<SessionStatus> = this._status$.asObservable();
   readonly elapsed$: Observable<number> = this._elapsed$.asObservable();
@@ -151,12 +169,14 @@ export class SessionService implements OnDestroy {
       const viewingId = this._id$.value;
       const recordingId = this._recordingSessionId$.value;
       const recordingStatus = this._recordingStatus$.value;
+      const enhancingId = this._enhancingSessionId$.value;
       const viewStatus = this._viewStatus$.value;
 
-      // If viewing the recording session AND actively recording/draining, show recording status
-      // Otherwise, show view status (includes 'processing' for summary generation)
       if (viewingId === recordingId && (recordingStatus === 'recording' || recordingStatus === 'draining')) {
         this._status$.next(recordingStatus);
+      } else if (viewingId === enhancingId) {
+        // Session is being enhanced — show processing regardless of _viewStatus$
+        this._status$.next('processing');
       } else {
         this._status$.next(viewStatus);
       }
@@ -202,6 +222,7 @@ export class SessionService implements OnDestroy {
       updateIsRecordingElsewhere();
     });
     this._viewStatus$.pipe(takeUntil(this._destroy$)).subscribe(updateStatus);
+    this._enhancingSessionId$.pipe(takeUntil(this._destroy$)).subscribe(updateStatus);
     this._recordingElapsed$.pipe(takeUntil(this._destroy$)).subscribe(updateElapsed);
     this._viewElapsed$.pipe(takeUntil(this._destroy$)).subscribe(updateElapsed);
   }
@@ -415,8 +436,15 @@ export class SessionService implements OnDestroy {
   }
 
   enhanceNotes(directive?: string): void {
+    // Block if another enhancement is already running
+    if (this._enhancingSessionId$.value) {
+      console.warn('[SessionService] Enhancement already in progress for session:', this._enhancingSessionId$.value);
+      return;
+    }
+
     const segments = this.getCurrentSegments();
     const notes = this._userNotes$.value;
+    const targetSessionId = this._id$.value;
 
     if (segments.length === 0) return;
 
@@ -426,6 +454,7 @@ export class SessionService implements OnDestroy {
       this.saveSummaryToHistory(currentSummary, directive);
     }
 
+    this._enhancingSessionId$.next(targetSessionId);
     this._viewStatus$.next('processing');
 
     // Build transcript text with segment IDs
@@ -438,17 +467,18 @@ export class SessionService implements OnDestroy {
 
     if (estimatedTokens > 7000) {
       // Map-reduce for long transcripts
-      this.enhanceWithMapReduce(notes, segments, directive);
+      this.enhanceWithMapReduce(notes, segments, directive, targetSessionId);
     } else {
-      this.enhanceDirect(notes, transcript, directive);
+      this.enhanceDirect(notes, transcript, directive, targetSessionId);
     }
   }
 
-  private enhanceDirect(notes: string, transcript: string, directive?: string): void {
+  private enhanceDirect(notes: string, transcript: string, directive?: string, targetSessionId?: string): void {
     // Clean up previous LLM subscriptions
     this.llmSubs.forEach((s) => s.unsubscribe());
     this.llmSubs = [];
 
+    const sessionId = targetSessionId ?? this._id$.value;
     const requestId = this.llm.enhance(notes, transcript, directive);
 
     const cleanupSubs = () => {
@@ -456,10 +486,10 @@ export class SessionService implements OnDestroy {
       this.llmSubs = [];
     };
 
-    // Stream tokens progressively into the summary
+    // Stream tokens progressively into the summary (only if still viewing target session)
     this.llmSubs.push(
       this.llm.streamedText$.subscribe((text) => {
-        if (text) {
+        if (text && this._id$.value === sessionId) {
           this._aiSummary$.next(text);
         }
       }),
@@ -467,28 +497,49 @@ export class SessionService implements OnDestroy {
         if (payload.requestId !== requestId) return;
         try {
           const { title, body } = this.extractTitleFromSummary(payload.fullText || '');
-          if (title) this._title$.next(title);
-          this._aiSummary$.next(body || payload.fullText || '');
+          const finalSummary = body || payload.fullText || '';
+
+          // Always save to the target session directly (regardless of current view)
+          this.saveSessionById(sessionId, {
+            ...(title ? { title } : {}),
+            aiSummary: finalSummary,
+          });
+
+          // Update UI state only if still viewing the target session
+          if (this._id$.value === sessionId) {
+            if (title) this._title$.next(title);
+            this._aiSummary$.next(finalSummary);
+          }
         } catch (err) {
           console.error('[SessionService] Error parsing enhance result:', err);
-          this._aiSummary$.next(payload.fullText || '');
+          const fallback = payload.fullText || '';
+          this.saveSessionById(sessionId, { aiSummary: fallback });
+          if (this._id$.value === sessionId) {
+            this._aiSummary$.next(fallback);
+          }
         }
         this._enhanceProgress$.next(null);
+        this._enhancingSessionId$.next(null);
         this._viewStatus$.next('done');
-        this.requestSave();
         cleanupSubs();
       }),
       this.llm.error$.subscribe((payload) => {
         if (payload.requestId !== requestId) return;
         console.error('[SessionService] Enhance error:', payload.error);
         this._enhanceProgress$.next(null);
+        this._enhancingSessionId$.next(null);
         this._viewStatus$.next('done');
         cleanupSubs();
       })
     );
   }
 
-  private async enhanceWithMapReduce(notes: string, segments: TranscriptSegment[], directive?: string): Promise<void> {
+  private async enhanceWithMapReduce(
+    notes: string,
+    segments: TranscriptSegment[],
+    directive?: string,
+    targetSessionId?: string,
+  ): Promise<void> {
     // Split transcript into chunks of ~800 tokens by segment boundaries
     const chunks: string[] = [];
     let currentChunk = '';
@@ -530,7 +581,7 @@ export class SessionService implements OnDestroy {
     // Final pass: merge condensed chunks into the enhance prompt
     this._enhanceProgress$.next({ phase: 'enhancing', current: 0, total: 0 });
     const mergedTranscript = condensed.join('\n\n');
-    this.enhanceDirect(notes, mergedTranscript, directive);
+    this.enhanceDirect(notes, mergedTranscript, directive, targetSessionId);
   }
 
   private condenseChunk(chunk: string): Promise<string> {
@@ -708,6 +759,37 @@ export class SessionService implements OnDestroy {
     await this.loadSessionsList();
   }
 
+  /** Save specific fields to a session by ID (bypasses singleton state) */
+  private async saveSessionById(
+    sessionId: string,
+    updates: { title?: string; aiSummary?: string }
+  ): Promise<void> {
+    const api = this.voxtapeApi?.session;
+    if (!api) return;
+
+    try {
+      const existing = await api.load(sessionId);
+      if (!existing) return;
+
+      await api.save({
+        id: sessionId,
+        title: updates.title ?? existing.title,
+        userNotes: existing.userNotes,
+        segments: existing.segments,
+        aiNotes: existing.aiNotes,
+        aiSummary: updates.aiSummary ?? existing.aiSummary,
+        chatMessages: existing.chatMessages,
+        durationMs: existing.durationMs,
+        createdAt: (existing as SessionData & { createdAt?: number }).createdAt ?? Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      await this.loadSessionsList();
+    } catch (err) {
+      console.error('[SessionService] saveSessionById failed:', err);
+    }
+  }
+
   private async loadSessionsList(): Promise<void> {
     const api = this.voxtapeApi?.session;
     if (!api) {
@@ -729,12 +811,24 @@ export class SessionService implements OnDestroy {
 
   private extractTitleFromSummary(text: string): { title: string; body: string } {
     const lines = text.split('\n');
-    const firstLine = lines[0]?.trim() || '';
 
-    // Check for "Titre: ..." or "Title: ..." pattern (with optional ### ## # prefix)
-    const match = firstLine.match(/^(?:#{1,3}\s*)?(?:Titre|Title)\s*:\s*(.+)$/i);
-    let body = match ? lines.slice(1).join('\n').trim() : text;
-    const title = match ? match[1].trim() : '';
+    // Scan first 3 non-empty lines for title pattern
+    // Handles: "Titre: ...", "**Titre**: ...", "# Titre: ...", "## **Title**: ..."
+    const titleRegex = /^(?:#{1,3}\s*)?(?:\*{1,2})?(?:Titre|Title)(?:\*{1,2})?\s*:\s*(.+)$/i;
+    const nonEmptyLines = lines.filter(l => l.trim());
+    let title = '';
+    let titleLineIndex = -1;
+
+    for (let i = 0; i < Math.min(3, nonEmptyLines.length); i++) {
+      const match = nonEmptyLines[i].match(titleRegex);
+      if (match) {
+        title = match[1].replace(/\*{1,2}/g, '').trim();
+        titleLineIndex = lines.indexOf(nonEmptyLines[i]);
+        break;
+      }
+    }
+
+    let body = titleLineIndex >= 0 ? lines.filter((_, idx) => idx !== titleLineIndex).join('\n').trim() : text;
 
     // Strip "Mes notes" / "My notes" section if the LLM included it
     body = body.replace(/---+\s*\n/g, '\n');

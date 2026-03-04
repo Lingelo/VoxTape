@@ -81,8 +81,9 @@
                 <button
                   class="pill-generate-btn"
                   [class.processing]="status === 'processing'"
-                  [disabled]="status === 'processing'"
+                  [disabled]="status === 'processing' || isLlmBusy"
                   (click)="onEnhanceClick()"
+                  [title]="isLlmBusy ? ('recording.llmBusy' | translate) : ''"
                 >
                   @if (status === 'processing') {
                     <sdn-glitch-loader
@@ -134,7 +135,7 @@
             (keydown.escape)="directiveMode ? exitDirectiveMode() : (transcriptOpen ? closeTranscript.emit() : null)"
             (focus)="onInputFocus()"
             [placeholder]="directiveMode ? ('recording.directivePlaceholder' | translate) : ('chat.placeholder' | translate)"
-            [disabled]="status === 'processing'"
+            [disabled]="status === 'processing' || isLlmBusy"
           />
         </div>
       }
@@ -145,8 +146,9 @@
       <button
         class="generate-btn-inline"
         [class.processing]="status === 'processing'"
-        [disabled]="status === 'processing'"
+        [disabled]="status === 'processing' || isLlmBusy"
         (click)="onEnhanceClick()"
+        [title]="isLlmBusy ? ('recording.llmBusy' | translate) : ''"
       >
         @if (status === 'processing') {
           <sdn-glitch-loader

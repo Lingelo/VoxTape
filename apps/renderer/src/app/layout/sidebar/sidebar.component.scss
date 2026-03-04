@@ -199,6 +199,27 @@
   }
 }
 
+.enhancing-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+  background: var(--accent-primary);
+  flex-shrink: 0;
+  animation: enhancingPulse 1.2s steps(3) infinite;
+  box-shadow:
+    0 0 6px rgba(0, 255, 128, 0.6),
+    0 0 12px rgba(0, 255, 128, 0.3);
+}
+
+@keyframes enhancingPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
 .session-title {
   font-size: 13px;
   color: var(--accent-primary);

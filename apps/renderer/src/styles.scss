@@ -100,8 +100,9 @@ body::after {
   z-index: 99999;
 }
 
-/* Allow text selection in editor and transcript */
-textarea, [contenteditable], .notes-area, .segment-bubble, .segment-block, .segment-text {
+/* Allow text selection in editor, transcript, chat, and AI summary */
+textarea, [contenteditable], .notes-area, .segment-bubble, .segment-block, .segment-text,
+.ai-summary-body, .chat-msg, .chat-messages {
   user-select: text;
 }
 
