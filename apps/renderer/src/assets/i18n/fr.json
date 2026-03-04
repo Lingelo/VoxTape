@@ -51,7 +51,9 @@
     "generating": "Génération en cours...",
     "close": "Fermer",
     "history": "Historique",
-    "viewInTranscript": "Voir dans la transcription"
+    "viewInTranscript": "Voir dans la transcription",
+    "condensingBlock": "Condensation {{current}}/{{total}}",
+    "finalizing": "Synthèse finale en cours..."
   },
   "chat": {
     "title": "Chat",

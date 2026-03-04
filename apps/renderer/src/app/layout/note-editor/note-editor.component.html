@@ -7,6 +7,22 @@
     [placeholder]="'notes.titlePlaceholder' | translate"
   />
 
+  <!-- Enhance progress overlay -->
+  @if (enhanceProgress) {
+    <div class="enhance-progress">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progressPercent"></div>
+      </div>
+      <span class="progress-label">
+        @if (enhanceProgress.phase === 'condensing') {
+          {{ 'notes.condensingBlock' | translate:{ current: enhanceProgress.current, total: enhanceProgress.total } }}
+        } @else {
+          {{ 'notes.finalizing' | translate }}
+        }
+      </span>
+    </div>
+  }
+
   <!-- AI Summary (top, main content after recording) -->
   @if (aiSummary) {
     <div class="ai-summary">
