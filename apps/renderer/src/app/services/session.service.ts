@@ -24,6 +24,12 @@ export interface TranscriptSegment {
 
 export type SessionStatus = 'idle' | 'recording' | 'draining' | 'processing' | 'done';
 
+export interface EnhanceProgress {
+  phase: 'condensing' | 'enhancing';
+  current: number;
+  total: number;
+}
+
 interface SessionListItem {
   id: string;
   title: string;
@@ -77,6 +83,7 @@ export class SessionService implements OnDestroy {
   private readonly _aiSummary$ = new BehaviorSubject<string>('');
   private readonly _chatMessages$ = new BehaviorSubject<ChatMessage[]>([]);
   private readonly _sessions$ = new BehaviorSubject<SessionListItem[]>([]);
+  private readonly _enhanceProgress$ = new BehaviorSubject<EnhanceProgress | null>(null);
 
   // Recording state (persists across session navigation)
   private readonly _recordingSessionId$ = new BehaviorSubject<string | null>(null);
@@ -116,6 +123,7 @@ export class SessionService implements OnDestroy {
   private readonly _summaryHistory$ = new BehaviorSubject<SummaryHistoryItem[]>([]);
   readonly summaryHistory$: Observable<SummaryHistoryItem[]> = this._summaryHistory$.asObservable();
   readonly sessions$: Observable<SessionListItem[]> = this._sessions$.asObservable();
+  readonly enhanceProgress$: Observable<EnhanceProgress | null> = this._enhanceProgress$.asObservable();
   readonly segments$: Observable<TranscriptSegment[]> = this._segments$.asObservable();
   readonly status$: Observable<SessionStatus> = this._status$.asObservable();
   readonly elapsed$: Observable<number> = this._elapsed$.asObservable();
@@ -428,7 +436,7 @@ export class SessionService implements OnDestroy {
     // Estimate tokens (~4 chars/token in French)
     const estimatedTokens = Math.ceil(transcript.length / 4);
 
-    if (estimatedTokens > 6000) {
+    if (estimatedTokens > 7000) {
       // Map-reduce for long transcripts
       this.enhanceWithMapReduce(notes, segments, directive);
     } else {
@@ -465,6 +473,7 @@ export class SessionService implements OnDestroy {
           console.error('[SessionService] Error parsing enhance result:', err);
           this._aiSummary$.next(payload.fullText || '');
         }
+        this._enhanceProgress$.next(null);
         this._viewStatus$.next('done');
         this.requestSave();
         cleanupSubs();
@@ -472,6 +481,7 @@ export class SessionService implements OnDestroy {
       this.llm.error$.subscribe((payload) => {
         if (payload.requestId !== requestId) return;
         console.error('[SessionService] Enhance error:', payload.error);
+        this._enhanceProgress$.next(null);
         this._viewStatus$.next('done');
         cleanupSubs();
       })
@@ -483,7 +493,7 @@ export class SessionService implements OnDestroy {
     const chunks: string[] = [];
     let currentChunk = '';
     let currentTokens = 0;
-    const CHUNK_TOKEN_LIMIT = 800;
+    const CHUNK_TOKEN_LIMIT = 2000;
 
     for (const seg of segments) {
       const line = `[${seg.id}] ${seg.text}\n`;
@@ -501,12 +511,12 @@ export class SessionService implements OnDestroy {
     if (currentChunk) chunks.push(currentChunk);
 
     console.log(`[SessionService] Map-reduce: ${chunks.length} chunks from ${segments.length} segments`);
-    this._aiSummary$.next(`Condensation en cours (${chunks.length} blocs)...`);
+    this._enhanceProgress$.next({ phase: 'condensing', current: 0, total: chunks.length });
 
     // Condense each chunk sequentially
     const condensed: string[] = [];
     for (let i = 0; i < chunks.length; i++) {
-      this._aiSummary$.next(`Condensation bloc ${i + 1}/${chunks.length}...`);
+      this._enhanceProgress$.next({ phase: 'condensing', current: i + 1, total: chunks.length });
       try {
         const result = await this.condenseChunk(chunks[i]);
         condensed.push(result);
@@ -518,6 +528,7 @@ export class SessionService implements OnDestroy {
     }
 
     // Final pass: merge condensed chunks into the enhance prompt
+    this._enhanceProgress$.next({ phase: 'enhancing', current: 0, total: 0 });
     const mergedTranscript = condensed.join('\n\n');
     this.enhanceDirect(notes, mergedTranscript, directive);
   }

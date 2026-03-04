@@ -18,7 +18,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { SessionService } from '../../services/session.service';
+import { SessionService, EnhanceProgress } from '../../services/session.service';
 import { AiBlock } from './ai-block.extension';
 import type { EnhancedNote } from '@voxtape/shared-types';
 
@@ -39,6 +39,8 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
   renderedSummary = '';
   showHistory = false;
   summaryHistory: Array<{ id: number; summary: string; directive: string | null; createdAt: number }> = [];
+  enhanceProgress: EnhanceProgress | null = null;
+  progressPercent = 0;
   private readonly session = inject(SessionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translate = inject(TranslateService);
@@ -71,6 +73,13 @@ export class NoteEditorComponent implements OnInit, AfterViewInit, OnDestroy {
       }),
       this.session.summaryHistory$.subscribe((history) => {
         this.summaryHistory = history;
+        this.cdr.markForCheck();
+      }),
+      this.session.enhanceProgress$.subscribe((progress) => {
+        this.enhanceProgress = progress;
+        this.progressPercent = progress && progress.total > 0
+          ? Math.round((progress.current / progress.total) * 100)
+          : 0;
         this.cdr.markForCheck();
       })
     );

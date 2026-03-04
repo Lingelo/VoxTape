@@ -150,7 +150,7 @@ export class LlmService implements OnDestroy {
       requestId,
       systemPrompt: PROMPTS[lang].condense,
       userPrompt: transcript,
-      maxTokens: 1024,
+      maxTokens: 1500,
       temperature: 0.15,
     });
     return requestId;

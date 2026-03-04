@@ -51,7 +51,9 @@
     "generating": "Generating...",
     "close": "Close",
     "history": "History",
-    "viewInTranscript": "View in transcript"
+    "viewInTranscript": "View in transcript",
+    "condensingBlock": "Condensing {{current}}/{{total}}",
+    "finalizing": "Final synthesis in progress..."
   },
   "chat": {
     "title": "Chat",
