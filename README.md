@@ -68,10 +68,11 @@ xattr -cr /Applications/VoxTape.app
 
 ### Prerequisites
 
-- **Node.js 20+** (recommended: [nvm](https://github.com/nvm-sh/nvm))
-- **Rust** (optional, for system audio capture)
+- **Node.js 22+** (recommended: [nvm](https://github.com/nvm-sh/nvm) — `nvm install 22`)
+- **Rust** (required for system audio capture)
   ```bash
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  source "$HOME/.cargo/env"
   ```
 
 ### Quick start
@@ -82,7 +83,10 @@ git clone https://github.com/Lingelo/VoxTape.git
 cd VoxTape
 npm install
 
-# Download AI models
+# Build native module (system audio capture)
+npm run build:native
+
+# Download AI models (required before first run)
 npm run download-model       # STT: Silero VAD + Whisper Turbo (~540 MB)
 npm run download-llm-model   # LLM: Ministral 3B Q4_K_M (~2.1 GB)
 
@@ -91,6 +95,20 @@ npm run dev
 ```
 
 The app opens automatically. Angular dev server runs on `http://localhost:4200`.
+
+### macOS Permissions (dev mode)
+
+In dev mode, macOS associates permissions with the Electron binary, not a packaged app. You must manually grant access:
+
+1. Open **System Settings > Privacy & Security**
+2. For both **Microphone** and **Screen Recording**:
+   - Click **+**
+   - Press **Cmd+Shift+G** to open the path dialog
+   - Navigate to `<project-root>/node_modules/electron/dist/Electron.app`
+   - Add it and ensure the toggle is **on**
+3. **Quit and relaunch** the app — macOS requires a full process restart after granting Screen Recording
+
+> **Tip:** If permissions aren't working, reset and retry: `tccutil reset ScreenCapture` then relaunch the app.
 
 ### Commands
 
