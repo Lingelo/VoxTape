@@ -1,9 +1,8 @@
-import { EventEmitter } from 'events';
 import { WebSocket } from 'ws';
 import type { SttProvider } from './stt-provider.interface.js';
 import type { TranscriptSegment } from '@voxtape/shared-types';
 
-export class DeepgramSttProvider extends EventEmitter implements SttProvider {
+export class DeepgramSttProvider implements SttProvider {
   readonly id = 'deepgram' as const;
 
   private ws: WebSocket | null = null;

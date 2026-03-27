@@ -676,14 +676,12 @@ function setupIpc(): void {
           return { ok: false, error: `HTTP ${res.status}` };
         }
         case 'anthropic': {
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
+          // Use the models list endpoint (free, no tokens consumed)
+          const res = await fetch('https://api.anthropic.com/v1/models', {
             headers: {
               'x-api-key': key,
               'anthropic-version': '2023-06-01',
-              'content-type': 'application/json',
             },
-            body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
             signal: AbortSignal.timeout(10000),
           });
           if (res.ok) return { ok: true };
