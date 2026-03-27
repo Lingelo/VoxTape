@@ -23,10 +23,6 @@ export class CredentialService {
     }
   }
 
-  isEncryptionAvailable(): boolean {
-    return this.safeStorage?.isEncryptionAvailable() ?? false;
-  }
-
   setCredential(provider: string, key: string): void {
     const store = this.loadStore();
     if (this.safeStorage?.isEncryptionAvailable()) {

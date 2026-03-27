@@ -32,8 +32,7 @@ export class GeminiLlmProvider implements LlmProvider {
     });
 
     if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      throw new Error(`Gemini API error ${response.status}: ${body}`);
+      throw new Error(`Gemini API error: HTTP ${response.status}`);
     }
 
     let inputTokens = 0;

@@ -133,7 +133,6 @@
     "connectionFailed": "Failed",
     "connectionTesting": "Testing...",
     "deleteKey": "Delete key",
-    "deleteKeyConfirm": "Remove this API key?",
     "selectModel": "Model",
     "keyStored": "Key stored",
     "noKeyStored": "No key",

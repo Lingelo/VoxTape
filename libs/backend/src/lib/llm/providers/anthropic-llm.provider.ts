@@ -30,8 +30,7 @@ export class AnthropicLlmProvider implements LlmProvider {
     });
 
     if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      throw new Error(`Anthropic API error ${response.status}: ${body}`);
+      throw new Error(`Anthropic API error: HTTP ${response.status}`);
     }
 
     let inputTokens = 0;

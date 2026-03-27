@@ -133,7 +133,6 @@
     "connectionFailed": "Échec",
     "connectionTesting": "Test en cours...",
     "deleteKey": "Supprimer la clé",
-    "deleteKeyConfirm": "Supprimer cette clé API ?",
     "selectModel": "Modèle",
     "keyStored": "Clé enregistrée",
     "noKeyStored": "Aucune clé",

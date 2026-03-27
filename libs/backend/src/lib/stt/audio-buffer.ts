@@ -37,12 +37,4 @@ export class AudioBuffer {
     this.chunks = [];
     this.totalSamples = 0;
   }
-
-  get size(): number {
-    return this.chunks.length;
-  }
-
-  get durationSeconds(): number {
-    return this.totalSamples / 16000;
-  }
 }

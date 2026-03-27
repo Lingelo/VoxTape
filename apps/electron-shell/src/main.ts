@@ -30,6 +30,7 @@ import {
   MeetingDetectionService,
   CredentialService,
 } from '@voxtape/backend';
+import { IpcChannels } from '@voxtape/shared-types';
 import type { LlmPromptPayload, MeetingDetectionEvent } from '@voxtape/shared-types';
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -635,24 +636,31 @@ function setupIpc(): void {
 
   // ── Credential IPC ──────────────────────────────────────────────────
 
-  ipcMain.handle('credential:set', (_event, provider: string, key: string) => {
-    if (!provider || typeof provider !== 'string' || !key || typeof key !== 'string') {
+  const VALID_PROVIDERS = new Set(['openai', 'anthropic', 'gemini', 'deepgram']);
+
+  ipcMain.handle(IpcChannels.CREDENTIAL_SET, (_event, provider: string, key: string) => {
+    if (!VALID_PROVIDERS.has(provider) || !key || typeof key !== 'string') {
       return { ok: false, error: 'Invalid arguments' };
     }
     credentialService.setCredential(provider, key);
     return { ok: true };
   });
 
-  ipcMain.handle('credential:has', (_event, provider: string) => {
+  ipcMain.handle(IpcChannels.CREDENTIAL_HAS, (_event, provider: string) => {
+    if (!VALID_PROVIDERS.has(provider)) return false;
     return credentialService.hasCredential(provider);
   });
 
-  ipcMain.handle('credential:delete', (_event, provider: string) => {
+  ipcMain.handle(IpcChannels.CREDENTIAL_DELETE, (_event, provider: string) => {
+    if (!VALID_PROVIDERS.has(provider)) return { ok: false, error: 'Invalid provider' };
     credentialService.deleteCredential(provider);
     return { ok: true };
   });
 
-  ipcMain.handle('credential:validate', async (_event, provider: string, key: string) => {
+  ipcMain.handle(IpcChannels.CREDENTIAL_VALIDATE, async (_event, provider: string, key: string) => {
+    if (!VALID_PROVIDERS.has(provider)) {
+      return { ok: false, error: 'Invalid provider' };
+    }
     if (!key || typeof key !== 'string') {
       return { ok: false, error: 'Invalid API key' };
     }

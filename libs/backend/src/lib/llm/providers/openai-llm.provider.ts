@@ -32,8 +32,7 @@ export class OpenAiLlmProvider implements LlmProvider {
     });
 
     if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      throw new Error(`OpenAI API error ${response.status}: ${body}`);
+      throw new Error(`OpenAI API error: HTTP ${response.status}`);
     }
 
     for await (const event of parseSSEStream(response)) {
