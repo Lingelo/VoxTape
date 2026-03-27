@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { MeetingDetectionConfig } from '@voxtape/shared-types';
+import type { MeetingDetectionConfig, LlmProviderId, SttProviderId } from '@voxtape/shared-types';
 import { DEFAULT_MEETING_DETECTION_CONFIG } from '@voxtape/shared-types';
 
 export interface VoxTapeConfig {
@@ -12,11 +12,15 @@ export interface VoxTapeConfig {
     systemAudioEnabled?: boolean;
   };
   llm: {
+    provider: LlmProviderId;
+    model: string | null;
     modelPath: string | null;
     contextSize: number;
     temperature: number;
   };
   stt: {
+    provider: SttProviderId;
+    model: string | null;
     modelPath: string | null;
   };
   meetingDetection: MeetingDetectionConfig;
@@ -28,8 +32,8 @@ const DEFAULT_CONFIG: VoxTapeConfig = {
   language: 'fr',
   theme: 'dark',
   audio: { defaultDeviceId: null },
-  llm: { modelPath: null, contextSize: 8192, temperature: 0.7 },
-  stt: { modelPath: null },
+  llm: { provider: 'local', model: null, modelPath: null, contextSize: 8192, temperature: 0.7 },
+  stt: { provider: 'local', model: null, modelPath: null },
   meetingDetection: { ...DEFAULT_MEETING_DETECTION_CONFIG },
   onboardingComplete: false,
   firstLaunchComplete: false,

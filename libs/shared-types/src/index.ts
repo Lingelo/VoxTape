@@ -6,3 +6,4 @@ export * from './llm.types.js';
 export * from './database.types.js';
 export * from './meeting.types.js';
 export * from './lib/security-utils.js';
+export * from './provider.types.js';

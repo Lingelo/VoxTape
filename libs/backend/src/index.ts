@@ -20,3 +20,5 @@ export * from './lib/diarization/diarization.module.js';
 export * from './lib/meeting-detection/meeting-detection.service.js';
 export * from './lib/meeting-detection/meeting-detection.module.js';
 export * from './lib/meeting-detection/browser-url.service.js';
+export * from './lib/credential/credential.service.js';
+export * from './lib/credential/credential.module.js';

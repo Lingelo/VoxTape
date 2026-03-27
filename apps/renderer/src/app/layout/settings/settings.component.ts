@@ -20,6 +20,12 @@ interface VoxTapeSettingsApi {
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
     reset: () => Promise<void>;
   };
+  credentials?: {
+    set: (provider: string, key: string) => Promise<{ ok: boolean }>;
+    has: (provider: string) => Promise<boolean>;
+    delete: (provider: string) => Promise<{ ok: boolean }>;
+    validate: (provider: string, key: string) => Promise<{ ok: boolean; error?: string }>;
+  };
   model?: {
     list: () => Promise<{ known: ModelInfo[]; downloaded: DownloadedModel[] }>;
     download: (modelId: string) => void;
@@ -49,12 +55,15 @@ interface MeetingDetectionConfig {
   pollIntervalMs: number;
 }
 
+type LlmProviderId = 'local' | 'openai' | 'anthropic' | 'gemini';
+type SttProviderId = 'local' | 'deepgram';
+
 interface Config {
   language: string;
   theme: 'dark' | 'light' | 'system';
   audio: { defaultDeviceId: string | null; systemAudioEnabled?: boolean };
-  llm: { modelPath: string | null; contextSize: number; temperature: number };
-  stt: { modelPath: string | null };
+  llm: { provider: LlmProviderId; model: string | null; modelPath: string | null; contextSize: number; temperature: number };
+  stt: { provider: SttProviderId; model: string | null; modelPath: string | null };
   meetingDetection?: MeetingDetectionConfig;
   onboardingComplete: boolean;
 }
@@ -82,6 +91,45 @@ export class SettingsComponent implements OnInit, OnDestroy {
   meetingDetectionEnabled = true;
   detectWebMeetings = false;
   showMeetingNotification = true;
+
+  // AI Providers
+  llmProviders: { value: LlmProviderId; labelKey: string }[] = [
+    { value: 'local', labelKey: 'settings.providerLocal' },
+    { value: 'openai', labelKey: 'settings.providerOpenai' },
+    { value: 'anthropic', labelKey: 'settings.providerAnthropic' },
+    { value: 'gemini', labelKey: 'settings.providerGemini' },
+  ];
+  sttProviders: { value: SttProviderId; labelKey: string }[] = [
+    { value: 'local', labelKey: 'settings.providerLocal' },
+    { value: 'deepgram', labelKey: 'settings.providerDeepgram' },
+  ];
+  llmModels: Record<LlmProviderId, { id: string; name: string }[]> = {
+    local: [],
+    openai: [
+      { id: 'gpt-4o', name: 'GPT-4o' },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+      { id: 'gpt-4.1', name: 'GPT-4.1' },
+      { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
+      { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano' },
+    ],
+    anthropic: [
+      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
+      { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
+    ],
+    gemini: [
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+    ],
+  };
+  sttModels: Record<SttProviderId, { id: string; name: string }[]> = {
+    local: [],
+    deepgram: [
+      { id: 'nova-3', name: 'Nova 3' },
+      { id: 'nova-2', name: 'Nova 2' },
+    ],
+  };
+  apiKeyInputs: Record<string, string> = {};
+  apiKeyStatus: Record<string, 'stored' | 'none' | 'testing' | 'valid' | 'failed'> = {};
 
   // App version (from Electron)
   appVersion = '';
@@ -153,6 +201,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.loadModels();
     this.setupProgressListener();
     this.checkSystemAudio();
+    this.loadApiKeyStatus();
     this.glossaryService.entries$.subscribe((entries) => {
       this.glossaryEntries = entries;
       this.cdr.markForCheck();
@@ -324,6 +373,105 @@ export class SettingsComponent implements OnInit, OnDestroy {
     } catch {
       // Permission denied or no devices
     }
+  }
+
+  // ── AI Providers ──────────────────────────────────────────────────
+
+  private async loadApiKeyStatus(): Promise<void> {
+    const api = this.voxtapeApi?.credentials;
+    if (!api) return;
+
+    const providers = ['openai', 'anthropic', 'gemini', 'deepgram'];
+    for (const provider of providers) {
+      const has = await api.has(provider);
+      this.apiKeyStatus[provider] = has ? 'stored' : 'none';
+    }
+    this.cdr.markForCheck();
+  }
+
+  onLlmProviderChange(): void {
+    if (!this.config) return;
+    this.save('llm.provider', this.config.llm.provider);
+    // Auto-select first model if none selected
+    const models = this.llmModels[this.config.llm.provider];
+    if (models.length && !this.config.llm.model) {
+      this.config.llm.model = models[0].id;
+      this.save('llm.model', this.config.llm.model);
+    }
+  }
+
+  onLlmModelChange(): void {
+    if (!this.config) return;
+    this.save('llm.model', this.config.llm.model);
+  }
+
+  onSttProviderChange(): void {
+    if (!this.config) return;
+    this.save('stt.provider', this.config.stt.provider);
+    const models = this.sttModels[this.config.stt.provider];
+    if (models.length && !this.config.stt.model) {
+      this.config.stt.model = models[0].id;
+      this.save('stt.model', this.config.stt.model);
+    }
+  }
+
+  onSttModelChange(): void {
+    if (!this.config) return;
+    this.save('stt.model', this.config.stt.model);
+  }
+
+  async saveApiKey(provider: string): Promise<void> {
+    const api = this.voxtapeApi?.credentials;
+    const key = this.apiKeyInputs[provider]?.trim();
+    if (!api || !key) return;
+
+    await api.set(provider, key);
+    this.apiKeyInputs[provider] = '';
+    this.apiKeyStatus[provider] = 'stored';
+    this.cdr.markForCheck();
+  }
+
+  async testApiKey(provider: string): Promise<void> {
+    const api = this.voxtapeApi?.credentials;
+    if (!api) return;
+
+    const key = this.apiKeyInputs[provider]?.trim();
+    if (!key) return;
+
+    this.apiKeyStatus[provider] = 'testing';
+    this.cdr.markForCheck();
+
+    const result = await api.validate(provider, key);
+    this.ngZone.run(() => {
+      if (result.ok) {
+        this.apiKeyStatus[provider] = 'valid';
+        // Auto-save after successful test
+        api.set(provider, key);
+        this.apiKeyInputs[provider] = '';
+      } else {
+        this.apiKeyStatus[provider] = 'failed';
+      }
+      this.cdr.markForCheck();
+    });
+  }
+
+  async deleteApiKey(provider: string): Promise<void> {
+    const api = this.voxtapeApi?.credentials;
+    if (!api) return;
+
+    await api.delete(provider);
+    this.apiKeyStatus[provider] = 'none';
+    this.cdr.markForCheck();
+  }
+
+  getRequiredProviders(): string[] {
+    if (!this.config) return [];
+    const providers: string[] = [];
+    if (this.config.llm.provider !== 'local') providers.push(this.config.llm.provider);
+    if (this.config.stt.provider !== 'local' && !providers.includes(this.config.stt.provider)) {
+      providers.push(this.config.stt.provider);
+    }
+    return providers;
   }
 
   // ── LLM Context Size ────────────────────────────────────────────

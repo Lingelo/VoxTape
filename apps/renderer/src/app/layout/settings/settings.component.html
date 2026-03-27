@@ -184,6 +184,104 @@
         </div>
       </section>
 
+      <!-- AI Providers -->
+      <section class="settings-section">
+        <h2>{{ 'settings.aiProviders' | translate }}</h2>
+        <p class="setting-hint" style="margin-bottom: 12px;">{{ 'settings.aiProvidersHint' | translate }}</p>
+
+        <!-- LLM Provider -->
+        <div class="setting-row">
+          <div class="setting-label-group">
+            <span class="label-text">{{ 'settings.llmProvider' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.llmProviderHint' | translate }}</span>
+          </div>
+          <select [(ngModel)]="config.llm.provider" (change)="onLlmProviderChange()">
+            @for (p of llmProviders; track p.value) {
+              <option [ngValue]="p.value">{{ p.labelKey | translate }}</option>
+            }
+          </select>
+        </div>
+
+        @if (config.llm.provider !== 'local') {
+          <div class="setting-row">
+            <span class="label-text">{{ 'settings.selectModel' | translate }}</span>
+            <select [(ngModel)]="config.llm.model" (change)="onLlmModelChange()">
+              @for (m of llmModels[config.llm.provider]; track m.id) {
+                <option [ngValue]="m.id">{{ m.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <!-- STT Provider -->
+        <div class="setting-row" style="margin-top: 16px;">
+          <div class="setting-label-group">
+            <span class="label-text">{{ 'settings.sttProvider' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.sttProviderHint' | translate }}</span>
+          </div>
+          <select [(ngModel)]="config.stt.provider" (change)="onSttProviderChange()">
+            @for (p of sttProviders; track p.value) {
+              <option [ngValue]="p.value">{{ p.labelKey | translate }}</option>
+            }
+          </select>
+        </div>
+
+        @if (config.stt.provider !== 'local') {
+          <div class="setting-row">
+            <span class="label-text">{{ 'settings.selectModel' | translate }}</span>
+            <select [(ngModel)]="config.stt.model" (change)="onSttModelChange()">
+              @for (m of sttModels[config.stt.provider]; track m.id) {
+                <option [ngValue]="m.id">{{ m.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <!-- API Keys for active providers -->
+        @for (provider of getRequiredProviders(); track provider) {
+          <div class="api-key-section">
+            <div class="setting-row">
+              <span class="label-text">{{ 'settings.apiKey' | translate }} — {{ provider }}</span>
+              <span class="api-key-status" [ngClass]="{
+                'status-stored': apiKeyStatus[provider] === 'stored' || apiKeyStatus[provider] === 'valid',
+                'status-none': apiKeyStatus[provider] === 'none',
+                'status-failed': apiKeyStatus[provider] === 'failed',
+                'status-testing': apiKeyStatus[provider] === 'testing'
+              }">
+                @switch (apiKeyStatus[provider]) {
+                  @case ('stored') { {{ 'settings.keyStored' | translate }} }
+                  @case ('valid') { {{ 'settings.connectionValid' | translate }} }
+                  @case ('none') { {{ 'settings.noKeyStored' | translate }} }
+                  @case ('testing') { {{ 'settings.connectionTesting' | translate }} }
+                  @case ('failed') { {{ 'settings.connectionFailed' | translate }} }
+                }
+              </span>
+            </div>
+            <div class="api-key-controls">
+              <input
+                type="password"
+                class="api-key-input"
+                [(ngModel)]="apiKeyInputs[provider]"
+                [placeholder]="'settings.apiKeyPlaceholder' | translate"
+                (keydown.enter)="testApiKey(provider)"
+              />
+              <button
+                class="test-mic-btn"
+                [disabled]="!apiKeyInputs[provider]?.trim() || apiKeyStatus[provider] === 'testing'"
+                (click)="testApiKey(provider)"
+              >
+                {{ 'settings.testConnection' | translate }}
+              </button>
+              @if (apiKeyStatus[provider] === 'stored' || apiKeyStatus[provider] === 'valid') {
+                <button class="glossary-remove-btn" (click)="deleteApiKey(provider)" [title]="'settings.deleteKey' | translate">
+                  &times;
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </section>
+
       <!-- Keyboard Shortcuts -->
       <section class="settings-section">
         <h2>{{ 'settings.shortcuts' | translate }}</h2>

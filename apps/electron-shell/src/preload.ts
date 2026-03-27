@@ -157,6 +157,17 @@ const voxtapeApi = {
       ipcRenderer.invoke('export:json', sessionId),
   },
 
+  credentials: {
+    set: (provider: string, key: string): Promise<any> =>
+      ipcRenderer.invoke('credential:set', provider, key),
+    has: (provider: string): Promise<boolean> =>
+      ipcRenderer.invoke('credential:has', provider),
+    delete: (provider: string): Promise<any> =>
+      ipcRenderer.invoke('credential:delete', provider),
+    validate: (provider: string, key: string): Promise<any> =>
+      ipcRenderer.invoke('credential:validate', provider, key),
+  },
+
   app: {
     getVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
   },
