@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { GlitchLoaderComponent } from '../../shared/glitch-loader/glitch-loader.component';
 import { LanguageService, SupportedLanguage } from '../../services/language.service';
+import { AiModeStepComponent, AiModeResult } from './ai-mode-step/ai-mode-step.component';
 
 interface ModelInfo {
   id: string;
@@ -34,6 +35,12 @@ interface VoxTapeOnboardingApi {
   config?: {
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
   };
+  credentials?: {
+    set: (provider: string, key: string) => Promise<{ ok: boolean }>;
+    has: (provider: string) => Promise<boolean>;
+    delete: (provider: string) => Promise<{ ok: boolean }>;
+    validate: (provider: string, key: string) => Promise<{ ok: boolean; error?: string }>;
+  };
   model?: {
     list: () => Promise<{ known: ModelInfo[]; downloaded: { id: string }[] }>;
     download: (modelId: string) => void;
@@ -56,15 +63,19 @@ interface VoxTapeOnboardingApi {
 @Component({
   selector: 'sdn-onboarding',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, GlitchLoaderComponent],
+  imports: [CommonModule, FormsModule, TranslateModule, GlitchLoaderComponent, AiModeStepComponent],
   templateUrl: './onboarding.component.html',
   styleUrl: './onboarding.component.scss',
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
   step = 0;
-  steps = [0, 1, 2, 3, 4, 5];
+  steps = [0, 1, 2, 3, 4, 5, 6];
   selectedLang: SupportedLanguage = 'fr';
   appVersion = '';
+
+  // AI Mode (step 4)
+  aiModeResult: AiModeResult = { mode: 'local', llmProvider: 'openai', sttProvider: 'local' };
+  aiModeCanProceed = true;
 
   // Mic
   audioLevel = 0;
@@ -104,7 +115,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private readonly translate = inject(TranslateService);
   private readonly languageService = inject(LanguageService);
 
-  private get voxtapeApi(): VoxTapeOnboardingApi | undefined {
+  get voxtapeApi(): VoxTapeOnboardingApi | undefined {
     return (window as Window & { voxtape?: VoxTapeOnboardingApi }).voxtape;
   }
 
@@ -153,8 +164,21 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     if (this.step === 3) {
       this.stopSystemAudioTest();
     }
+    // AI Mode step: save config and handle cloud skip
+    if (this.step === 4 && this.aiModeResult.mode === 'cloud') {
+      this.saveConfig('llm.provider', this.aiModeResult.llmProvider);
+      this.saveConfig('llm.model', this.getDefaultModel(this.aiModeResult.llmProvider));
+      if (this.aiModeResult.sttProvider !== 'local') {
+        this.saveConfig('stt.provider', this.aiModeResult.sttProvider);
+        this.saveConfig('stt.model', 'nova-3');
+      }
+      // Download VAD silently (2MB), skip the full install step
+      this.downloadVadOnly();
+      this.step = 6; // Jump to Ready
+      return;
+    }
     // Block progression from Install step until done
-    if (this.step === 4 && this.installState !== 'done') {
+    if (this.step === 5 && this.installState !== 'done') {
       return;
     }
     this.step = Math.min(this.step + 1, this.steps.length - 1);
@@ -444,6 +468,26 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     }
 
     this.overallProgress = (progressWeight / totalWeight) * 100;
+  }
+
+  // ── AI Mode ──────────────────────────────────────────────────────
+
+  private getDefaultModel(provider: string): string {
+    const defaults: Record<string, string> = {
+      openai: 'gpt-4o-mini',
+      anthropic: 'claude-haiku-4-5-20251001',
+      gemini: 'gemini-2.5-flash',
+    };
+    return defaults[provider] ?? '';
+  }
+
+  private downloadVadOnly(): void {
+    const api = this.voxtapeApi?.model;
+    if (!api) return;
+    // Only download VAD if not already present
+    if (this.downloads['silero-vad']?.status !== 'done') {
+      api.download('silero-vad');
+    }
   }
 
   // ── Config ────────────────────────────────────────────────────────

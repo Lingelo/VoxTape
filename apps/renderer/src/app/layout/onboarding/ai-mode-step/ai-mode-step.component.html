@@ -1,0 +1,51 @@
+<h1>{{ 'onboarding.aiModeTitle' | translate }}</h1>
+<p class="subtitle">{{ 'onboarding.aiModeSubtitle' | translate }}</p>
+
+<div class="ai-mode-cards">
+  <button class="ai-mode-card" [class.selected]="aiMode === 'local'" (click)="selectMode('local')">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="0"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    <span class="ai-mode-title">{{ 'onboarding.localTitle' | translate }}</span>
+    <span class="ai-mode-desc">{{ 'onboarding.localDesc' | translate }}</span>
+  </button>
+  <button class="ai-mode-card" [class.selected]="aiMode === 'cloud'" (click)="selectMode('cloud')">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+    <span class="ai-mode-title">{{ 'onboarding.cloudTitle' | translate }}</span>
+    <span class="ai-mode-desc">{{ 'onboarding.cloudDesc' | translate }}</span>
+  </button>
+</div>
+
+@if (aiMode === 'cloud') {
+  <div class="cloud-keys-section">
+    <h2 class="cloud-keys-title">{{ 'onboarding.cloudKeysTitle' | translate }}</h2>
+
+    <div class="cloud-provider-row">
+      <span class="cloud-label">{{ 'onboarding.llmLabel' | translate }}</span>
+      <select [(ngModel)]="llmProvider" class="cloud-select">
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic</option>
+        <option value="gemini">Gemini</option>
+      </select>
+    </div>
+    <app-api-key-input
+      [provider]="llmProvider"
+      [credentialsApi]="credentialsApi"
+      (statusChange)="onLlmKeyStatus($event)"
+    />
+
+    <div class="cloud-provider-row" style="margin-top: 16px;">
+      <span class="cloud-label">{{ 'onboarding.sttLabel' | translate }}</span>
+      <select [(ngModel)]="sttProvider" class="cloud-select">
+        <option value="local">{{ 'settings.providerLocal' | translate }}</option>
+        <option value="deepgram">Deepgram</option>
+      </select>
+    </div>
+    @if (sttProvider !== 'local') {
+      <app-api-key-input
+        [provider]="sttProvider"
+        [credentialsApi]="credentialsApi"
+      />
+    }
+
+    <p class="cloud-hint">{{ 'onboarding.cloudKeysHint' | translate }}</p>
+  </div>
+}

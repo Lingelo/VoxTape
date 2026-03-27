@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -125,16 +125,22 @@ interface VoxTapeCredentialsApi {
 export class ApiKeyInputComponent {
   @Input() provider = '';
   @Input() credentialsApi: VoxTapeCredentialsApi | undefined;
+  @Output() statusChange = new EventEmitter<KeyStatus>();
 
   status: KeyStatus = 'none';
   keyInput = '';
 
   constructor(private cdr: ChangeDetectorRef, private ngZone: NgZone) {}
 
+  private setStatus(s: KeyStatus): void {
+    this.status = s;
+    this.statusChange.emit(s);
+  }
+
   async ngOnInit(): Promise<void> {
     if (this.credentialsApi) {
       const has = await this.credentialsApi.has(this.provider);
-      this.status = has ? 'stored' : 'none';
+      this.setStatus(has ? 'stored' : 'none');
       this.cdr.markForCheck();
     }
   }
@@ -142,7 +148,7 @@ export class ApiKeyInputComponent {
   async ngOnChanges(): Promise<void> {
     if (this.credentialsApi && this.provider) {
       const has = await this.credentialsApi.has(this.provider);
-      this.status = has ? 'stored' : 'none';
+      this.setStatus(has ? 'stored' : 'none');
       this.keyInput = '';
       this.cdr.markForCheck();
     }
@@ -153,7 +159,7 @@ export class ApiKeyInputComponent {
     const key = this.keyInput?.trim();
     if (!api || !key) return;
 
-    this.status = 'testing';
+    this.setStatus('testing');
     this.cdr.markForCheck();
 
     const result = await api.validate(this.provider, key);
@@ -161,9 +167,9 @@ export class ApiKeyInputComponent {
       if (result.ok) {
         api.set(this.provider, key);
         this.keyInput = '';
-        this.status = 'stored';
+        this.setStatus('stored');
       } else {
-        this.status = 'failed';
+        this.setStatus('failed');
       }
       this.cdr.markForCheck();
     });
@@ -174,7 +180,7 @@ export class ApiKeyInputComponent {
     if (!api) return;
 
     await api.delete(this.provider);
-    this.status = 'none';
+    this.setStatus('none');
     this.cdr.markForCheck();
   }
 }
