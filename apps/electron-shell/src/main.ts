@@ -3,6 +3,7 @@ import {
   BrowserWindow,
   ipcMain,
   session,
+  safeStorage,
   Tray,
   Menu,
   nativeImage,
@@ -104,7 +105,7 @@ async function bootstrapNest(): Promise<void> {
   const userData = app.getPath('userData');
   databaseService.open(userData);
   configService.open(userData);
-  credentialService.open(userData);
+  credentialService.open(userData, safeStorage);
 
   // Feed LLM config from persisted settings
   const llmCfg = configService.get('llm');
@@ -682,7 +683,8 @@ function setupIpc(): void {
           return { ok: false, error: `HTTP ${res.status}` };
         }
         case 'gemini': {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, {
+          const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+            headers: { 'x-goog-api-key': key },
             signal: AbortSignal.timeout(10000),
           });
           if (res.ok) return { ok: true };

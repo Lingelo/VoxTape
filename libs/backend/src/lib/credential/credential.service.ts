@@ -2,18 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
+interface SafeStorageApi {
+  isEncryptionAvailable(): boolean;
+  encryptString(plainText: string): Buffer;
+  decryptString(encrypted: Buffer): string;
+}
+
 @Injectable()
 export class CredentialService {
   private credentialsPath = '';
-  private safeStorage: typeof import('electron').safeStorage | null = null;
+  private safeStorage: SafeStorageApi | null = null;
 
-  open(userDataPath: string): void {
+  open(userDataPath: string, safeStorage?: SafeStorageApi): void {
     this.credentialsPath = join(userDataPath, 'credentials.json');
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      this.safeStorage = require('electron').safeStorage;
-    } catch {
-      console.warn('[CredentialService] safeStorage not available — credentials will not be encrypted');
+    if (safeStorage) {
+      this.safeStorage = safeStorage;
+      console.log(`[CredentialService] safeStorage available: encryption=${safeStorage.isEncryptionAvailable()}`);
+    } else {
+      console.warn('[CredentialService] safeStorage not provided — credentials will NOT be encrypted');
     }
   }
 
@@ -27,7 +33,7 @@ export class CredentialService {
       const encrypted = this.safeStorage.encryptString(key);
       store[provider] = encrypted.toString('latin1');
     } else {
-      // Fallback: base64 encode (not truly secure, but functional)
+      console.warn('[CredentialService] safeStorage not available — storing credential with base64 (not secure)');
       store[provider] = Buffer.from(key).toString('base64');
     }
     this.saveStore(store);
@@ -74,6 +80,6 @@ export class CredentialService {
   }
 
   private saveStore(store: Record<string, string>): void {
-    writeFileSync(this.credentialsPath, JSON.stringify(store, null, 2), 'utf-8');
+    writeFileSync(this.credentialsPath, JSON.stringify(store, null, 2), { encoding: 'utf-8', mode: 0o600 });
   }
 }

@@ -31,8 +31,7 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
   private cloudProvider: SttProvider | null = null;
   private _getApiKey: ((provider: string) => string | null) | null = null;
   private audioBuffer = new AudioBuffer(30);
-  private pendingSystemChunks: Map<number, Int16Array> = new Map();
-  private chunkCounter = 0;
+  private latestSystemChunk: Int16Array | null = null;
 
   constructor() {
     super();
@@ -187,20 +186,17 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
       this.audioBuffer.push(samples);
 
       if (channel === 'system') {
-        // Store system chunk for mixing
-        this.pendingSystemChunks.set(this.chunkCounter, samples);
+        // Keep latest system chunk for mixing with next mic chunk
+        this.latestSystemChunk = samples;
       } else {
-        // Mix with any pending system chunk of same sequence
-        const systemChunk = this.pendingSystemChunks.get(this.chunkCounter);
-        if (systemChunk) {
-          const mixed = mixAudioChannels(samples, systemChunk);
+        // Mix mic with latest system chunk if available
+        if (this.latestSystemChunk) {
+          const mixed = mixAudioChannels(samples, this.latestSystemChunk);
           this.cloudProvider.feedAudio(mixed);
-          this.pendingSystemChunks.delete(this.chunkCounter);
+          this.latestSystemChunk = null;
         } else {
-          // No system audio — send mic-only
           this.cloudProvider.feedAudio(samples);
         }
-        this.chunkCounter++;
       }
       return;
     }
@@ -224,8 +220,7 @@ export class SttService extends EventEmitter implements OnModuleDestroy {
       this.cloudProvider.stop();
       this.cloudProvider = null;
       this.audioBuffer.clear();
-      this.pendingSystemChunks.clear();
-      this.chunkCounter = 0;
+      this.latestSystemChunk = null;
       return;
     }
     if (!this.worker) return;

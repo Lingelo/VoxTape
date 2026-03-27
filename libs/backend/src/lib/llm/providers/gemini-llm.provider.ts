@@ -11,11 +11,15 @@ export class GeminiLlmProvider implements LlmProvider {
     options: LlmProviderOptions,
     signal: AbortSignal,
   ): AsyncGenerator<LlmProviderStreamResult> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+    const model = encodeURIComponent(options.model);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: userPrompt }] }],

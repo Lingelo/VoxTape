@@ -6,6 +6,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SessionService } from '../../services/session.service';
 import { LanguageService, SupportedLanguage } from '../../services/language.service';
 import { GlossaryService, GlossaryEntry } from '../../services/glossary.service';
+import { ApiKeyInputComponent } from './api-key-input/api-key-input.component';
 
 interface DownloadedModel {
   id: string;
@@ -72,7 +73,7 @@ interface Config {
   selector: 'sdn-settings',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, ApiKeyInputComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -128,8 +129,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
       { id: 'nova-2', name: 'Nova 2' },
     ],
   };
-  apiKeyInputs: Record<string, string> = {};
-  apiKeyStatus: Record<string, 'stored' | 'none' | 'testing' | 'valid' | 'failed'> = {};
 
   // App version (from Electron)
   appVersion = '';
@@ -179,7 +178,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly glossaryService = inject(GlossaryService);
   private readonly translate = inject(TranslateService);
 
-  private get voxtapeApi(): VoxTapeSettingsApi | undefined {
+  get voxtapeApi(): VoxTapeSettingsApi | undefined {
     return (window as Window & { voxtape?: VoxTapeSettingsApi }).voxtape;
   }
 
@@ -201,7 +200,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.loadModels();
     this.setupProgressListener();
     this.checkSystemAudio();
-    this.loadApiKeyStatus();
     this.glossaryService.entries$.subscribe((entries) => {
       this.glossaryEntries = entries;
       this.cdr.markForCheck();
@@ -377,18 +375,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   // ── AI Providers ──────────────────────────────────────────────────
 
-  private async loadApiKeyStatus(): Promise<void> {
-    const api = this.voxtapeApi?.credentials;
-    if (!api) return;
-
-    const providers = ['openai', 'anthropic', 'gemini', 'deepgram'];
-    for (const provider of providers) {
-      const has = await api.has(provider);
-      this.apiKeyStatus[provider] = has ? 'stored' : 'none';
-    }
-    this.cdr.markForCheck();
-  }
-
   onLlmProviderChange(): void {
     if (!this.config) return;
     this.save('llm.provider', this.config.llm.provider);
@@ -418,60 +404,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
   onSttModelChange(): void {
     if (!this.config) return;
     this.save('stt.model', this.config.stt.model);
-  }
-
-  async saveApiKey(provider: string): Promise<void> {
-    const api = this.voxtapeApi?.credentials;
-    const key = this.apiKeyInputs[provider]?.trim();
-    if (!api || !key) return;
-
-    await api.set(provider, key);
-    this.apiKeyInputs[provider] = '';
-    this.apiKeyStatus[provider] = 'stored';
-    this.cdr.markForCheck();
-  }
-
-  async testApiKey(provider: string): Promise<void> {
-    const api = this.voxtapeApi?.credentials;
-    if (!api) return;
-
-    const key = this.apiKeyInputs[provider]?.trim();
-    if (!key) return;
-
-    this.apiKeyStatus[provider] = 'testing';
-    this.cdr.markForCheck();
-
-    const result = await api.validate(provider, key);
-    this.ngZone.run(() => {
-      if (result.ok) {
-        this.apiKeyStatus[provider] = 'valid';
-        // Auto-save after successful test
-        api.set(provider, key);
-        this.apiKeyInputs[provider] = '';
-      } else {
-        this.apiKeyStatus[provider] = 'failed';
-      }
-      this.cdr.markForCheck();
-    });
-  }
-
-  async deleteApiKey(provider: string): Promise<void> {
-    const api = this.voxtapeApi?.credentials;
-    if (!api) return;
-
-    await api.delete(provider);
-    this.apiKeyStatus[provider] = 'none';
-    this.cdr.markForCheck();
-  }
-
-  getRequiredProviders(): string[] {
-    if (!this.config) return [];
-    const providers: string[] = [];
-    if (this.config.llm.provider !== 'local') providers.push(this.config.llm.provider);
-    if (this.config.stt.provider !== 'local' && !providers.includes(this.config.stt.provider)) {
-      providers.push(this.config.stt.provider);
-    }
-    return providers;
   }
 
   // ── LLM Context Size ────────────────────────────────────────────

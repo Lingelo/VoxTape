@@ -211,6 +211,12 @@
               }
             </select>
           </div>
+
+          <!-- API Key for LLM provider -->
+          <app-api-key-input
+            [provider]="config.llm.provider"
+            [credentialsApi]="voxtapeApi?.credentials"
+          />
         }
 
         <!-- STT Provider -->
@@ -235,50 +241,14 @@
               }
             </select>
           </div>
-        }
 
-        <!-- API Keys for active providers -->
-        @for (provider of getRequiredProviders(); track provider) {
-          <div class="api-key-section">
-            <div class="setting-row">
-              <span class="label-text">{{ 'settings.apiKey' | translate }} — {{ provider }}</span>
-              <span class="api-key-status" [ngClass]="{
-                'status-stored': apiKeyStatus[provider] === 'stored' || apiKeyStatus[provider] === 'valid',
-                'status-none': apiKeyStatus[provider] === 'none',
-                'status-failed': apiKeyStatus[provider] === 'failed',
-                'status-testing': apiKeyStatus[provider] === 'testing'
-              }">
-                @switch (apiKeyStatus[provider]) {
-                  @case ('stored') { {{ 'settings.keyStored' | translate }} }
-                  @case ('valid') { {{ 'settings.connectionValid' | translate }} }
-                  @case ('none') { {{ 'settings.noKeyStored' | translate }} }
-                  @case ('testing') { {{ 'settings.connectionTesting' | translate }} }
-                  @case ('failed') { {{ 'settings.connectionFailed' | translate }} }
-                }
-              </span>
-            </div>
-            <div class="api-key-controls">
-              <input
-                type="password"
-                class="api-key-input"
-                [(ngModel)]="apiKeyInputs[provider]"
-                [placeholder]="'settings.apiKeyPlaceholder' | translate"
-                (keydown.enter)="testApiKey(provider)"
-              />
-              <button
-                class="test-mic-btn"
-                [disabled]="!apiKeyInputs[provider]?.trim() || apiKeyStatus[provider] === 'testing'"
-                (click)="testApiKey(provider)"
-              >
-                {{ 'settings.testConnection' | translate }}
-              </button>
-              @if (apiKeyStatus[provider] === 'stored' || apiKeyStatus[provider] === 'valid') {
-                <button class="glossary-remove-btn" (click)="deleteApiKey(provider)" [title]="'settings.deleteKey' | translate">
-                  &times;
-                </button>
-              }
-            </div>
-          </div>
+          <!-- API Key for STT provider (only if different from LLM provider) -->
+          @if ($any(config.stt.provider) !== $any(config.llm.provider)) {
+            <app-api-key-input
+              [provider]="config.stt.provider"
+              [credentialsApi]="voxtapeApi?.credentials"
+            />
+          }
         }
       </section>
 

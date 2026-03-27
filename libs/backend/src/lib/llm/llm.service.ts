@@ -220,8 +220,11 @@ export class LlmService extends EventEmitter implements OnModuleDestroy {
         provider: this._activeProvider,
       } as LlmCompletePayload);
     } catch (err: any) {
+      this._cloudAbortController = null;
       if (err?.name === 'AbortError') {
         // Cancelled by user — not an error
+        this._status = 'ready';
+        this.emit('status', this._status);
         this.emit('complete', {
           requestId: payload.requestId,
           fullText,
@@ -231,24 +234,25 @@ export class LlmService extends EventEmitter implements OnModuleDestroy {
         } as LlmCompletePayload);
       } else {
         console.error(`[LlmService] Cloud provider error (${this._activeProvider}):`, err?.message);
-        // Try local fallback if available
+        // One-time local fallback without mutating the configured provider
         if (this.worker || this._modelPath) {
-          console.log('[LlmService] Falling back to local LLM');
+          console.log('[LlmService] One-time fallback to local LLM (cloud provider unchanged)');
           this.emit('status', 'loading');
-          this._activeProvider = 'local';
           this.promptLocal(payload);
-          return;
+        } else {
+          this._status = 'ready';
+          this.emit('status', this._status);
+          this.emit('error', {
+            requestId: payload.requestId,
+            error: err?.message || 'Cloud provider error',
+          } as LlmErrorPayload);
         }
-        this.emit('error', {
-          requestId: payload.requestId,
-          error: err?.message || 'Cloud provider error',
-        } as LlmErrorPayload);
       }
-    } finally {
-      this._cloudAbortController = null;
-      this._status = 'ready';
-      this.emit('status', this._status);
+      return;
     }
+    this._cloudAbortController = null;
+    this._status = 'ready';
+    this.emit('status', this._status);
   }
 
   cancel(): void {
