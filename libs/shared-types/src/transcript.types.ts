@@ -1,4 +1,4 @@
-export type AudioSource = 'mic' | 'system';
+export type AudioSource = 'mic' | 'system' | 'mixed';
 
 export interface TranscriptSegment {
   id: string;

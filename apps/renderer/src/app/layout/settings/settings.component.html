@@ -184,6 +184,74 @@
         </div>
       </section>
 
+      <!-- AI Providers -->
+      <section class="settings-section">
+        <h2>{{ 'settings.aiProviders' | translate }}</h2>
+        <p class="setting-hint" style="margin-bottom: 12px;">{{ 'settings.aiProvidersHint' | translate }}</p>
+
+        <!-- LLM Provider -->
+        <div class="setting-row">
+          <div class="setting-label-group">
+            <span class="label-text">{{ 'settings.llmProvider' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.llmProviderHint' | translate }}</span>
+          </div>
+          <select [(ngModel)]="config.llm.provider" (change)="onLlmProviderChange()">
+            @for (p of llmProviders; track p.value) {
+              <option [ngValue]="p.value">{{ p.labelKey | translate }}</option>
+            }
+          </select>
+        </div>
+
+        @if (config.llm.provider !== 'local') {
+          <div class="setting-row">
+            <span class="label-text">{{ 'settings.selectModel' | translate }}</span>
+            <select [(ngModel)]="config.llm.model" (change)="onLlmModelChange()">
+              @for (m of llmModels[config.llm.provider]; track m.id) {
+                <option [ngValue]="m.id">{{ m.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- API Key for LLM provider -->
+          <sdn-api-key-input
+            [provider]="config.llm.provider"
+            [credentialsApi]="voxtapeApi?.credentials"
+          />
+        }
+
+        <!-- STT Provider -->
+        <div class="setting-row" style="margin-top: 16px;">
+          <div class="setting-label-group">
+            <span class="label-text">{{ 'settings.sttProvider' | translate }}</span>
+            <span class="setting-hint">{{ 'settings.sttProviderHint' | translate }}</span>
+          </div>
+          <select [(ngModel)]="config.stt.provider" (change)="onSttProviderChange()">
+            @for (p of sttProviders; track p.value) {
+              <option [ngValue]="p.value">{{ p.labelKey | translate }}</option>
+            }
+          </select>
+        </div>
+
+        @if (config.stt.provider !== 'local') {
+          <div class="setting-row">
+            <span class="label-text">{{ 'settings.selectModel' | translate }}</span>
+            <select [(ngModel)]="config.stt.model" (change)="onSttModelChange()">
+              @for (m of sttModels[config.stt.provider]; track m.id) {
+                <option [ngValue]="m.id">{{ m.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- API Key for STT provider (only if different from LLM provider) -->
+          @if (isSttProviderDifferentFromLlm()) {
+            <sdn-api-key-input
+              [provider]="config.stt.provider"
+              [credentialsApi]="voxtapeApi?.credentials"
+            />
+          }
+        }
+      </section>
+
       <!-- Keyboard Shortcuts -->
       <section class="settings-section">
         <h2>{{ 'settings.shortcuts' | translate }}</h2>

@@ -19,6 +19,10 @@ export interface LlmCompletePayload {
   fullText: string;
   tokensGenerated: number;
   durationMs: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  provider?: string;
 }
 
 export interface LlmErrorPayload {

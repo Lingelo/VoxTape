@@ -3,6 +3,7 @@ import {
   BrowserWindow,
   ipcMain,
   session,
+  safeStorage,
   Tray,
   Menu,
   nativeImage,
@@ -27,7 +28,9 @@ import {
   SystemAudioService,
   DiarizationService,
   MeetingDetectionService,
+  CredentialService,
 } from '@voxtape/backend';
+import { IpcChannels } from '@voxtape/shared-types';
 import type { LlmPromptPayload, MeetingDetectionEvent } from '@voxtape/shared-types';
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -44,6 +47,7 @@ let modelManager: ModelManagerService;
 let systemAudioService: SystemAudioService;
 let diarizationService: DiarizationService;
 let meetingDetectionService: MeetingDetectionService;
+let credentialService: CredentialService;
 let isRecording = false;
 let lastMeetingNotificationId: string | null = null;
 let meetingNotificationDismissed = false;
@@ -91,6 +95,7 @@ async function bootstrapNest(): Promise<void> {
   systemAudioService = appContext.get(SystemAudioService);
   diarizationService = appContext.get(DiarizationService);
   meetingDetectionService = appContext.get(MeetingDetectionService);
+  credentialService = appContext.get(CredentialService);
 
   // Set worker paths relative to this bundle
   sttService.setWorkerPath(join(__dirname, 'stt-worker.js'));
@@ -101,6 +106,7 @@ async function bootstrapNest(): Promise<void> {
   const userData = app.getPath('userData');
   databaseService.open(userData);
   configService.open(userData);
+  credentialService.open(userData, safeStorage);
 
   // Feed LLM config from persisted settings
   const llmCfg = configService.get('llm');
@@ -108,7 +114,19 @@ async function bootstrapNest(): Promise<void> {
     contextSize: llmCfg.contextSize,
     temperature: llmCfg.temperature,
     modelPath: llmCfg.modelPath,
+    provider: llmCfg.provider,
+    model: llmCfg.model,
   });
+  llmService.setApiKeyResolver((provider: string) => credentialService.getCredential(provider));
+
+  // Feed STT config from persisted settings
+  const sttCfg = configService.get('stt');
+  sttService.setSttConfig({
+    provider: sttCfg.provider,
+    model: sttCfg.model,
+    language: configService.get('language') || 'fr',
+  });
+  sttService.setApiKeyResolver((provider: string) => credentialService.getCredential(provider));
 
   const modelsDir = join(userData, 'models');
 
@@ -516,9 +534,13 @@ function setupIpc(): void {
     'theme': 'string',
     'audio.defaultDeviceId': 'string|null',
     'audio.systemAudioEnabled': 'boolean',
+    'llm.provider': 'string',
+    'llm.model': 'string|null',
     'llm.modelPath': 'string|null',
     'llm.contextSize': 'number',
     'llm.temperature': 'number',
+    'stt.provider': 'string',
+    'stt.model': 'string|null',
     'stt.modelPath': 'string|null',
     'meetingDetection.enabled': 'boolean',
     'meetingDetection.detectWebMeetings': 'boolean',
@@ -568,11 +590,22 @@ function setupIpc(): void {
         contextSize: llmCfg.contextSize,
         temperature: llmCfg.temperature,
         modelPath: llmCfg.modelPath,
+        provider: llmCfg.provider,
+        model: llmCfg.model,
+      });
+    }
+    // Live-update STT config when relevant keys change
+    if (key.startsWith('stt.')) {
+      const sttCfg = configService.get('stt');
+      sttService.setSttConfig({
+        provider: sttCfg.provider,
+        model: sttCfg.model,
       });
     }
     // Live-update STT language when app language changes
     if (key === 'language') {
       process.env.VOXTAPE_STT_LANGUAGE = (value as string) || 'fr';
+      sttService.setSttConfig({ language: (value as string) || 'fr' });
       sttService.restart().catch((err: Error) => {
         console.error('[Main] STT restart after language change failed:', err.message);
       });
@@ -599,6 +632,89 @@ function setupIpc(): void {
       }
     }
     return { ok: true };
+  });
+
+  // ── Credential IPC ──────────────────────────────────────────────────
+
+  const VALID_PROVIDERS = new Set(['openai', 'anthropic', 'gemini', 'deepgram']);
+
+  ipcMain.handle(IpcChannels.CREDENTIAL_SET, (_event, provider: string, key: string) => {
+    if (!VALID_PROVIDERS.has(provider) || !key || typeof key !== 'string') {
+      return { ok: false, error: 'Invalid arguments' };
+    }
+    credentialService.setCredential(provider, key);
+    return { ok: true };
+  });
+
+  ipcMain.handle(IpcChannels.CREDENTIAL_HAS, (_event, provider: string) => {
+    if (!VALID_PROVIDERS.has(provider)) return false;
+    return credentialService.hasCredential(provider);
+  });
+
+  ipcMain.handle(IpcChannels.CREDENTIAL_DELETE, (_event, provider: string) => {
+    if (!VALID_PROVIDERS.has(provider)) return { ok: false, error: 'Invalid provider' };
+    credentialService.deleteCredential(provider);
+    return { ok: true };
+  });
+
+  ipcMain.handle(IpcChannels.CREDENTIAL_VALIDATE, async (_event, provider: string, key: string) => {
+    if (!VALID_PROVIDERS.has(provider)) {
+      return { ok: false, error: 'Invalid provider' };
+    }
+    if (!key || typeof key !== 'string') {
+      return { ok: false, error: 'Invalid API key' };
+    }
+    try {
+      switch (provider) {
+        case 'openai': {
+          const res = await fetch('https://api.openai.com/v1/models', {
+            headers: { 'Authorization': `Bearer ${key}` },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (res.ok) return { ok: true };
+          if (res.status === 401) return { ok: false, error: 'Invalid API key' };
+          return { ok: false, error: `HTTP ${res.status}` };
+        }
+        case 'anthropic': {
+          // Use the models list endpoint (free, no tokens consumed)
+          const res = await fetch('https://api.anthropic.com/v1/models', {
+            headers: {
+              'x-api-key': key,
+              'anthropic-version': '2023-06-01',
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (res.ok) return { ok: true };
+          if (res.status === 401) return { ok: false, error: 'Invalid API key' };
+          return { ok: false, error: `HTTP ${res.status}` };
+        }
+        case 'gemini': {
+          const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+            headers: { 'x-goog-api-key': key },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (res.ok) return { ok: true };
+          if (res.status === 400 || res.status === 403) return { ok: false, error: 'Invalid API key' };
+          return { ok: false, error: `HTTP ${res.status}` };
+        }
+        case 'deepgram': {
+          const res = await fetch('https://api.deepgram.com/v1/projects', {
+            headers: { 'Authorization': `Token ${key}` },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (res.ok) return { ok: true };
+          if (res.status === 401) return { ok: false, error: 'Invalid API key' };
+          return { ok: false, error: `HTTP ${res.status}` };
+        }
+        default:
+          return { ok: false, error: 'Unknown provider' };
+      }
+    } catch (err: any) {
+      if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+        return { ok: false, error: 'Connection timed out' };
+      }
+      return { ok: false, error: 'Network error' };
+    }
   });
 
   // ── Media Access IPC ────────────────────────────────────────────────

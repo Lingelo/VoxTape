@@ -63,6 +63,12 @@ export const IpcChannels = {
   SUMMARY_HISTORY_SAVE: 'summary-history:save',
   SUMMARY_HISTORY_LIST: 'summary-history:list',
 
+  // Credentials: renderer -> main (invoke/handle)
+  CREDENTIAL_SET: 'credential:set',
+  CREDENTIAL_HAS: 'credential:has',
+  CREDENTIAL_DELETE: 'credential:delete',
+  CREDENTIAL_VALIDATE: 'credential:validate',
+
   // System Audio: renderer -> main
   SYSTEM_AUDIO_START: 'system-audio:start',
   SYSTEM_AUDIO_STOP: 'system-audio:stop',

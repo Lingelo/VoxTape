@@ -148,6 +148,38 @@ export class DatabaseService implements OnModuleDestroy {
       CREATE INDEX IF NOT EXISTS idx_summary_history_session_id ON summary_history(session_id);
     `);
 
+    // Migration: cloud provider cost tracking columns
+    try {
+      this.db.exec(`ALTER TABLE sessions ADD COLUMN cloud_input_tokens INTEGER DEFAULT 0`);
+    } catch {
+      // Column already exists — expected
+    }
+    try {
+      this.db.exec(`ALTER TABLE sessions ADD COLUMN cloud_output_tokens INTEGER DEFAULT 0`);
+    } catch {
+      // Column already exists — expected
+    }
+    try {
+      this.db.exec(`ALTER TABLE sessions ADD COLUMN cloud_stt_seconds REAL DEFAULT 0`);
+    } catch {
+      // Column already exists — expected
+    }
+    try {
+      this.db.exec(`ALTER TABLE sessions ADD COLUMN cloud_estimated_cost_usd REAL DEFAULT 0`);
+    } catch {
+      // Column already exists — expected
+    }
+    try {
+      this.db.exec(`ALTER TABLE sessions ADD COLUMN llm_provider TEXT DEFAULT 'local'`);
+    } catch {
+      // Column already exists — expected
+    }
+    try {
+      this.db.exec(`ALTER TABLE sessions ADD COLUMN stt_provider TEXT DEFAULT 'local'`);
+    } catch {
+      // Column already exists — expected
+    }
+
     // Performance indexes
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_segments_session_id ON segments(session_id);

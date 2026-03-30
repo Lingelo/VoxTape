@@ -227,8 +227,28 @@
     </div>
     }
 
-    <!-- Step 4: Install -->
+    <!-- Step 4: AI Mode Choice -->
     @if (step === 4) {
+    <div class="step-content">
+      <sdn-ai-mode-step
+        [credentialsApi]="voxtapeApi?.credentials"
+        (canProceedChange)="aiModeCanProceed = $event"
+      #aiModeStep />
+
+      <div class="btn-group">
+        <button class="secondary-btn" (click)="prevStep()">{{ 'onboarding.back' | translate }}</button>
+        <button
+          class="primary-btn"
+          [disabled]="!aiModeCanProceed"
+          [class.disabled]="!aiModeCanProceed"
+          (click)="aiModeResult = aiModeStep.result; nextStep()"
+        >{{ 'onboarding.continue' | translate }}</button>
+      </div>
+    </div>
+    }
+
+    <!-- Step 5: Install -->
+    @if (step === 5) {
     <div class="step-content">
       <h1>{{ 'onboarding.installTitle' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.installSubtitle' | translate }}</p>
@@ -307,8 +327,8 @@
     </div>
     }
 
-    <!-- Step 5: Ready -->
-    @if (step === 5) {
+    <!-- Step 6: Ready -->
+    @if (step === 6) {
     <div class="step-content">
       <h1>{{ 'onboarding.readyTitle' | translate }}</h1>
       <p class="subtitle">{{ 'onboarding.readySubtitle' | translate }}</p>

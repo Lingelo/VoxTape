@@ -6,6 +6,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SessionService } from '../../services/session.service';
 import { LanguageService, SupportedLanguage } from '../../services/language.service';
 import { GlossaryService, GlossaryEntry } from '../../services/glossary.service';
+import { ApiKeyInputComponent } from './api-key-input/api-key-input.component';
+import type { LlmProviderId, SttProviderId } from '@voxtape/shared-types';
+import { LLM_MODELS, STT_MODELS } from '@voxtape/shared-types';
 
 interface DownloadedModel {
   id: string;
@@ -19,6 +22,12 @@ interface VoxTapeSettingsApi {
     get: () => Promise<Config>;
     set: (key: string, value: string | boolean | number | null) => Promise<void>;
     reset: () => Promise<void>;
+  };
+  credentials?: {
+    set: (provider: string, key: string) => Promise<{ ok: boolean }>;
+    has: (provider: string) => Promise<boolean>;
+    delete: (provider: string) => Promise<{ ok: boolean }>;
+    validate: (provider: string, key: string) => Promise<{ ok: boolean; error?: string }>;
   };
   model?: {
     list: () => Promise<{ known: ModelInfo[]; downloaded: DownloadedModel[] }>;
@@ -53,8 +62,8 @@ interface Config {
   language: string;
   theme: 'dark' | 'light' | 'system';
   audio: { defaultDeviceId: string | null; systemAudioEnabled?: boolean };
-  llm: { modelPath: string | null; contextSize: number; temperature: number };
-  stt: { modelPath: string | null };
+  llm: { provider: LlmProviderId; model: string | null; modelPath: string | null; contextSize: number; temperature: number };
+  stt: { provider: SttProviderId; model: string | null; modelPath: string | null };
   meetingDetection?: MeetingDetectionConfig;
   onboardingComplete: boolean;
 }
@@ -63,7 +72,7 @@ interface Config {
   selector: 'sdn-settings',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule, TranslateModule, ApiKeyInputComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -82,6 +91,20 @@ export class SettingsComponent implements OnInit, OnDestroy {
   meetingDetectionEnabled = true;
   detectWebMeetings = false;
   showMeetingNotification = true;
+
+  // AI Providers
+  llmProviders: { value: LlmProviderId; labelKey: string }[] = [
+    { value: 'local', labelKey: 'settings.providerLocal' },
+    { value: 'openai', labelKey: 'settings.providerOpenai' },
+    { value: 'anthropic', labelKey: 'settings.providerAnthropic' },
+    { value: 'gemini', labelKey: 'settings.providerGemini' },
+  ];
+  sttProviders: { value: SttProviderId; labelKey: string }[] = [
+    { value: 'local', labelKey: 'settings.providerLocal' },
+    { value: 'deepgram', labelKey: 'settings.providerDeepgram' },
+  ];
+  llmModels = LLM_MODELS;
+  sttModels = STT_MODELS;
 
   // App version (from Electron)
   appVersion = '';
@@ -131,7 +154,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private readonly glossaryService = inject(GlossaryService);
   private readonly translate = inject(TranslateService);
 
-  private get voxtapeApi(): VoxTapeSettingsApi | undefined {
+  get voxtapeApi(): VoxTapeSettingsApi | undefined {
     return (window as Window & { voxtape?: VoxTapeSettingsApi }).voxtape;
   }
 
@@ -324,6 +347,43 @@ export class SettingsComponent implements OnInit, OnDestroy {
     } catch {
       // Permission denied or no devices
     }
+  }
+
+  // ── AI Providers ──────────────────────────────────────────────────
+
+  onLlmProviderChange(): void {
+    if (!this.config) return;
+    this.save('llm.provider', this.config.llm.provider);
+    // Auto-select first model if none selected
+    const models = this.llmModels[this.config.llm.provider];
+    if (models.length && !this.config.llm.model) {
+      this.config.llm.model = models[0].id;
+      this.save('llm.model', this.config.llm.model);
+    }
+  }
+
+  onLlmModelChange(): void {
+    if (!this.config) return;
+    this.save('llm.model', this.config.llm.model);
+  }
+
+  onSttProviderChange(): void {
+    if (!this.config) return;
+    this.save('stt.provider', this.config.stt.provider);
+    const models = this.sttModels[this.config.stt.provider];
+    if (models.length && !this.config.stt.model) {
+      this.config.stt.model = models[0].id;
+      this.save('stt.model', this.config.stt.model);
+    }
+  }
+
+  onSttModelChange(): void {
+    if (!this.config) return;
+    this.save('stt.model', this.config.stt.model);
+  }
+
+  isSttProviderDifferentFromLlm(): boolean {
+    return !!this.config && (this.config.stt.provider as string) !== (this.config.llm.provider as string);
   }
 
   // ── LLM Context Size ────────────────────────────────────────────
