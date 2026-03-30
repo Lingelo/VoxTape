@@ -230,7 +230,7 @@
     <!-- Step 4: AI Mode Choice -->
     @if (step === 4) {
     <div class="step-content">
-      <app-ai-mode-step
+      <sdn-ai-mode-step
         [credentialsApi]="voxtapeApi?.credentials"
         (canProceedChange)="aiModeCanProceed = $event"
       #aiModeStep />

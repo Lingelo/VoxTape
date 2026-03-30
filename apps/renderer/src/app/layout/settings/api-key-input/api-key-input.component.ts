@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, NgZone, OnInit, OnChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -13,7 +13,7 @@ interface VoxTapeCredentialsApi {
 }
 
 @Component({
-  selector: 'app-api-key-input',
+  selector: 'sdn-api-key-input',
   standalone: true,
   imports: [CommonModule, FormsModule, TranslateModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -122,7 +122,7 @@ interface VoxTapeCredentialsApi {
     }
   `],
 })
-export class ApiKeyInputComponent {
+export class ApiKeyInputComponent implements OnInit, OnChanges {
   @Input() provider = '';
   @Input() credentialsApi: VoxTapeCredentialsApi | undefined;
   @Output() statusChange = new EventEmitter<KeyStatus>();
@@ -130,7 +130,8 @@ export class ApiKeyInputComponent {
   status: KeyStatus = 'none';
   keyInput = '';
 
-  constructor(private cdr: ChangeDetectorRef, private ngZone: NgZone) {}
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ngZone = inject(NgZone);
 
   private setStatus(s: KeyStatus): void {
     this.status = s;

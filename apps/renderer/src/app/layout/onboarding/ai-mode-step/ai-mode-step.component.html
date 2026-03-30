@@ -26,7 +26,7 @@
         <option value="gemini">Gemini</option>
       </select>
     </div>
-    <app-api-key-input
+    <sdn-api-key-input
       [provider]="llmProvider"
       [credentialsApi]="credentialsApi"
       (statusChange)="onLlmKeyStatus($event)"
@@ -40,7 +40,7 @@
       </select>
     </div>
     @if (sttProvider !== 'local') {
-      <app-api-key-input
+      <sdn-api-key-input
         [provider]="sttProvider"
         [credentialsApi]="credentialsApi"
       />

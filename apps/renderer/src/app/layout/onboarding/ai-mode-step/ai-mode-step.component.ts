@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -19,7 +19,7 @@ export interface AiModeResult {
 }
 
 @Component({
-  selector: 'app-ai-mode-step',
+  selector: 'sdn-ai-mode-step',
   standalone: true,
   imports: [CommonModule, FormsModule, TranslateModule, ApiKeyInputComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,7 +35,7 @@ export class AiModeStepComponent {
   sttProvider: SttProviderId = 'local';
   private llmKeyValid = false;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  private readonly cdr = inject(ChangeDetectorRef);
 
   get result(): AiModeResult {
     return {

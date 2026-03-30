@@ -382,6 +382,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.save('stt.model', this.config.stt.model);
   }
 
+  isSttProviderDifferentFromLlm(): boolean {
+    return !!this.config && (this.config.stt.provider as string) !== (this.config.llm.provider as string);
+  }
+
   // ── LLM Context Size ────────────────────────────────────────────
 
   onContextSizeChange(): void {

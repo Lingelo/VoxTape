@@ -213,7 +213,7 @@
           </div>
 
           <!-- API Key for LLM provider -->
-          <app-api-key-input
+          <sdn-api-key-input
             [provider]="config.llm.provider"
             [credentialsApi]="voxtapeApi?.credentials"
           />
@@ -243,8 +243,8 @@
           </div>
 
           <!-- API Key for STT provider (only if different from LLM provider) -->
-          @if ($any(config.stt.provider) !== $any(config.llm.provider)) {
-            <app-api-key-input
+          @if (isSttProviderDifferentFromLlm()) {
+            <sdn-api-key-input
               [provider]="config.stt.provider"
               [credentialsApi]="voxtapeApi?.credentials"
             />
