@@ -119,6 +119,7 @@ export class SessionService implements OnDestroy {
   private readonly glossary = inject(GlossaryService);
 
   readonly id$: Observable<string> = this._id$.asObservable();
+  get currentSessionId(): string { return this._id$.value; }
   readonly recordingSessionId$: Observable<string | null> = this._recordingSessionId$.asObservable();
   readonly userNotes$: Observable<string> = this._userNotes$.asObservable();
   readonly title$: Observable<string> = this._title$.asObservable();

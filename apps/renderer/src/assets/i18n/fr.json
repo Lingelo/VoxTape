@@ -42,7 +42,9 @@
     "loader1": "ÉCOUTE EN COURS...",
     "loader2": "TRANSCRIPTION...",
     "loader3": "DÉCODAGE AUDIO...",
-    "loader4": "ANALYSE VOCALE..."
+    "loader4": "ANALYSE VOCALE...",
+    "retranscribe": "Re-transcrire",
+    "retranscribing": "Re-transcription..."
   },
   "notes": {
     "title": "Notes",

@@ -42,7 +42,9 @@
     "loader1": "LISTENING...",
     "loader2": "TRANSCRIBING...",
     "loader3": "DECODING AUDIO...",
-    "loader4": "VOICE ANALYSIS..."
+    "loader4": "VOICE ANALYSIS...",
+    "retranscribe": "Re-transcribe",
+    "retranscribing": "Re-transcribing..."
   },
   "notes": {
     "title": "Notes",

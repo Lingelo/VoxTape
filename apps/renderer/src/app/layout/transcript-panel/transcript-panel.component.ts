@@ -39,6 +39,7 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, A
   editingSegmentId: string | null = null;
   editingText = '';
   audioPath: string | null = null;
+  isRetranscribing = false;
   private readonly session = inject(SessionService);
   private readonly ipc = inject(ElectronIpcService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -145,6 +146,24 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, A
     const el = container.querySelector(`[data-segment-id="${segmentId}"]`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  async retranscribe(): Promise<void> {
+    const api = (window as any).voxtape?.session;
+    const sessionId = this.session.currentSessionId;
+    if (!api?.retranscribe || !sessionId) return;
+
+    this.isRetranscribing = true;
+    this.cdr.markForCheck();
+
+    try {
+      await api.retranscribe(sessionId);
+    } catch (err) {
+      console.error('[TranscriptPanel] Retranscribe failed:', err);
+    } finally {
+      this.isRetranscribing = false;
+      this.cdr.markForCheck();
     }
   }
 

@@ -133,6 +133,7 @@ const voxtapeApi = {
     load: (id: string): Promise<any> => ipcRenderer.invoke('session:load', id),
     list: (): Promise<any> => ipcRenderer.invoke('session:list'),
     delete: (id: string): Promise<any> => ipcRenderer.invoke('session:delete', id),
+    retranscribe: (id: string): Promise<any> => ipcRenderer.invoke('session:retranscribe', id),
   },
 
   search: {

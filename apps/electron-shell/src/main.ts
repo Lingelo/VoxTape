@@ -450,6 +450,45 @@ function setupIpc(): void {
     }
   });
 
+  // ── Re-transcribe IPC ────────────────────────────────────────────
+
+  ipcMain.handle(IpcChannels.SESSION_RETRANSCRIBE, async (_event, sessionId: string) => {
+    try {
+      const session = databaseService.getSession(sessionId);
+      if (!session?.audioPath) {
+        return { ok: false, error: 'No audio recording for this session' };
+      }
+
+      const { readFileSync: readFs } = require('fs');
+      const audioData = readFs(session.audioPath);
+
+      // Skip WAV header (44 bytes), read PCM data
+      const headerSize = 44;
+      const pcmData = new Int16Array(audioData.buffer, audioData.byteOffset + headerSize, (audioData.byteLength - headerSize) / 2);
+
+      // Feed chunks to STT (1600 samples = 100ms at 16kHz)
+      const chunkSize = 1600;
+      mainWindow?.webContents.send('session:retranscribe-start');
+      sttService.startRecording();
+
+      for (let i = 0; i < pcmData.length; i += chunkSize) {
+        const chunk = pcmData.slice(i, Math.min(i + chunkSize, pcmData.length));
+        sttService.feedAudioChunk(chunk, 'mic');
+        // Small delay to let STT process (avoid flooding)
+        if (i % (chunkSize * 10) === 0) {
+          await new Promise((r) => setTimeout(r, 10));
+        }
+      }
+
+      sttService.stopRecording();
+      mainWindow?.webContents.send('session:retranscribe-end');
+      return { ok: true };
+    } catch (err: any) {
+      console.error('[Main] retranscribe error:', err.message);
+      return { ok: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('folder:create', (_event, name: string, parentId?: string) => {
     try {
       return databaseService.createFolder(name, parentId);

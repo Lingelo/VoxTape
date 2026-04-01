@@ -76,6 +76,27 @@
   text-align: right;
 }
 
+.retranscribe-btn {
+  padding: 2px 8px;
+  border: 2px solid var(--border-subtle);
+  border-radius: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
 .recording-elsewhere-banner {
   display: flex;
   align-items: center;
