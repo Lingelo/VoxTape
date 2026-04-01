@@ -22,3 +22,5 @@ export * from './lib/meeting-detection/meeting-detection.module.js';
 export * from './lib/meeting-detection/browser-url.service.js';
 export * from './lib/credential/credential.service.js';
 export * from './lib/credential/credential.module.js';
+export * from './lib/audio-recorder/audio-recorder.service.js';
+export * from './lib/audio-recorder/audio-recorder.module.js';

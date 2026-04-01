@@ -52,6 +52,7 @@ export const CONFIG_WHITELIST: Record<string, 'string' | 'number' | 'boolean' | 
   'theme': 'string',
   'audio.defaultDeviceId': 'string|null',
   'audio.systemAudioEnabled': 'boolean',
+  'audio.saveRecordings': 'boolean',
   'llm.provider': 'string',
   'llm.model': 'string|null',
   'llm.modelPath': 'string|null',

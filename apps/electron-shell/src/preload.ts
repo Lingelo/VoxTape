@@ -5,11 +5,16 @@ const voxtapeApi = {
     sendChunk: (samples: number[]): void => {
       ipcRenderer.send('audio:chunk', samples);
     },
-    startRecording: (): void => {
-      ipcRenderer.send('audio:recording-start');
+    startRecording: (sessionId?: string): void => {
+      ipcRenderer.send('audio:recording-start', sessionId);
     },
     stopRecording: (): void => {
       ipcRenderer.send('audio:recording-stop');
+    },
+    onRecordingSaved: (callback: (audioPath: string) => void): (() => void) => {
+      const handler = (_event: any, audioPath: string) => callback(audioPath);
+      ipcRenderer.on('audio:recording-saved', handler);
+      return () => ipcRenderer.removeListener('audio:recording-saved', handler);
     },
   },
 

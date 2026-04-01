@@ -10,6 +10,7 @@ export interface VoxTapeConfig {
   audio: {
     defaultDeviceId: string | null;
     systemAudioEnabled?: boolean;
+    saveRecordings?: boolean;
   };
   llm: {
     provider: LlmProviderId;

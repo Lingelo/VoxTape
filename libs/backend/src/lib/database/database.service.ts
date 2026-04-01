@@ -180,6 +180,13 @@ export class DatabaseService implements OnModuleDestroy {
       // Column already exists — expected
     }
 
+    // Migration: audio recording path
+    try {
+      this.db.exec(`ALTER TABLE sessions ADD COLUMN audio_path TEXT`);
+    } catch {
+      // Column already exists — expected
+    }
+
     // Performance indexes
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_segments_session_id ON segments(session_id);
@@ -202,18 +209,20 @@ export class DatabaseService implements OnModuleDestroy {
     chatMessages?: ChatMessage[];
     durationMs: number;
     folderId?: string | null;
+    audioPath?: string | null;
     createdAt: number;
     updatedAt: number;
   }): void {
     const saveSessionStmt = this.db.prepare(`
-      INSERT INTO sessions (id, title, user_notes, ai_summary, folder_id, duration_ms, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO sessions (id, title, user_notes, ai_summary, folder_id, duration_ms, audio_path, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         user_notes = excluded.user_notes,
         ai_summary = excluded.ai_summary,
         folder_id = excluded.folder_id,
         duration_ms = excluded.duration_ms,
+        audio_path = COALESCE(excluded.audio_path, audio_path),
         updated_at = excluded.updated_at
     `);
 
@@ -243,6 +252,7 @@ export class DatabaseService implements OnModuleDestroy {
         data.aiSummary ?? '',
         data.folderId ?? null,
         data.durationMs,
+        data.audioPath ?? null,
         data.createdAt,
         data.updatedAt
       );

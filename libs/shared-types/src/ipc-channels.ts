@@ -63,6 +63,9 @@ export const IpcChannels = {
   SUMMARY_HISTORY_SAVE: 'summary-history:save',
   SUMMARY_HISTORY_LIST: 'summary-history:list',
 
+  // Audio recording: main -> renderer
+  AUDIO_RECORDING_SAVED: 'audio:recording-saved',
+
   // Credentials: renderer -> main (invoke/handle)
   CREDENTIAL_SET: 'credential:set',
   CREDENTIAL_HAS: 'credential:has',

@@ -10,9 +10,10 @@ import { SystemAudioModule } from './system-audio/system-audio.module.js';
 import { DiarizationModule } from './diarization/diarization.module.js';
 import { MeetingDetectionModule } from './meeting-detection/meeting-detection.module.js';
 import { CredentialModule } from './credential/credential.module.js';
+import { AudioRecorderModule } from './audio-recorder/audio-recorder.module.js';
 
 @Module({
-  imports: [SttModule, AudioModule, LlmModule, DatabaseModule, ExportModule, ConfigModule, ModelManagerModule, SystemAudioModule, DiarizationModule, MeetingDetectionModule, CredentialModule],
-  exports: [SttModule, AudioModule, LlmModule, DatabaseModule, ExportModule, ConfigModule, ModelManagerModule, SystemAudioModule, DiarizationModule, MeetingDetectionModule, CredentialModule],
+  imports: [SttModule, AudioModule, LlmModule, DatabaseModule, ExportModule, ConfigModule, ModelManagerModule, SystemAudioModule, DiarizationModule, MeetingDetectionModule, CredentialModule, AudioRecorderModule],
+  exports: [SttModule, AudioModule, LlmModule, DatabaseModule, ExportModule, ConfigModule, ModelManagerModule, SystemAudioModule, DiarizationModule, MeetingDetectionModule, CredentialModule, AudioRecorderModule],
 })
 export class BackendModule {}

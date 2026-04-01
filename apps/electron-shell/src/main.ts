@@ -29,6 +29,7 @@ import {
   DiarizationService,
   MeetingDetectionService,
   CredentialService,
+  AudioRecorderService,
 } from '@voxtape/backend';
 import { IpcChannels } from '@voxtape/shared-types';
 import type { LlmPromptPayload, MeetingDetectionEvent } from '@voxtape/shared-types';
@@ -48,6 +49,7 @@ let systemAudioService: SystemAudioService;
 let diarizationService: DiarizationService;
 let meetingDetectionService: MeetingDetectionService;
 let credentialService: CredentialService;
+let audioRecorderService: AudioRecorderService;
 let isRecording = false;
 let lastMeetingNotificationId: string | null = null;
 let meetingNotificationDismissed = false;
@@ -96,6 +98,7 @@ async function bootstrapNest(): Promise<void> {
   diarizationService = appContext.get(DiarizationService);
   meetingDetectionService = appContext.get(MeetingDetectionService);
   credentialService = appContext.get(CredentialService);
+  audioRecorderService = appContext.get(AudioRecorderService);
 
   // Set worker paths relative to this bundle
   sttService.setWorkerPath(join(__dirname, 'stt-worker.js'));
@@ -107,6 +110,8 @@ async function bootstrapNest(): Promise<void> {
   databaseService.open(userData);
   configService.open(userData);
   credentialService.open(userData, safeStorage);
+  audioRecorderService.setRecordingsDir(join(userData, 'recordings'));
+  audioRecorderService.setEnabled(configService.get('audio')?.saveRecordings !== false);
 
   // Feed LLM config from persisted settings
   const llmCfg = configService.get('llm');
@@ -294,11 +299,11 @@ function toggleRecording(): void {
   }
 }
 
-function startRecording(): void {
+function startRecording(sessionId?: string): void {
   if (isRecording) return;
   isRecording = true;
 
-  audioService.startRecording();
+  audioService.startRecording(sessionId);
   // Diarization disabled - too slow for real-time use
   // diarizationService.startRecording();
   updateTrayMenu();
@@ -310,7 +315,11 @@ function stopRecording(): void {
   if (!isRecording) return;
   isRecording = false;
 
-  audioService.stopRecording();
+  const audioPath = audioService.stopRecording();
+  // Send audio path to renderer so it can include it in the next session save
+  if (audioPath) {
+    mainWindow?.webContents.send('audio:recording-saved', audioPath);
+  }
   // Diarization disabled - too slow for real-time use
   // diarizationService.stopRecording();
   // Also stop system audio capture if active
@@ -331,7 +340,7 @@ function setupIpc(): void {
   });
 
   // Recording control from renderer
-  ipcMain.on('audio:recording-start', () => startRecording());
+  ipcMain.on('audio:recording-start', (_event, sessionId?: string) => startRecording(sessionId));
   ipcMain.on('audio:recording-stop', () => stopRecording());
 
   // Forward STT events to renderer windows
@@ -422,6 +431,11 @@ function setupIpc(): void {
 
   ipcMain.handle('session:delete', (_event, id: string) => {
     try {
+      // Delete audio file if it exists
+      const session = databaseService.getSession(id);
+      if (session?.audio_path) {
+        audioRecorderService.deleteRecording(session.audio_path);
+      }
       databaseService.deleteSession(id);
       return { ok: true };
     } catch (err: any) {
@@ -534,6 +548,7 @@ function setupIpc(): void {
     'theme': 'string',
     'audio.defaultDeviceId': 'string|null',
     'audio.systemAudioEnabled': 'boolean',
+    'audio.saveRecordings': 'boolean',
     'llm.provider': 'string',
     'llm.model': 'string|null',
     'llm.modelPath': 'string|null',
@@ -593,6 +608,10 @@ function setupIpc(): void {
         provider: llmCfg.provider,
         model: llmCfg.model,
       });
+    }
+    // Live-update audio recorder config
+    if (key === 'audio.saveRecordings') {
+      audioRecorderService.setEnabled(value as boolean);
     }
     // Live-update STT config when relevant keys change
     if (key.startsWith('stt.')) {
