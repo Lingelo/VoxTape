@@ -352,6 +352,7 @@ export class DatabaseService implements OnModuleDestroy {
       createdAt: session.created_at,
       updatedAt: session.updated_at,
       durationMs: session.duration_ms,
+      audioPath: session.audio_path || null,
     };
   }
 

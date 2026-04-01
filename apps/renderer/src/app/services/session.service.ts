@@ -46,6 +46,7 @@ interface SessionData {
   segments?: TranscriptSegment[];
   aiNotes?: EnhancedNote[];
   aiSummary?: string;
+  audioPath?: string | null;
   chatMessages?: ChatMessage[];
   durationMs?: number;
 }
@@ -81,6 +82,7 @@ export class SessionService implements OnDestroy {
   private readonly _viewElapsed$ = new BehaviorSubject<number>(0);
   private readonly _aiNotes$ = new BehaviorSubject<EnhancedNote[]>([]);
   private readonly _aiSummary$ = new BehaviorSubject<string>('');
+  private readonly _audioPath$ = new BehaviorSubject<string | null>(null);
   private readonly _chatMessages$ = new BehaviorSubject<ChatMessage[]>([]);
   private readonly _sessions$ = new BehaviorSubject<SessionListItem[]>([]);
   private readonly _enhanceProgress$ = new BehaviorSubject<EnhanceProgress | null>(null);
@@ -122,6 +124,7 @@ export class SessionService implements OnDestroy {
   readonly title$: Observable<string> = this._title$.asObservable();
   readonly aiNotes$: Observable<EnhancedNote[]> = this._aiNotes$.asObservable();
   readonly aiSummary$: Observable<string> = this._aiSummary$.asObservable();
+  readonly audioPath$: Observable<string | null> = this._audioPath$.asObservable();
   readonly chatMessages$: Observable<ChatMessage[]> = this._chatMessages$.asObservable();
   private readonly _summaryHistory$ = new BehaviorSubject<SummaryHistoryItem[]>([]);
   readonly summaryHistory$: Observable<SummaryHistoryItem[]> = this._summaryHistory$.asObservable();
@@ -628,6 +631,7 @@ export class SessionService implements OnDestroy {
     this._viewElapsed$.next(0);
     this._aiNotes$.next([]);
     this._aiSummary$.next('');
+    this._audioPath$.next(null);
     this._chatMessages$.next([]);
   }
 
@@ -649,6 +653,7 @@ export class SessionService implements OnDestroy {
     this._loadedSegments$.next(data.segments || []);
     this._aiNotes$.next(data.aiNotes || []);
     this._aiSummary$.next(data.aiSummary || '');
+    this._audioPath$.next(data.audioPath || null);
     this._chatMessages$.next(data.chatMessages || []);
     this._viewElapsed$.next(data.durationMs || 0);
     // Only set status to 'done' if not viewing the recording session

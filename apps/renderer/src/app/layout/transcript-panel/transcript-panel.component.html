@@ -1,4 +1,21 @@
 <div class="transcript-panel">
+  @if (audioPath) {
+    <div class="audio-player">
+      <audio #audioEl [src]="'file://' + audioPath" preload="metadata"></audio>
+      <button class="play-btn" (click)="audioEl.paused ? audioEl.play() : audioEl.pause()">
+        {{ audioEl.paused ? '&#9654;' : '&#10074;&#10074;' }}
+      </button>
+      <input
+        type="range"
+        class="seek-bar"
+        [min]="0"
+        [max]="audioEl.duration || 0"
+        [value]="audioEl.currentTime || 0"
+        (input)="audioEl.currentTime = $any($event.target).value"
+      />
+      <span class="audio-time">{{ formatTime((audioEl.currentTime || 0) * 1000) }}</span>
+    </div>
+  }
   @if (isRecordingElsewhere) {
     <div class="recording-elsewhere-banner"
       tabindex="0"

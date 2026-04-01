@@ -316,9 +316,15 @@ function stopRecording(): void {
   isRecording = false;
 
   const audioPath = audioService.stopRecording();
-  // Send audio path to renderer so it can include it in the next session save
   if (audioPath) {
+    // Send WAV path immediately so renderer can save it
     mainWindow?.webContents.send('audio:recording-saved', audioPath);
+    // Compress to Opus in background, update renderer when done
+    audioRecorderService.compressToOpus(audioPath).then((finalPath) => {
+      if (finalPath !== audioPath) {
+        mainWindow?.webContents.send('audio:recording-saved', finalPath);
+      }
+    });
   }
   // Diarization disabled - too slow for real-time use
   // diarizationService.stopRecording();

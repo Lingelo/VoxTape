@@ -24,6 +24,7 @@ export interface SessionState {
   createdAt: number;
   updatedAt: number;
   durationMs: number;
+  audioPath?: string | null;
 }
 
 export type SttStatus = 'loading' | 'ready' | 'error';

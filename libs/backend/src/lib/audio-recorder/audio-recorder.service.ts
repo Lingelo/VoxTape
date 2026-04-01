@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { openSync, writeSync, closeSync, mkdirSync, existsSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { execFile } from 'child_process';
 import { createWavHeader, finalizeWavHeader } from './wav-header.js';
 
 const SAMPLE_RATE = 16000;
@@ -87,6 +88,30 @@ export class AudioRecorderService {
 
     console.log(`[AudioRecorder] Saved ${path} (${(this.dataSize / 1024 / 1024).toFixed(1)} MB)`);
     return path;
+  }
+
+  /**
+   * Compress WAV to Opus in background. Returns the Opus path on success, or the original WAV path on failure.
+   */
+  compressToOpus(wavPath: string): Promise<string> {
+    const opusPath = wavPath.replace(/\.wav$/, '.opus');
+    return new Promise((resolve) => {
+      execFile('ffmpeg', ['-i', wavPath, '-c:a', 'libopus', '-b:a', '32k', '-y', opusPath], (err) => {
+        if (err) {
+          console.warn('[AudioRecorder] ffmpeg not available or failed, keeping WAV:', err.message);
+          resolve(wavPath);
+          return;
+        }
+        // Delete WAV, return Opus path
+        try {
+          unlinkSync(wavPath);
+        } catch {
+          // WAV cleanup failed, not critical
+        }
+        console.log(`[AudioRecorder] Compressed to ${opusPath}`);
+        resolve(opusPath);
+      });
+    });
   }
 
   deleteRecording(filePath: string): void {

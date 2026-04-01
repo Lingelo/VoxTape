@@ -38,6 +38,7 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, A
   isRecordingElsewhere = false;
   editingSegmentId: string | null = null;
   editingText = '';
+  audioPath: string | null = null;
   private readonly session = inject(SessionService);
   private readonly ipc = inject(ElectronIpcService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -58,6 +59,10 @@ export class TranscriptPanelComponent implements OnInit, OnDestroy, OnChanges, A
       }),
       this.ipc.sttStatus$.subscribe((status) => {
         this.sttStatus = status;
+        this.cdr.markForCheck();
+      }),
+      this.session.audioPath$.subscribe((path) => {
+        this.audioPath = path;
         this.cdr.markForCheck();
       }),
       this.session.isRecordingElsewhere$.subscribe((elsewhere) => {

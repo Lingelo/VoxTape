@@ -14,6 +14,68 @@
   flex: 1;
 }
 
+// ── Audio Player ──────────────────────────────────────────────
+
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+
+  audio {
+    display: none;
+  }
+}
+
+.play-btn {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border-subtle);
+  border-radius: 0;
+  background: none;
+  color: var(--accent-primary);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    border-color: var(--accent-primary);
+  }
+}
+
+.seek-bar {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border-subtle);
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+  }
+}
+
+.audio-time {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text-secondary);
+  min-width: 40px;
+  text-align: right;
+}
+
 .recording-elsewhere-banner {
   display: flex;
   align-items: center;
