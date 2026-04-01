@@ -86,6 +86,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   systemAudioEnabled = false;
   systemAudioLevel = 0;
   isTestingSystemAudio = false;
+  saveRecordings = true;
 
   // Meeting detection
   meetingDetectionEnabled = true;
@@ -205,7 +206,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
     // Read persisted preference
     if (this.config) {
-      this.systemAudioEnabled = (this.config as Config & { audio?: { systemAudioEnabled?: boolean } }).audio?.systemAudioEnabled ?? false;
+      this.systemAudioEnabled = (this.config as any).audio?.systemAudioEnabled ?? false;
+      this.saveRecordings = (this.config as any).audio?.saveRecordings !== false;
     }
     // Set up level listener
     this.setupSystemAudioLevelListener();
@@ -222,6 +224,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
     });
+  }
+
+  onSaveRecordingsToggle(): void {
+    this.save('audio.saveRecordings', this.saveRecordings);
   }
 
   onSystemAudioToggle(): void {

@@ -88,6 +88,8 @@
     "systemAudioHint": "Transcrit l'audio des applications (réunions, vidéos...)",
     "systemAudioDetected": "Audio système détecté !",
     "playMediaToTest": "Lancez une vidéo ou de la musique...",
+    "saveRecordings": "Sauvegarder les enregistrements audio",
+    "saveRecordingsHint": "Sauvegarde les enregistrements pour la réécoute et la re-transcription",
     "systemAudioUnsupported": "Capture audio système : nécessite macOS 14.2+",
     "meetingDetection": "Détection des réunions",
     "meetingDetectionEnabled": "Détecter les réunions",

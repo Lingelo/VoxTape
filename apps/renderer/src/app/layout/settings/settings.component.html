@@ -94,6 +94,18 @@
         }
       </section>
 
+      <!-- Audio Recording -->
+      <div class="setting-row">
+        <div class="setting-label-group">
+          <span class="label-text">{{ 'settings.saveRecordings' | translate }}</span>
+          <span class="setting-hint">{{ 'settings.saveRecordingsHint' | translate }}</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" [(ngModel)]="saveRecordings" (change)="onSaveRecordingsToggle()" [attr.aria-label]="'settings.saveRecordings' | translate" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
       <!-- Meeting Detection -->
       <section class="settings-section">
         <h2>{{ 'settings.meetingDetection' | translate }}</h2>
