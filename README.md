@@ -96,6 +96,24 @@ npm run dev
 
 The app opens automatically. Angular dev server runs on `http://localhost:4200`.
 
+### Troubleshooting — `Electron failed to install correctly` or `Could not locate the bindings file` (better-sqlite3)
+
+Both symptoms mean npm lifecycle scripts were skipped during install, so Electron's binary was never downloaded and `better-sqlite3` was never rebuilt against Electron's ABI. The project ships a local `.npmrc` (`ignore-scripts=false`) that handles this for most setups. Two cases where it doesn't:
+
+**1. You have `NPM_CONFIG_IGNORE_SCRIPTS=true` in your shell env** (common supply-chain hardening). Env vars beat `.npmrc` per npm config precedence. Reinstall with the CLI flag, which beats env vars:
+
+```bash
+rm -rf node_modules && npm install --ignore-scripts=false
+```
+
+**2. You installed deps before pulling the `.npmrc`.** npm sees "up to date" on the next `npm install` and doesn't replay the scripts. Force the root `postinstall` once:
+
+```bash
+npm run postinstall
+```
+
+This re-runs Electron's binary installer (if missing) and rebuilds `better-sqlite3` via `electron-rebuild`.
+
 ### macOS Permissions (dev mode)
 
 In dev mode, macOS associates permissions with the Electron binary, not a packaged app. You must manually grant access:
