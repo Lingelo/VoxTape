@@ -98,8 +98,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   overallProgress = 0;
 
   private micStream: MediaStream | null = null;
-  private audioCtx: AudioContext | null = null;
-  private analyserInterval: ReturnType<typeof setInterval> | null = null;
+  private micLevelCleanup: (() => void) | null = null;
   private progressCleanup: (() => void) | null = null;
 
   // Required model IDs — without these, core functionality doesn't work
@@ -226,12 +225,17 @@ export class OnboardingComponent implements OnInit, OnDestroy {
         await mediaApi.requestMicAccess();
       }
 
-      const constraints: MediaStreamConstraints = {
-        audio: this.selectedDeviceId
-          ? { deviceId: { exact: this.selectedDeviceId } }
-          : true,
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
       };
+      if (this.selectedDeviceId) {
+        audioConstraints.deviceId = { exact: this.selectedDeviceId };
+      }
+      const constraints: MediaStreamConstraints = { audio: audioConstraints };
       this.micStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const track = this.micStream.getAudioTracks()[0];
 
       this.zone.run(async () => {
         this.micState = 'active';
@@ -242,25 +246,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
 
-      this.audioCtx = new AudioContext();
-      const source = this.audioCtx.createMediaStreamSource(this.micStream);
-      const analyser = this.audioCtx.createAnalyser();
-      analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.3;
-      source.connect(analyser);
-
-      const buffer = new Uint8Array(analyser.frequencyBinCount);
-      this.analyserInterval = setInterval(() => {
-        analyser.getByteFrequencyData(buffer);
-        const avg = buffer.reduce((a, b) => a + b, 0) / buffer.length;
-        this.zone.run(() => {
-          this.audioLevel = Math.min(1, avg / 80);
-          if (this.audioLevel > 0.02) {
-            this.micSignalDetected = true;
-          }
-          this.cdr.markForCheck();
-        });
-      }, 50);
+      this.micLevelCleanup = this.startLevelMeter(track);
     } catch (err) {
       console.error('[Onboarding] Mic access failed:', err);
       this.zone.run(() => {
@@ -268,6 +254,56 @@ export class OnboardingComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       });
     }
+  }
+
+  // Uses MediaStreamTrackProcessor (WebCodecs) to read raw audio frames directly.
+  // Bypasses WebAudio AnalyserNode, which silently reads zeros on some Chromium + macOS
+  // + USB-audio-device combinations despite a live, non-muted MediaStreamTrack.
+  private startLevelMeter(track: MediaStreamTrack): () => void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const MSTP = (window as unknown as { MediaStreamTrackProcessor?: any }).MediaStreamTrackProcessor;
+    if (!MSTP) {
+      console.warn('[Onboarding] MediaStreamTrackProcessor unavailable — level meter disabled');
+      return () => { /* no-op */ };
+    }
+
+    const processor = new MSTP({ track });
+    const reader: ReadableStreamDefaultReader = processor.readable.getReader();
+    let cancelled = false;
+
+    (async () => {
+      while (!cancelled) {
+        const { value: frame, done } = await reader.read();
+        if (done || !frame) break;
+        const numFrames = frame.numberOfFrames;
+        const buffer = new Float32Array(numFrames);
+        try {
+          frame.copyTo(buffer, { planeIndex: 0, format: 'f32-planar' });
+        } finally {
+          frame.close();
+        }
+        let peak = 0;
+        for (let i = 0; i < buffer.length; i++) {
+          const v = Math.abs(buffer[i]);
+          if (v > peak) peak = v;
+        }
+        this.zone.run(() => {
+          // Smooth decay so the bar doesn't flicker back to zero between frames.
+          this.audioLevel = Math.max(peak, this.audioLevel * 0.85);
+          if (peak > 0.02) {
+            this.micSignalDetected = true;
+          }
+          this.cdr.markForCheck();
+        });
+      }
+    })().catch((err) => {
+      if (!cancelled) console.error('[Onboarding] Level meter read failed:', err);
+    });
+
+    return () => {
+      cancelled = true;
+      reader.cancel().catch(() => { /* cancel errors are expected */ });
+    };
   }
 
   private async enumerateDevices(): Promise<void> {
@@ -290,17 +326,13 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   stopMicTest(): void {
-    if (this.analyserInterval) {
-      clearInterval(this.analyserInterval);
-      this.analyserInterval = null;
+    if (this.micLevelCleanup) {
+      this.micLevelCleanup();
+      this.micLevelCleanup = null;
     }
     if (this.micStream) {
       this.micStream.getTracks().forEach((t) => t.stop());
       this.micStream = null;
-    }
-    if (this.audioCtx) {
-      this.audioCtx.close().catch(() => { /* AudioContext close errors are expected */ });
-      this.audioCtx = null;
     }
     this.audioLevel = 0;
   }
